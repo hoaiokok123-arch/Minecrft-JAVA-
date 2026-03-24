@@ -17,6 +17,12 @@ PLATFORM    ?= 2
 # Release vs Debug
 RELEASE ?= 0
 
+# MobileGlues source moved from src/main/cpp to MobileGlues-cpp on newer upstream.
+MOBILEGLUES_SRC_NEW := $(SOURCEDIR)/Natives/external/MobileGlues/MobileGlues-cpp
+MOBILEGLUES_SRC_OLD := $(SOURCEDIR)/Natives/external/MobileGlues/src/main/cpp
+MOBILEGLUES_SRC ?= $(if $(wildcard $(MOBILEGLUES_SRC_NEW)/CMakeLists.txt),$(MOBILEGLUES_SRC_NEW),$(MOBILEGLUES_SRC_OLD))
+MOBILEGLUES_SPIRV_DYLIB := $(MOBILEGLUES_SRC)/libraries/ios/libspirv-cross-c-shared.0.dylib
+
 # Check if running on github runner
 RUNNER ?= 0
 
@@ -313,11 +319,15 @@ dep_mg:
 		-DCMAKE_OSX_ARCHITECTURES=arm64 \
 		-DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
 		-DCMAKE_C_FLAGS="-arch arm64" \
-		$(SOURCEDIR)/Natives/external/MobileGlues/src/main/cpp/
+		$(MOBILEGLUES_SRC)
 
 	cmake --build $(WORKINGDIR)/mobileglues --config RelWithDebInfo -j$(JOBS) --target mobileglues
 	cp $(WORKINGDIR)/mobileglues/libmobileglues.dylib $(WORKINGDIR)/libmobileglues.dylib
-	cp $(SOURCEDIR)/Natives/external/MobileGlues/src/main/cpp/libraries/ios/libspirv-cross-c-shared.0.dylib $(WORKINGDIR)/libspirv-cross-c-shared.0.dylib
+	if [ -f "$(MOBILEGLUES_SPIRV_DYLIB)" ]; then \
+		cp "$(MOBILEGLUES_SPIRV_DYLIB)" "$(WORKINGDIR)/libspirv-cross-c-shared.0.dylib"; \
+	else \
+		echo "Optional MobileGlues SPIRV dylib not found at $(MOBILEGLUES_SPIRV_DYLIB), skipping copy."; \
+	fi
 	echo '[Amethyst v$(VERSION)] dep_mg - end'
 
 assets:
