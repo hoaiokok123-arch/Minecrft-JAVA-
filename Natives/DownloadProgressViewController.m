@@ -22,6 +22,8 @@ static void *TotalProgressObserverContext = &TotalProgressObserverContext;
     [super loadView];
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemClose target:self action:@selector(actionClose)];
     self.tableView.allowsSelection = NO;
+    self.preferredContentSize = PLCompactPopoverSize(320, 220);
+    PLApplyCompactTableLayout(self.tableView, 42);
 
     // Load WFWorkflowProgressView
     dlopen("/System/Library/PrivateFrameworks/WorkflowUIServices.framework/WorkflowUIServices", RTLD_GLOBAL);
@@ -87,6 +89,7 @@ static void *TotalProgressObserverContext = &TotalProgressObserverContext;
         progressView.stopSize = 0;
         cell.accessoryView = progressView;
     }
+    PLApplyCompactTableCell(cell);
 
     // Unset the last cell displaying the progress
     NSProgress *lastProgress = objc_getAssociatedObject(cell, @"progress");

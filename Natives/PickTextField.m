@@ -59,8 +59,8 @@
 
     self.vc = [[PickViewController alloc] init];
     self.vc.modalPresentationStyle = UIModalPresentationPopover;
-    CGFloat width = MIN(400, MIN(self.window.frame.size.width, self.window.frame.size.height));
-    self.vc.preferredContentSize = CGSizeMake(width, 250);
+    CGFloat width = MIN(360, MIN(self.window.frame.size.width, self.window.frame.size.height));
+    self.vc.preferredContentSize = PLCompactPopoverSize(width, 220);
     self.vc.textField = self;
 
     UIPopoverPresentationController *popoverController = [self.vc popoverPresentationController];

@@ -39,6 +39,8 @@
         }
     }
 
+    PLApplyCompactTableLayout(self.tableView, 42);
+    self.preferredContentSize = PLCompactPopoverSize(320, 220);
     [self.tableView setSeparatorStyle:UITableViewCellSeparatorStyleSingleLine];
 }
 
@@ -54,6 +56,7 @@
     if (cell == nil) {
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"cell"];
     }
+    PLApplyCompactTableCell(cell);
 
     if (indexPath.row == self.accountList.count) {
         cell.imageView.image = [UIImage imageNamed:@"IconAdd"];

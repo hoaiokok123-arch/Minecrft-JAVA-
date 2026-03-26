@@ -315,7 +315,7 @@
         }
     };
     vc.modalPresentationStyle = UIModalPresentationPopover;
-    vc.preferredContentSize = CGSizeMake(350, 250);
+    vc.preferredContentSize = PLCompactPopoverSize(320, 220);
 
     UIPopoverPresentationController *popoverController = vc.popoverPresentationController;
     popoverController.sourceView = sender;

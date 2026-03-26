@@ -309,7 +309,7 @@
     vc.listPath = [NSString stringWithFormat:@"%s/controlmap", getenv("POJAV_HOME")];
     vc.whenItemSelected = handler;
     vc.modalPresentationStyle = UIModalPresentationPopover;
-    vc.preferredContentSize = CGSizeMake(350, 250);
+    vc.preferredContentSize = PLCompactPopoverSize(300, 220);
 
     UIPopoverPresentationController *popoverController = [vc popoverPresentationController];
     popoverController.sourceView = self.view;

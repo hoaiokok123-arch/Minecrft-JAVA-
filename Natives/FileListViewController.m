@@ -30,6 +30,8 @@
         }
     }
 
+    PLApplyCompactTableLayout(self.tableView, 40);
+    self.preferredContentSize = PLCompactPopoverSize(300, 220);
     [self.tableView setSeparatorStyle:UITableViewCellSeparatorStyleSingleLine];
 }
 
@@ -45,6 +47,7 @@
     if (cell == nil) {
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"cell"];
     }
+    PLApplyCompactTableCell(cell);
 
     cell.textLabel.text = [self.fileList objectAtIndex:indexPath.row];
     return cell;

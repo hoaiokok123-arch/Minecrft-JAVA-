@@ -325,11 +325,12 @@ static void *ProgressObserverContext = &ProgressObserverContext;
 
 - (void)performInstallOrShowDetails:(id)sender {
     BOOL usesBarButtonItem = [sender isKindOfClass:UIBarButtonItem.class];
-    if (self.task) {
+        if (self.task) {
         if (!self.progressVC) {
             UIViewController *vc = [[DownloadProgressViewController alloc] initWithTask:self.task];
             self.progressVC = [[UINavigationController alloc] initWithRootViewController:vc];
             self.progressVC.modalPresentationStyle = UIModalPresentationPopover;
+            self.progressVC.preferredContentSize = PLCompactPopoverSize(320, 220);
         } else if (self.progressVC.popoverPresentationController._isDismissing) {
             // FIXME: stock bug? it crashes when users dismisses and presents this vc too fast
             // "UIPopoverPresentationController () should have a non-nil sourceView or barButtonItem set before the presentation occurs."

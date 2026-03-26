@@ -22,7 +22,8 @@
 
     self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
-    self.tableView.sectionFooterHeight = 50;
+    self.tableView.sectionFooterHeight = 36;
+    PLApplyCompactTableLayout(self.tableView, 42);
 
     NSString *path = [NSString stringWithFormat:@"%s/instances", getenv("POJAV_HOME")];
 
@@ -72,6 +73,7 @@
         [cell.contentView addSubview:view];
         cell.detailTextLabel.text = @"...";
     }
+    PLApplyCompactTableCell(cell);
     view = cell.contentView.subviews.firstObject;
     view.placeholder = self.array[indexPath.row];
     view.text = self.array[indexPath.row];

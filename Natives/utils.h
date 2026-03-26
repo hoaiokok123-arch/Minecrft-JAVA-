@@ -78,6 +78,9 @@ BOOL PLPatchMachOPlatformForFile(const char *path);
 
 UIViewController* currentVC();
 void openLink(UIViewController* sender, NSURL* link);
+void PLApplyCompactTableLayout(UITableView *tableView, CGFloat rowHeight);
+void PLApplyCompactTableCell(UITableViewCell *cell);
+CGSize PLCompactPopoverSize(CGFloat width, CGFloat height);
 
 NSString* localize(NSString* key, NSString* comment);
 NSMutableDictionary* parseJSONFromFile(NSString *path);

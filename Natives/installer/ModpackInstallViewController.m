@@ -32,6 +32,7 @@
     self.searchController.searchResultsUpdater = self;
     self.searchController.obscuresBackgroundDuringPresentation = NO;
     self.navigationItem.searchController = self.searchController;
+    PLApplyCompactTableLayout(self.tableView, 48);
     self.modrinth = [ModrinthAPI new];
     self.filters = @{
         @"isModpack": @(YES),
@@ -125,6 +126,7 @@
         cell.imageView.contentMode = UIViewContentModeScaleToFill;
         cell.imageView.clipsToBounds = YES;
     }
+    PLApplyCompactTableCell(cell);
 
     NSDictionary *item = self.list[indexPath.row];
     cell.textLabel.text = item[@"title"];

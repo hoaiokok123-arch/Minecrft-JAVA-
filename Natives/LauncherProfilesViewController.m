@@ -79,6 +79,7 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
 
     self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
+    PLApplyCompactTableLayout(self.tableView, 44);
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -179,7 +180,7 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
     cell.detailTextLabel.text = profile[@"lastVersionId"];
     cell.imageView.layer.magnificationFilter = kCAFilterNearest;
 
-    UIImage *fallbackImage = [[UIImage imageNamed:@"DefaultProfile"] _imageWithSize:CGSizeMake(40, 40)];
+    UIImage *fallbackImage = [[UIImage imageNamed:@"DefaultProfile"] _imageWithSize:CGSizeMake(32, 32)];
     [cell.imageView setImageWithURL:[NSURL URLWithString:profile[@"icon"]] placeholderImage:fallbackImage];
 }
 
@@ -193,7 +194,7 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
         cell.detailTextLabel.numberOfLines = 0;
         cell.detailTextLabel.lineBreakMode = NSLineBreakByWordWrapping;
         if (indexPath.section == kProfiles) {
-            cell.imageView.frame = CGRectMake(0, 0, 40, 40);
+            cell.imageView.frame = CGRectMake(0, 0, 32, 32);
             cell.imageView.isSizeFixed = YES;
         }
     } else {
@@ -201,6 +202,7 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
         cell.userInteractionEnabled = YES;
         cell.accessoryView = nil;
     }
+    PLApplyCompactTableCell(cell);
 
     if (indexPath.section == kInstances) {
         [self setupInstanceCell:cell atRow:indexPath.row];

@@ -60,6 +60,7 @@ static WFWorkflowProgressView* currentProgressView;
 
     self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
+    PLApplyCompactTableLayout(self.tableView, 42);
 
     self.javaRuntimes = @{
         @(DEFAULT_JRE): @[@"preference.manage_runtime.default.1165", @"preference.manage_runtime.default.117", @"launcher.menu.execute_jar"]
@@ -187,6 +188,7 @@ static WFWorkflowProgressView* currentProgressView;
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"DefaultCell"];
         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
     }
+    PLApplyCompactTableCell(cell);
     cell.textLabel.text = localize(self.javaRuntimes[@DEFAULT_JRE][indexPath.row], nil);
     cell.detailTextLabel.text = [NSString stringWithFormat:@"Java %@",
         ((NSDictionary *)self.selectedRuntimes[@"0"])[self.selectedRTTags[indexPath.row]]];
@@ -198,6 +200,7 @@ static WFWorkflowProgressView* currentProgressView;
     if (cell == nil) {
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"RTCell"];
     }
+    PLApplyCompactTableCell(cell);
     NSNumber *version = self.sortedJavaVersions[indexPath.section];
     NSString *name = self.javaRuntimes[version][indexPath.row];
     BOOL isInternal = [objc_getAssociatedObject(name, @"internalJRE") boolValue];

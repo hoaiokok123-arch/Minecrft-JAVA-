@@ -45,7 +45,8 @@ typedef void(^CreateView)(UITableViewCell *, NSString *, NSDictionary *);
     
     self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
-    self.tableView.sectionFooterHeight = 50;
+    self.tableView.sectionFooterHeight = 36;
+    PLApplyCompactTableLayout(self.tableView, 42);
     
     [self loadGamepadConfigurationFile];
     self.prefControllerTypes = @[@{@"name": @"xbox"}, @{@"name": @"playstation"}];
@@ -120,7 +121,7 @@ typedef void(^CreateView)(UITableViewCell *, NSString *, NSDictionary *);
         cell.textLabel.text = localize(([NSString stringWithFormat:@"controller_configurator.%@.title.%@", getPrefObject(@"control.controller_type"), item[@"name"]]), nil);
         UITextField *view = (id)cell.accessoryView;
         if (view == nil) {
-            view = [[PickTextField alloc] initWithFrame:CGRectMake(0, 0, cell.bounds.size.width / 2.1, cell.bounds.size.height)];
+            view = [[PickTextField alloc] initWithFrame:CGRectMake(0, 0, cell.bounds.size.width / 2.5, cell.bounds.size.height)];
             [view addTarget:view action:@selector(resignFirstResponder) forControlEvents:UIControlEventEditingDidEndOnExit];
             view.autocorrectionType = UITextAutocorrectionTypeNo;
             view.autocapitalizationType = UITextAutocapitalizationTypeNone;
@@ -145,6 +146,7 @@ typedef void(^CreateView)(UITableViewCell *, NSString *, NSDictionary *);
             cell.accessoryType = UITableViewCellAccessoryNone;
         }
     }
+    PLApplyCompactTableCell(cell);
     return cell;
 }
 
@@ -238,7 +240,7 @@ typedef void(^CreateView)(UITableViewCell *, NSString *, NSDictionary *);
     
     vc.whenItemSelected = handler;
     vc.modalPresentationStyle = UIModalPresentationPopover;
-    vc.preferredContentSize = CGSizeMake(350, 250);
+    vc.preferredContentSize = PLCompactPopoverSize(300, 220);
 
     UIPopoverPresentationController *popoverController = [vc popoverPresentationController];
     popoverController.sourceView = self.tableView;

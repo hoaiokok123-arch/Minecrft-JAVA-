@@ -63,6 +63,32 @@ void openLink(UIViewController* sender, NSURL* link) {
     }
 }
 
+void PLApplyCompactTableLayout(UITableView *tableView, CGFloat rowHeight) {
+    tableView.rowHeight = rowHeight;
+    tableView.estimatedRowHeight = rowHeight;
+    tableView.estimatedSectionHeaderHeight = 0;
+    tableView.estimatedSectionFooterHeight = 0;
+    tableView.cellLayoutMarginsFollowReadableWidth = NO;
+    tableView.contentInset = UIEdgeInsetsZero;
+    if (@available(iOS 15.0, *)) {
+        tableView.sectionHeaderTopPadding = 0;
+    }
+}
+
+void PLApplyCompactTableCell(UITableViewCell *cell) {
+    cell.layoutMargins = UIEdgeInsetsMake(0, 8, 0, 8);
+    cell.separatorInset = UIEdgeInsetsMake(0, 12, 0, 12);
+    cell.textLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightMedium];
+    if (cell.detailTextLabel) {
+        cell.detailTextLabel.font = [UIFont systemFontOfSize:11.5];
+        cell.detailTextLabel.textColor = UIColor.secondaryLabelColor;
+    }
+}
+
+CGSize PLCompactPopoverSize(CGFloat width, CGFloat height) {
+    return CGSizeMake(clamp(width, 280, 330), clamp(height, 200, 240));
+}
+
 NSMutableDictionary* parseJSONFromFile(NSString *path) {
     NSError *error;
 
