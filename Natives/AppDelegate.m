@@ -1,4 +1,6 @@
 #import "AppDelegate.h"
+#import "LauncherSplitViewController.h"
+#import "SurfaceViewController.h"
 #import "SceneDelegate.h"
 #import "ios_uikit_bridge.h"
 #import "utils.h"
@@ -29,6 +31,19 @@ extern dispatch_group_t fatalExitGroup;
         dispatch_group_leave(fatalExitGroup);
         fatalExitGroup = nil;
     }
+}
+
+- (UIInterfaceOrientationMask)application:(UIApplication *)application supportedInterfaceOrientationsForWindow:(UIWindow *)window {
+    UIViewController *rootViewController = window.rootViewController;
+    if ([rootViewController isKindOfClass:SurfaceViewController.class]) {
+        return UIInterfaceOrientationMaskAllButUpsideDown;
+    }
+
+    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad || NSProcessInfo.processInfo.isMacCatalystApp) {
+        return UIInterfaceOrientationMaskAll;
+    }
+
+    return UIInterfaceOrientationMaskPortrait;
 }
 
 @end
