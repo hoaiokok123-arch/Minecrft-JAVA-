@@ -57,7 +57,7 @@ static const CGFloat LauncherToolbarFieldMaxWidth = 420.0;
     }
 
     if (self.usesLiquidGlassToolbar) {
-        CGFloat availableWidth = CGRectGetWidth(self.view.bounds);
+        CGFloat availableWidth = MAX(CGRectGetWidth(self.view.bounds) - self.view.safeAreaInsets.left - self.view.safeAreaInsets.right, 0.0);
         CGFloat containerWidth = MIN(MAX(availableWidth - 140.0, 180.0), LauncherToolbarFieldMaxWidth);
         self.toolbarContentView.frame = CGRectMake(0, 0, containerWidth, LauncherToolbarControlHeight);
         self.toolbarChromeView.frame = self.toolbarContentView.bounds;
@@ -582,6 +582,22 @@ static const CGFloat LauncherToolbarFieldMaxWidth = 420.0;
 }
 
 #pragma mark - View controller UI mode
+
+- (void)viewSafeAreaInsetsDidChange {
+    [super viewSafeAreaInsetsDidChange];
+    [self layoutToolbarControls];
+}
+
+- (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
+    [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
+    [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
+        [self layoutToolbarControls];
+        [sidebarViewController updateAccountInfo];
+    } completion:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
+        [self layoutToolbarControls];
+        [sidebarViewController updateAccountInfo];
+    }];
+}
 
 - (BOOL)prefersHomeIndicatorAutoHidden {
     return YES;

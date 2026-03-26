@@ -27,35 +27,62 @@
 @implementation LauncherPreferencesViewController
 
 - (void)configureOverviewHeader {
-    UIView *wrapper = [[UIView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(self.tableView.bounds), 124.0)];
-    self.overviewCard = [[UIView alloc] initWithFrame:CGRectMake(16.0, 8.0, wrapper.bounds.size.width - 32.0, 104.0)];
+    UIView *wrapper = [[UIView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(self.tableView.bounds), 1.0)];
+    wrapper.backgroundColor = UIColor.clearColor;
+
+    self.overviewCard = [[UIView alloc] initWithFrame:CGRectZero];
+    self.overviewCard.translatesAutoresizingMaskIntoConstraints = NO;
     LauncherStylePanel(self.overviewCard, 24.0);
 
-    UILabel *eyebrowLabel = [[UILabel alloc] initWithFrame:CGRectMake(20.0, 18.0, self.overviewCard.bounds.size.width - 40.0, 16.0)];
+    UILabel *eyebrowLabel = [[UILabel alloc] initWithFrame:CGRectZero];
+    eyebrowLabel.translatesAutoresizingMaskIntoConstraints = NO;
     eyebrowLabel.text = self.title;
     eyebrowLabel.font = LauncherCaptionFont(12.0);
     eyebrowLabel.textColor = UIColor.secondaryLabelColor;
 
     self.overviewTitleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
+    self.overviewTitleLabel.translatesAutoresizingMaskIntoConstraints = NO;
     self.overviewTitleLabel.font = LauncherTitleFont(22.0);
     self.overviewTitleLabel.textColor = UIColor.labelColor;
-    self.overviewTitleLabel.numberOfLines = 2;
+    self.overviewTitleLabel.numberOfLines = 0;
 
     self.overviewSubtitleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
+    self.overviewSubtitleLabel.translatesAutoresizingMaskIntoConstraints = NO;
     self.overviewSubtitleLabel.font = LauncherBodyFont(13.0);
     self.overviewSubtitleLabel.textColor = UIColor.secondaryLabelColor;
-    self.overviewSubtitleLabel.numberOfLines = 3;
+    self.overviewSubtitleLabel.numberOfLines = 0;
 
     NSString *version = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"1.0";
     NSString *build = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleVersion"] ?: @"";
     self.overviewTitleLabel.text = [NSString stringWithFormat:@"%@ (%@)", version, build];
     self.overviewSubtitleLabel.text = UIDevice.currentDevice.completeOSVersion;
 
+    [wrapper addSubview:self.overviewCard];
     [self.overviewCard addSubview:eyebrowLabel];
     [self.overviewCard addSubview:self.overviewTitleLabel];
     [self.overviewCard addSubview:self.overviewSubtitleLabel];
-    [wrapper addSubview:self.overviewCard];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [self.overviewCard.topAnchor constraintEqualToAnchor:wrapper.topAnchor constant:8.0],
+        [self.overviewCard.leadingAnchor constraintEqualToAnchor:wrapper.leadingAnchor constant:16.0],
+        [self.overviewCard.trailingAnchor constraintEqualToAnchor:wrapper.trailingAnchor constant:-16.0],
+        [self.overviewCard.bottomAnchor constraintEqualToAnchor:wrapper.bottomAnchor constant:-12.0],
+
+        [eyebrowLabel.topAnchor constraintEqualToAnchor:self.overviewCard.topAnchor constant:18.0],
+        [eyebrowLabel.leadingAnchor constraintEqualToAnchor:self.overviewCard.leadingAnchor constant:20.0],
+        [eyebrowLabel.trailingAnchor constraintEqualToAnchor:self.overviewCard.trailingAnchor constant:-20.0],
+
+        [self.overviewTitleLabel.topAnchor constraintEqualToAnchor:eyebrowLabel.bottomAnchor constant:2.0],
+        [self.overviewTitleLabel.leadingAnchor constraintEqualToAnchor:eyebrowLabel.leadingAnchor],
+        [self.overviewTitleLabel.trailingAnchor constraintEqualToAnchor:eyebrowLabel.trailingAnchor],
+
+        [self.overviewSubtitleLabel.topAnchor constraintEqualToAnchor:self.overviewTitleLabel.bottomAnchor constant:8.0],
+        [self.overviewSubtitleLabel.leadingAnchor constraintEqualToAnchor:eyebrowLabel.leadingAnchor],
+        [self.overviewSubtitleLabel.trailingAnchor constraintEqualToAnchor:eyebrowLabel.trailingAnchor],
+        [self.overviewSubtitleLabel.bottomAnchor constraintEqualToAnchor:self.overviewCard.bottomAnchor constant:-18.0]
+    ]];
     self.tableView.tableHeaderView = wrapper;
+    LauncherFitTableSupplementaryView(self.tableView, wrapper, YES);
 }
 
 - (void)updateOverviewHeaderLayout {
@@ -63,17 +90,7 @@
     if (!wrapper) {
         return;
     }
-
-    CGFloat width = CGRectGetWidth(self.tableView.bounds);
-    BOOL needsHeaderReapply = fabs(CGRectGetWidth(wrapper.frame) - width) > 0.5;
-    wrapper.frame = CGRectMake(0, 0, width, 124.0);
-    self.overviewCard.frame = CGRectMake(16.0, 8.0, width - 32.0, 104.0);
-    self.overviewCard.subviews[0].frame = CGRectMake(20.0, 18.0, self.overviewCard.bounds.size.width - 40.0, 16.0);
-    self.overviewTitleLabel.frame = CGRectMake(20.0, 36.0, self.overviewCard.bounds.size.width - 40.0, 30.0);
-    self.overviewSubtitleLabel.frame = CGRectMake(20.0, 66.0, self.overviewCard.bounds.size.width - 40.0, 26.0);
-    if (needsHeaderReapply) {
-        self.tableView.tableHeaderView = wrapper;
-    }
+    LauncherFitTableSupplementaryView(self.tableView, wrapper, YES);
 }
 
 - (id)init {

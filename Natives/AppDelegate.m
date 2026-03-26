@@ -43,7 +43,7 @@ extern dispatch_group_t fatalExitGroup;
         return UIInterfaceOrientationMaskAll;
     }
 
-    return UIInterfaceOrientationMaskPortrait;
+    return UIInterfaceOrientationMaskAllButUpsideDown;
 }
 
 @end
