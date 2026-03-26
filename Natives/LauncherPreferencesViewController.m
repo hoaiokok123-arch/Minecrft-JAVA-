@@ -21,7 +21,6 @@
 @property(nonatomic) UIView *overviewCard;
 @property(nonatomic) UILabel *overviewTitleLabel;
 @property(nonatomic) UILabel *overviewSubtitleLabel;
-@property(nonatomic) CGFloat lastOverviewLayoutWidth;
 @end
 
 @implementation LauncherPreferencesViewController
@@ -65,15 +64,12 @@
     }
 
     CGFloat width = CGRectGetWidth(self.tableView.bounds);
-    BOOL needsHeaderReapply = fabs(CGRectGetWidth(wrapper.frame) - width) > 0.5;
     wrapper.frame = CGRectMake(0, 0, width, 124.0);
     self.overviewCard.frame = CGRectMake(16.0, 8.0, width - 32.0, 104.0);
     self.overviewCard.subviews[0].frame = CGRectMake(20.0, 18.0, self.overviewCard.bounds.size.width - 40.0, 16.0);
     self.overviewTitleLabel.frame = CGRectMake(20.0, 36.0, self.overviewCard.bounds.size.width - 40.0, 30.0);
     self.overviewSubtitleLabel.frame = CGRectMake(20.0, 66.0, self.overviewCard.bounds.size.width - 40.0, 26.0);
-    if (needsHeaderReapply) {
-        self.tableView.tableHeaderView = wrapper;
-    }
+    self.tableView.tableHeaderView = wrapper;
 }
 
 - (id)init {
@@ -489,11 +485,7 @@
 
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
-    CGFloat width = CGRectGetWidth(self.tableView.bounds);
-    if (fabs(self.lastOverviewLayoutWidth - width) > 0.5) {
-        self.lastOverviewLayoutWidth = width;
-        [self updateOverviewHeaderLayout];
-    }
+    [self updateOverviewHeaderLayout];
 }
 
 - (void)viewWillDisappear:(BOOL)animated {

@@ -34,7 +34,6 @@ static const CGFloat LauncherProfileIconSize = 34.0;
 @property(nonatomic) UILabel *summaryTitleLabel;
 @property(nonatomic) UILabel *summarySubtitleLabel;
 @property(nonatomic) UILabel *summaryMetaLabel;
-@property(nonatomic) CGFloat lastSummaryLayoutWidth;
 @end
 
 @implementation LauncherProfilesViewController
@@ -97,7 +96,7 @@ static const CGFloat LauncherProfileIconSize = 34.0;
     NSString *gameDir = getPrefObject(@"general.game_directory") ?: @"default";
     self.summaryTitleLabel.text = profileName;
     self.summarySubtitleLabel.text = [NSString stringWithFormat:@"%@\n%@", versionId, gameDir];
-    self.summaryMetaLabel.text = [NSString stringWithFormat:@"%@ - %lu", localize(@"Profiles", nil), (unsigned long)PLProfiles.current.profiles.count];
+    self.summaryMetaLabel.text = [NSString stringWithFormat:@"%@ • %lu", localize(@"Profiles", nil), (unsigned long)PLProfiles.current.profiles.count];
 
     UIImage *fallbackImage = [[UIImage imageNamed:@"DefaultProfile"] _imageWithSize:CGSizeMake(64, 64)];
     NSString *iconURL = selectedProfile[@"icon"];
@@ -111,7 +110,6 @@ static const CGFloat LauncherProfileIconSize = 34.0;
     }
 
     CGFloat width = CGRectGetWidth(self.tableView.bounds);
-    BOOL needsHeaderReapply = fabs(CGRectGetWidth(wrapper.frame) - width) > 0.5;
     wrapper.frame = CGRectMake(0, 0, width, 144.0);
     self.summaryCard.frame = CGRectMake(16.0, 8.0, width - 32.0, 124.0);
     self.summaryImageView.frame = CGRectMake(20.0, 22.0, 64.0, 64.0);
@@ -121,9 +119,7 @@ static const CGFloat LauncherProfileIconSize = 34.0;
     self.summaryTitleLabel.frame = CGRectMake(textX, 36.0, textWidth, 30.0);
     self.summarySubtitleLabel.frame = CGRectMake(textX, 66.0, textWidth, 34.0);
     self.summaryMetaLabel.frame = CGRectMake(textX, 100.0, textWidth, 16.0);
-    if (needsHeaderReapply) {
-        self.tableView.tableHeaderView = wrapper;
-    }
+    self.tableView.tableHeaderView = wrapper;
 }
 
 - (void)viewDidLoad
@@ -190,11 +186,7 @@ static const CGFloat LauncherProfileIconSize = 34.0;
 
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
-    CGFloat width = CGRectGetWidth(self.tableView.bounds);
-    if (fabs(self.lastSummaryLayoutWidth - width) > 0.5) {
-        self.lastSummaryLayoutWidth = width;
-        [self updateSummaryHeaderLayout];
-    }
+    [self updateSummaryHeaderLayout];
 }
 
 - (void)actionTogglePrefIsolation:(UISwitch *)sender {
