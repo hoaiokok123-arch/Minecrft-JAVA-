@@ -13,6 +13,13 @@ extern NSMutableDictionary *prefDict;
 
 @implementation LauncherSplitViewController
 
+- (void)updatePrimaryColumnWidthForSize:(CGSize)size {
+    CGFloat compactWidth = MIN(300, MAX(260, size.width * 0.74));
+    self.minimumPrimaryColumnWidth = compactWidth;
+    self.maximumPrimaryColumnWidth = compactWidth;
+    self.preferredPrimaryColumnWidthFraction = compactWidth / MAX(size.width, 1);
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = UIColor.systemBackgroundColor;
@@ -28,8 +35,7 @@ extern NSMutableDictionary *prefDict;
 
     self.viewControllers = @[masterVc, detailVc];
     [self changeDisplayModeForSize:self.view.frame.size];
-    
-    self.maximumPrimaryColumnWidth = self.view.bounds.size.width * 0.95;
+    [self updatePrimaryColumnWidthForSize:self.view.bounds.size];
 }
 
 - (void)splitViewController:(UISplitViewController *)svc willChangeToDisplayMode:(UISplitViewControllerDisplayMode)displayMode {
@@ -44,6 +50,9 @@ extern NSMutableDictionary *prefDict;
 {
     [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
     [self changeDisplayModeForSize:size];
+    [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
+        [self updatePrimaryColumnWidthForSize:size];
+    } completion:nil];
 }
 
 - (void)changeDisplayModeForSize:(CGSize)size {
@@ -60,6 +69,7 @@ extern NSMutableDictionary *prefDict;
     self.preferredSplitBehavior = isPortrait ?
         UISplitViewControllerSplitBehaviorOverlay :
         UISplitViewControllerSplitBehaviorTile;
+    [self updatePrimaryColumnWidthForSize:size];
 }
 
 - (void)dismissViewController {
