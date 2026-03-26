@@ -5,7 +5,6 @@
 #import "LauncherPrefManageJREViewController.h"
 #import "LauncherProfileEditorViewController.h"
 #import "LauncherProfilesViewController.h"
-#import "LauncherUIStyle.h"
 //#import "NSFileManager+NRFileManager.h"
 #import "PLProfiles.h"
 #pragma clang diagnostic push
@@ -29,11 +28,6 @@ static const CGFloat LauncherProfileIconSize = 34.0;
 @interface LauncherProfilesViewController () //<UIContextMenuInteractionDelegate>
 
 @property(nonatomic) UIBarButtonItem *createButtonItem;
-@property(nonatomic) UIView *summaryCard;
-@property(nonatomic) UIImageView *summaryImageView;
-@property(nonatomic) UILabel *summaryTitleLabel;
-@property(nonatomic) UILabel *summarySubtitleLabel;
-@property(nonatomic) UILabel *summaryMetaLabel;
 @end
 
 @implementation LauncherProfilesViewController
@@ -46,80 +40,6 @@ static const CGFloat LauncherProfileIconSize = 34.0;
 
 - (NSString *)imageName {
     return @"MenuProfiles";
-}
-
-- (void)configureSummaryHeader {
-    UIView *wrapper = [[UIView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(self.tableView.bounds), 144.0)];
-    self.summaryCard = [[UIView alloc] initWithFrame:CGRectMake(16.0, 8.0, wrapper.bounds.size.width - 32.0, 124.0)];
-    LauncherStylePanel(self.summaryCard, 24.0);
-
-    self.summaryImageView = [[UIImageView alloc] initWithFrame:CGRectMake(20.0, 22.0, 64.0, 64.0)];
-    self.summaryImageView.contentMode = UIViewContentModeScaleAspectFit;
-    self.summaryImageView.layer.cornerRadius = 16.0;
-    self.summaryImageView.clipsToBounds = YES;
-    self.summaryImageView.layer.magnificationFilter = kCAFilterNearest;
-    self.summaryImageView.layer.minificationFilter = kCAFilterNearest;
-
-    UILabel *eyebrowLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-    eyebrowLabel.text = localize(@"Profiles", nil);
-    eyebrowLabel.font = LauncherCaptionFont(12.0);
-    eyebrowLabel.textColor = UIColor.secondaryLabelColor;
-    eyebrowLabel.tag = 101;
-
-    self.summaryTitleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-    self.summaryTitleLabel.font = LauncherTitleFont(22.0);
-    self.summaryTitleLabel.textColor = UIColor.labelColor;
-    self.summaryTitleLabel.numberOfLines = 2;
-
-    self.summarySubtitleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-    self.summarySubtitleLabel.font = LauncherBodyFont(13.0);
-    self.summarySubtitleLabel.textColor = UIColor.secondaryLabelColor;
-    self.summarySubtitleLabel.numberOfLines = 2;
-
-    self.summaryMetaLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-    self.summaryMetaLabel.font = LauncherCaptionFont(12.0);
-    self.summaryMetaLabel.textColor = UIColor.secondaryLabelColor;
-
-    [self.summaryCard addSubview:self.summaryImageView];
-    [self.summaryCard addSubview:eyebrowLabel];
-    [self.summaryCard addSubview:self.summaryTitleLabel];
-    [self.summaryCard addSubview:self.summarySubtitleLabel];
-    [self.summaryCard addSubview:self.summaryMetaLabel];
-    [wrapper addSubview:self.summaryCard];
-    self.tableView.tableHeaderView = wrapper;
-}
-
-- (void)updateSummaryHeader {
-    NSMutableDictionary *selectedProfile = PLProfiles.current.selectedProfile;
-    NSString *profileName = selectedProfile[@"name"] ?: PLProfiles.current.selectedProfileName ?: @"(Default)";
-    NSString *versionId = selectedProfile[@"lastVersionId"] ?: @"latest-release";
-    NSString *gameDir = getPrefObject(@"general.game_directory") ?: @"default";
-    self.summaryTitleLabel.text = profileName;
-    self.summarySubtitleLabel.text = [NSString stringWithFormat:@"%@\n%@", versionId, gameDir];
-    self.summaryMetaLabel.text = [NSString stringWithFormat:@"%@ • %lu", localize(@"Profiles", nil), (unsigned long)PLProfiles.current.profiles.count];
-
-    UIImage *fallbackImage = [[UIImage imageNamed:@"DefaultProfile"] _imageWithSize:CGSizeMake(64, 64)];
-    NSString *iconURL = selectedProfile[@"icon"];
-    [self.summaryImageView setImageWithURL:[NSURL URLWithString:iconURL] placeholderImage:fallbackImage];
-}
-
-- (void)updateSummaryHeaderLayout {
-    UIView *wrapper = self.tableView.tableHeaderView;
-    if (!wrapper) {
-        return;
-    }
-
-    CGFloat width = CGRectGetWidth(self.tableView.bounds);
-    wrapper.frame = CGRectMake(0, 0, width, 144.0);
-    self.summaryCard.frame = CGRectMake(16.0, 8.0, width - 32.0, 124.0);
-    self.summaryImageView.frame = CGRectMake(20.0, 22.0, 64.0, 64.0);
-    CGFloat textX = 102.0;
-    CGFloat textWidth = self.summaryCard.bounds.size.width - textX - 20.0;
-    [self.summaryCard viewWithTag:101].frame = CGRectMake(textX, 18.0, textWidth, 16.0);
-    self.summaryTitleLabel.frame = CGRectMake(textX, 36.0, textWidth, 30.0);
-    self.summarySubtitleLabel.frame = CGRectMake(textX, 66.0, textWidth, 34.0);
-    self.summaryMetaLabel.frame = CGRectMake(textX, 100.0, textWidth, 16.0);
-    self.tableView.tableHeaderView = wrapper;
 }
 
 - (void)viewDidLoad
@@ -162,13 +82,9 @@ static const CGFloat LauncherProfileIconSize = 34.0;
     self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
     self.tableView.rowHeight = 60.0;
-    self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
-    self.tableView.backgroundColor = UIColor.systemGroupedBackgroundColor;
     if (@available(iOS 15.0, *)) {
         self.tableView.sectionHeaderTopPadding = 8.0;
     }
-    [self configureSummaryHeader];
-    [self updateSummaryHeader];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -181,12 +97,6 @@ static const CGFloat LauncherProfileIconSize = 34.0;
     [PLProfiles updateCurrent];
     [self.tableView reloadData];
     [self.navigationController performSelector:@selector(reloadProfileList)];
-    [self updateSummaryHeader];
-}
-
-- (void)viewDidLayoutSubviews {
-    [super viewDidLayoutSubviews];
-    [self updateSummaryHeaderLayout];
 }
 
 - (void)actionTogglePrefIsolation:(UISwitch *)sender {
@@ -237,22 +147,6 @@ static const CGFloat LauncherProfileIconSize = 34.0;
     return nil;
 }
 
-- (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
-    UILabel *label = [[UILabel alloc] initWithFrame:CGRectZero];
-    label.text = [self tableView:tableView titleForHeaderInSection:section].uppercaseString;
-    label.font = LauncherCaptionFont(12.0);
-    label.textColor = UIColor.secondaryLabelColor;
-
-    UIView *view = [[UIView alloc] initWithFrame:CGRectZero];
-    [view addSubview:label];
-    label.frame = CGRectMake(22.0, 10.0, tableView.bounds.size.width - 44.0, 16.0);
-    return view;
-}
-
-- (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
-    return 32.0;
-}
-
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     switch (section) {
         case 0: return 2;
@@ -263,8 +157,6 @@ static const CGFloat LauncherProfileIconSize = 34.0;
 
 - (void)setupInstanceCell:(UITableViewCell *) cell atRow:(NSInteger)row {
     cell.userInteractionEnabled = !getenv("DEMO_LOCK");
-    cell.textLabel.font = LauncherTitleFont(15.5);
-    cell.detailTextLabel.font = LauncherBodyFont(12.5);
     if (row == 0) {
         cell.imageView.image = [UIImage systemImageNamed:@"folder"];
         cell.textLabel.text = localize(@"preference.title.game_directory", nil);
@@ -291,15 +183,12 @@ static const CGFloat LauncherProfileIconSize = 34.0;
 
     cell.textLabel.text = profile[@"name"];
     cell.detailTextLabel.text = profile[@"lastVersionId"];
-    cell.textLabel.font = LauncherTitleFont(16.0);
-    cell.detailTextLabel.font = LauncherBodyFont(12.5);
     cell.imageView.layer.magnificationFilter = kCAFilterNearest;
 
     UIImage *fallbackImage = [[UIImage imageNamed:@"DefaultProfile"] _imageWithSize:CGSizeMake(LauncherProfileIconSize, LauncherProfileIconSize)];
     [cell.imageView setImageWithURL:[NSURL URLWithString:profile[@"icon"]] placeholderImage:fallbackImage];
     cell.imageView.layer.cornerRadius = 8.0;
     cell.imageView.clipsToBounds = YES;
-    cell.accessoryType = [profile[@"name"] isEqualToString:PLProfiles.current.selectedProfileName] ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryDisclosureIndicator;
 }
 
 - (UITableViewCell *)tableView:(nonnull UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath

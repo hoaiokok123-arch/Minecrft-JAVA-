@@ -5,7 +5,6 @@
 #import "LauncherNavigationController.h"
 #import "LauncherMenuViewController.h"
 #import "LauncherPreferences.h"
-#import "LauncherUIStyle.h"
 #import "PLPrefTableViewController.h"
 #import "UIKit+hook.h"
 
@@ -20,10 +19,6 @@
 
 @implementation PLPrefTableViewController
 
-- (BOOL)isSectionHeaderRowAtIndexPath:(NSIndexPath *)indexPath {
-    return self.prefSections && indexPath.row == 0;
-}
-
 - (id)init {
     self = [super init];
     [self initViewCreation];
@@ -36,12 +31,6 @@
 
     self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
-    self.tableView.backgroundColor = UIColor.systemGroupedBackgroundColor;
-    self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
-    self.tableView.contentInset = UIEdgeInsetsMake(6.0, 0, 20.0, 0);
-    if (@available(iOS 15.0, *)) {
-        self.tableView.sectionHeaderTopPadding = 8.0;
-    }
     if (self.prefSections) {
         self.prefSectionsVisibility = [[NSMutableArray<NSNumber *> alloc] initWithCapacity:self.prefSections.count];
         for (int i = 0; i < self.prefSections.count; i++) {
@@ -102,26 +91,6 @@
     return 1;
 }
 
-- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
-    if ([self isSectionHeaderRowAtIndexPath:indexPath]) {
-        return 66.0;
-    }
-
-    NSDictionary *item = self.prefContents[indexPath.section][indexPath.row];
-    BOOL showsDetail = [item[@"hasDetail"] boolValue] && self.prefDetailVisible;
-    return showsDetail ? 76.0 : 58.0;
-}
-
-- (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
-    return 10.0;
-}
-
-- (UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
-    UIView *view = [[UIView alloc] initWithFrame:CGRectZero];
-    view.backgroundColor = UIColor.clearColor;
-    return view;
-}
-
 - (UITableViewCell *)tableView:(nonnull UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     NSDictionary *item = self.prefContents[indexPath.section][indexPath.row];
 
@@ -150,18 +119,12 @@
     cell.selectionStyle = UITableViewCellSelectionStyleNone;
     cell.textLabel.textColor = nil;
     cell.detailTextLabel.text = nil;
-    cell.textLabel.font = LauncherTitleFont([self isSectionHeaderRowAtIndexPath:indexPath] ? 18.0 : 15.5);
-    cell.detailTextLabel.font = LauncherBodyFont(12.5);
-    cell.detailTextLabel.textColor = UIColor.secondaryLabelColor;
 
     NSString *key = item[@"key"];
     if (indexPath.row == 0 && self.prefSections) {
         key = self.prefSections[indexPath.section];
         cell.selectionStyle = UITableViewCellSelectionStyleDefault;
         cell.textLabel.text = localize(([NSString stringWithFormat:@"preference.section.%@", key]), nil);
-        NSString *symbolName = self.prefSectionsVisibility[indexPath.section].boolValue ? @"chevron.up" : @"chevron.down";
-        cell.accessoryView = [[UIImageView alloc] initWithImage:[UIImage systemImageNamed:symbolName]];
-        [(UIImageView *)cell.accessoryView setTintColor:UIColor.secondaryLabelColor];
     } else {
         CreateView createView = item[@"type"];
         createView(cell, self.prefSections[indexPath.section], key, item);
@@ -178,7 +141,6 @@
     BOOL destructive = [item[@"destructive"] boolValue];
     cell.imageView.tintColor = destructive ? UIColor.systemRedColor : nil;
     cell.imageView.image = [UIImage systemImageNamed:item[@"icon"]];
-    cell.imageView.preferredSymbolConfiguration = LauncherSymbolConfig([self isSectionHeaderRowAtIndexPath:indexPath] ? 19.0 : 17.0);
     
     if (cellStyle != UITableViewCellStyleValue1) {
         cell.detailTextLabel.text = nil;
@@ -191,12 +153,7 @@
     BOOL(^checkEnable)(void) = item[@"enableCondition"];
     cell.userInteractionEnabled = !checkEnable || checkEnable();
     cell.textLabel.enabled = cell.detailTextLabel.enabled = cell.userInteractionEnabled;
-    if ([cell.accessoryView respondsToSelector:@selector(setEnabled:)]) {
-        [(id)cell.accessoryView setEnabled:cell.userInteractionEnabled];
-    }
-    if ([cell.accessoryView isKindOfClass:UITextField.class]) {
-        ((UITextField *)cell.accessoryView).textColor = UIColor.labelColor;
-    }
+    [(id)cell.accessoryView setEnabled:cell.userInteractionEnabled];
 
     return cell;
 }
@@ -221,8 +178,7 @@
     self.typeTextField = ^void(UITableViewCell *cell, NSString *section, NSString *key, NSDictionary *item) {
         Class cls = item[@"customClass"];
         if (!cls) cls = UITextField.class;
-        CGFloat accessoryWidth = MAX(160.0, cell.bounds.size.width * 0.42);
-        UITextField *view = [[cls alloc] initWithFrame:CGRectMake(0, 0, accessoryWidth, MAX(cell.bounds.size.height - 14.0, 38.0))];
+        UITextField *view = [[cls alloc] initWithFrame:CGRectMake(0, 0, cell.bounds.size.width / 2.1, cell.bounds.size.height)];
         [view addTarget:view action:@selector(resignFirstResponder) forControlEvents:UIControlEventEditingDidEndOnExit];
         view.adjustsFontSizeToFitWidth = YES;
         view.autocorrectionType = UITextAutocorrectionTypeNo;
@@ -236,7 +192,6 @@
         view.placeholder = localize((item[@"placeholder"] ? item[@"placeholder"] :
             [NSString stringWithFormat:@"preference.placeholder.%@", key]), nil);
         view.text = weakSelf.getPreference(section, key);
-        LauncherStyleField(view);
         cell.accessoryView = view;
     };
 
@@ -247,8 +202,7 @@
     };
 
     self.typeSlider = ^void(UITableViewCell *cell, NSString *section, NSString *key, NSDictionary *item) {
-        CGFloat accessoryWidth = MAX(168.0, cell.bounds.size.width * 0.42);
-        DBNumberedSlider *view = [[DBNumberedSlider alloc] initWithFrame:CGRectMake(0, 0, accessoryWidth, cell.bounds.size.height)];
+        DBNumberedSlider *view = [[DBNumberedSlider alloc] initWithFrame:CGRectMake(0, 0, cell.bounds.size.width / 2.1, cell.bounds.size.height)];
         [view addTarget:weakSelf action:@selector(sliderMoved:) forControlEvents:UIControlEventValueChanged];
         view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleLeftMargin;
         view.minimumValue = [item[@"min"] intValue];
