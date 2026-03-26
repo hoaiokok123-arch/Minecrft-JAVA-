@@ -38,6 +38,7 @@ static WFWorkflowProgressView* currentProgressView;
 @property(nonatomic) NSMutableDictionary<NSString *, NSString *> *selectedRuntimes;
 @property(nonatomic) UIMenu* currentMenu;
 @property(nonatomic, weak) NSIndexPath* installingIndexPath;
+@property(nonatomic) CGFloat lastTableLayoutWidth;
 @end
 
 @implementation LauncherPrefManageJREViewController
@@ -60,6 +61,12 @@ static WFWorkflowProgressView* currentProgressView;
 
     self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
+    self.tableView.backgroundColor = UIColor.systemGroupedBackgroundColor;
+    self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    self.tableView.contentInset = UIEdgeInsetsMake(6.0, 0, 20.0, 0);
+    if (@available(iOS 15.0, *)) {
+        self.tableView.sectionHeaderTopPadding = 8.0;
+    }
 
     self.javaRuntimes = @{
         @(DEFAULT_JRE): @[@"preference.manage_runtime.default.1165", @"preference.manage_runtime.default.117", @"launcher.menu.execute_jar"]
@@ -76,6 +83,44 @@ static WFWorkflowProgressView* currentProgressView;
 
     // Load WFWorkflowProgressView
     dlopen("/System/Library/PrivateFrameworks/WorkflowUIServices.framework/WorkflowUIServices", RTLD_GLOBAL);
+}
+
+- (NSArray<NSIndexPath *> *)visibleIndexPathsForLayoutRefresh {
+    return self.tableView.indexPathsForVisibleRows ?: @[];
+}
+
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    CGFloat width = CGRectGetWidth(self.tableView.bounds);
+    if (width <= 0.0 || fabs(self.lastTableLayoutWidth - width) <= 0.5) {
+        return;
+    }
+
+    self.lastTableLayoutWidth = width;
+    NSArray<NSIndexPath *> *visibleIndexPaths = [self visibleIndexPathsForLayoutRefresh];
+    [UIView performWithoutAnimation:^{
+        if (visibleIndexPaths.count > 0) {
+            [self.tableView reloadRowsAtIndexPaths:visibleIndexPaths withRowAnimation:UITableViewRowAnimationNone];
+        }
+        [self.tableView layoutIfNeeded];
+    }];
+}
+
+- (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
+    [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
+    [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
+        [self.tableView setNeedsLayout];
+        [self.tableView layoutIfNeeded];
+    } completion:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
+        self.lastTableLayoutWidth = 0.0;
+        NSArray<NSIndexPath *> *visibleIndexPaths = [self visibleIndexPathsForLayoutRefresh];
+        [UIView performWithoutAnimation:^{
+            if (visibleIndexPaths.count > 0) {
+                [self.tableView reloadRowsAtIndexPaths:visibleIndexPaths withRowAnimation:UITableViewRowAnimationNone];
+            }
+            [self.tableView layoutIfNeeded];
+        }];
+    }];
 }
 
 + (void)actionCancelImportRuntime {
@@ -186,6 +231,10 @@ static WFWorkflowProgressView* currentProgressView;
     if (cell == nil) {
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"DefaultCell"];
         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+        cell.textLabel.numberOfLines = 0;
+        cell.detailTextLabel.numberOfLines = 2;
+        cell.detailTextLabel.adjustsFontSizeToFitWidth = YES;
+        cell.detailTextLabel.minimumScaleFactor = 0.8;
     }
     cell.textLabel.text = localize(self.javaRuntimes[@DEFAULT_JRE][indexPath.row], nil);
     cell.detailTextLabel.text = [NSString stringWithFormat:@"Java %@",
@@ -197,6 +246,9 @@ static WFWorkflowProgressView* currentProgressView;
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"RTCell"];
     if (cell == nil) {
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"RTCell"];
+        cell.textLabel.numberOfLines = 0;
+        cell.detailTextLabel.numberOfLines = 2;
+        cell.detailTextLabel.lineBreakMode = NSLineBreakByWordWrapping;
     }
     NSNumber *version = self.sortedJavaVersions[indexPath.section];
     NSString *name = self.javaRuntimes[version][indexPath.row];
