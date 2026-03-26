@@ -23,8 +23,6 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
     kProfiles
 };
 
-static const CGFloat LauncherProfileIconSize = 34.0;
-
 @interface LauncherProfilesViewController () //<UIContextMenuInteractionDelegate>
 
 @property(nonatomic) UIBarButtonItem *createButtonItem;
@@ -81,10 +79,6 @@ static const CGFloat LauncherProfileIconSize = 34.0;
 
     self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
-    self.tableView.rowHeight = 60.0;
-    if (@available(iOS 15.0, *)) {
-        self.tableView.sectionHeaderTopPadding = 8.0;
-    }
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -185,10 +179,8 @@ static const CGFloat LauncherProfileIconSize = 34.0;
     cell.detailTextLabel.text = profile[@"lastVersionId"];
     cell.imageView.layer.magnificationFilter = kCAFilterNearest;
 
-    UIImage *fallbackImage = [[UIImage imageNamed:@"DefaultProfile"] _imageWithSize:CGSizeMake(LauncherProfileIconSize, LauncherProfileIconSize)];
+    UIImage *fallbackImage = [[UIImage imageNamed:@"DefaultProfile"] _imageWithSize:CGSizeMake(40, 40)];
     [cell.imageView setImageWithURL:[NSURL URLWithString:profile[@"icon"]] placeholderImage:fallbackImage];
-    cell.imageView.layer.cornerRadius = 8.0;
-    cell.imageView.clipsToBounds = YES;
 }
 
 - (UITableViewCell *)tableView:(nonnull UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -201,7 +193,7 @@ static const CGFloat LauncherProfileIconSize = 34.0;
         cell.detailTextLabel.numberOfLines = 0;
         cell.detailTextLabel.lineBreakMode = NSLineBreakByWordWrapping;
         if (indexPath.section == kProfiles) {
-            cell.imageView.frame = CGRectMake(0, 0, LauncherProfileIconSize, LauncherProfileIconSize);
+            cell.imageView.frame = CGRectMake(0, 0, 40, 40);
             cell.imageView.isSizeFixed = YES;
         }
     } else {

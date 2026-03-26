@@ -13,13 +13,6 @@ extern NSMutableDictionary *prefDict;
 
 @implementation LauncherSplitViewController
 
-- (CGFloat)preferredSidebarWidthForSize:(CGSize)size {
-    BOOL isPortrait = size.height > size.width;
-    CGFloat shorterSide = MIN(size.width, size.height);
-    CGFloat preferredWidth = shorterSide * (isPortrait ? 0.86 : 0.34);
-    return MIN(MAX(preferredWidth, 300.0), isPortrait ? 360.0 : 380.0);
-}
-
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = UIColor.systemBackgroundColor;
@@ -35,6 +28,8 @@ extern NSMutableDictionary *prefDict;
 
     self.viewControllers = @[masterVc, detailVc];
     [self changeDisplayModeForSize:self.view.frame.size];
+    
+    self.maximumPrimaryColumnWidth = self.view.bounds.size.width * 0.95;
 }
 
 - (void)splitViewController:(UISplitViewController *)svc willChangeToDisplayMode:(UISplitViewControllerDisplayMode)displayMode {
@@ -53,11 +48,6 @@ extern NSMutableDictionary *prefDict;
 
 - (void)changeDisplayModeForSize:(CGSize)size {
     BOOL isPortrait = size.height > size.width;
-    CGFloat sidebarWidth = [self preferredSidebarWidthForSize:size];
-    self.minimumPrimaryColumnWidth = MIN(sidebarWidth, 300.0);
-    self.preferredPrimaryColumnWidth = sidebarWidth;
-    self.maximumPrimaryColumnWidth = MIN(MAX(sidebarWidth + 24.0, sidebarWidth), size.width * 0.95);
-
     if (self.preferredDisplayMode == 0 || self.displayMode != UISplitViewControllerDisplayModeSecondaryOnly) {
         if(!getPrefBool(@"general.hidden_sidebar")) {
             self.preferredDisplayMode = isPortrait ?
