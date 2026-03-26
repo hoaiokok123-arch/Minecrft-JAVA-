@@ -13,17 +13,6 @@ extern NSMutableDictionary *prefDict;
 
 @implementation LauncherSplitViewController
 
-- (UIInterfaceOrientationMask)supportedInterfaceOrientations {
-    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad || NSProcessInfo.processInfo.isMacCatalystApp) {
-        return UIInterfaceOrientationMaskAll;
-    }
-    return UIInterfaceOrientationMaskPortrait;
-}
-
-- (UIInterfaceOrientation)preferredInterfaceOrientationForPresentation {
-    return UIInterfaceOrientationPortrait;
-}
-
 - (CGFloat)preferredSidebarWidthForSize:(CGSize)size {
     BOOL isPortrait = size.height > size.width;
     CGFloat shorterSide = MIN(size.width, size.height);

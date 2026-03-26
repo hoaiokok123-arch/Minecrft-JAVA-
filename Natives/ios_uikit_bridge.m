@@ -149,14 +149,12 @@ void UIKit_returnToSplitView() {
                 window.rootViewController = [[LauncherSplitViewController alloc] initWithStyle:UISplitViewControllerStyleDoubleColumn];
             }
             [window makeKeyAndVisible];
-            [UIViewController attemptRotationToDeviceOrientation];
         }];
     });
 }
 
 void launchInitialViewController(UIWindow *window) {
     window.rootViewController = [[LauncherSplitViewController alloc] initWithStyle:UISplitViewControllerStyleDoubleColumn];
-    [UIViewController attemptRotationToDeviceOrientation];
 #if 0
     if (getPrefBool(@"internal.internal_launch_on_boot")) {
         window.rootViewController = [[SurfaceViewController alloc] init];
