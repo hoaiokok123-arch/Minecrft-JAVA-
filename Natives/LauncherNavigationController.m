@@ -51,15 +51,6 @@ static const CGFloat LauncherToolbarPlayMaxWidth = 132.0;
 static const CGFloat LauncherToolbarFieldMinWidth = 150.0;
 static const CGFloat LauncherToolbarFieldMaxWidth = 420.0;
 
-- (void)refreshVisibleLauncherLayout {
-    UIViewController *topViewController = self.topViewController;
-    if (topViewController.isViewLoaded) {
-        [topViewController.view setNeedsLayout];
-        [topViewController.view layoutIfNeeded];
-    }
-    [sidebarViewController updateAccountInfo];
-}
-
 - (void)layoutToolbarControls {
     if (!self.toolbarContentView || !self.versionTextField) {
         return;
@@ -601,9 +592,10 @@ static const CGFloat LauncherToolbarFieldMaxWidth = 420.0;
     [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
     [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
         [self layoutToolbarControls];
+        [sidebarViewController updateAccountInfo];
     } completion:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
         [self layoutToolbarControls];
-        [self refreshVisibleLauncherLayout];
+        [sidebarViewController updateAccountInfo];
     }];
 }
 
@@ -613,13 +605,13 @@ static const CGFloat LauncherToolbarFieldMaxWidth = 420.0;
 
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
+    [sidebarViewController updateAccountInfo];
     if (self.globalToolbarItems) {
         if (!self.viewControllers.firstObject.toolbarItems) {
             self.viewControllers.firstObject.toolbarItems = self.globalToolbarItems;
         }
     }
     [self layoutToolbarControls];
-    [sidebarViewController updateAccountInfo];
 }
 
 @end

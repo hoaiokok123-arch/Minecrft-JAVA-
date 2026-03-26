@@ -342,14 +342,6 @@ static const CGFloat LauncherAccountExpandedMaxWidth = 220.0;
     [self.tableView selectRowAtIndexPath:indexPath animated:NO scrollPosition:UITableViewScrollPositionNone];
 }
 
-- (void)showDetailColumn {
-    if (@available(iOS 14.0, *)) {
-        [self.splitViewController showColumn:UISplitViewControllerColumnSecondary];
-    } else {
-        [self.splitViewController showDetailViewController:contentNavigationController sender:self];
-    }
-}
-
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
     return self.options.count;
@@ -414,7 +406,7 @@ static const CGFloat LauncherAccountExpandedMaxWidth = 220.0;
         selected.vcArray[0].navigationItem.leftBarButtonItem = self.splitViewController.displayModeButtonItem;
         selected.vcArray[0].navigationItem.leftItemsSupplementBackButton = true;
         if (shouldShowDetail) {
-            [self showDetailColumn];
+            [self.splitViewController showDetailViewController:contentNavigationController sender:self];
         }
     }
 }
@@ -449,7 +441,7 @@ static const CGFloat LauncherAccountExpandedMaxWidth = 220.0;
 
 - (void)updateAccountInfo {
     NSDictionary *selected = BaseAuthenticator.current.authData;
-    CGSize size = contentNavigationController.view.bounds.size;
+    CGSize size = CGSizeMake(contentNavigationController.view.frame.size.width, contentNavigationController.view.frame.size.height);
     BOOL shouldShowTitle = size.width >= 620.0;
     CGFloat avatarSize = size.width >= 900.0 ? 38.0 : LauncherAccountCompactSize;
     NSString *accountName = selected[@"username"] ?: @"";

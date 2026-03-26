@@ -16,8 +16,6 @@
 @property(nonatomic) UIMenu* currentMenu;
 @property(nonatomic) UIBarButtonItem *helpBtn;
 @property(nonatomic) CGFloat lastTableLayoutWidth;
-- (NSArray<NSIndexPath *> *)visibleContentIndexPaths;
-- (void)updateVisibleAccessoryLayouts;
 
 @end
 
@@ -95,65 +93,15 @@
     }
 
     self.lastTableLayoutWidth = width;
-    [self updateVisibleAccessoryLayouts];
-}
-
-- (NSArray<NSIndexPath *> *)visibleContentIndexPaths {
-    NSMutableArray<NSIndexPath *> *indexPaths = [NSMutableArray array];
-    for (NSIndexPath *indexPath in self.tableView.indexPathsForVisibleRows) {
-        if (![self isSectionHeaderRowAtIndexPath:indexPath]) {
-            [indexPaths addObject:indexPath];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (fabs(self.lastTableLayoutWidth - CGRectGetWidth(self.tableView.bounds)) > 0.5) {
+            return;
         }
-    }
-    return indexPaths;
-}
-
-- (void)updateVisibleAccessoryLayouts {
-    for (UITableViewCell *cell in self.tableView.visibleCells) {
-        NSIndexPath *indexPath = [self.tableView indexPathForCell:cell];
-        if (!indexPath || [self isSectionHeaderRowAtIndexPath:indexPath]) {
-            continue;
-        }
-
-        UIView *accessoryView = cell.accessoryView;
-        if ([accessoryView isKindOfClass:UITextField.class]) {
-            CGFloat accessoryWidth = [self preferredAccessoryWidthForTableViewCell:cell
-                                                                      minimumWidth:136.0
-                                                                      maximumWidth:320.0
-                                                                 minimumLabelWidth:150.0];
-            CGFloat accessoryHeight = MAX(CGRectGetHeight(cell.bounds) - 14.0, 38.0);
-            accessoryView.frame = CGRectMake(0, 0, accessoryWidth, accessoryHeight);
-        } else if ([accessoryView isKindOfClass:DBNumberedSlider.class]) {
-            CGFloat accessoryWidth = [self preferredAccessoryWidthForTableViewCell:cell
-                                                                      minimumWidth:148.0
-                                                                      maximumWidth:340.0
-                                                                 minimumLabelWidth:140.0];
-            CGFloat accessoryHeight = MAX(CGRectGetHeight(cell.bounds), 44.0);
-            accessoryView.frame = CGRectMake(0, 0, accessoryWidth, accessoryHeight);
-        }
-
-        [cell setNeedsLayout];
-        [cell layoutIfNeeded];
-    }
-}
-
-- (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
-    [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
-    [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
-        [self.tableView setNeedsLayout];
-        [self.tableView layoutIfNeeded];
-        [self updateVisibleAccessoryLayouts];
-    } completion:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
-        self.lastTableLayoutWidth = 0.0;
-        NSArray<NSIndexPath *> *visibleIndexPaths = [self visibleContentIndexPaths];
         [UIView performWithoutAnimation:^{
-            if (visibleIndexPaths.count > 0) {
-                [self.tableView reloadRowsAtIndexPaths:visibleIndexPaths withRowAnimation:UITableViewRowAnimationNone];
-            }
+            [self.tableView reloadData];
             [self.tableView layoutIfNeeded];
         }];
-        [self updateVisibleAccessoryLayouts];
-    }];
+    });
 }
 
 #pragma mark UITableView
@@ -184,7 +132,7 @@
     }
 
     CGFloat availableWidth = MAX(cellWidth - 52.0, minimumWidth);
-    CGFloat preferredWidth = availableWidth * (availableWidth < 420.0 ? 0.34 : 0.42);
+    CGFloat preferredWidth = availableWidth * 0.42;
     CGFloat maximumAllowedWidth = MAX(120.0, availableWidth - minimumLabelWidth);
     return MIN(MAX(preferredWidth, minimumWidth), MIN(maximumWidth, maximumAllowedWidth));
 }

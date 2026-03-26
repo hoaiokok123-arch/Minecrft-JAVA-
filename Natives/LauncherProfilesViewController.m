@@ -211,23 +211,15 @@ static const CGFloat LauncherProfileIconSize = 34.0;
     if (fabs(self.lastSummaryLayoutWidth - width) > 0.5) {
         self.lastSummaryLayoutWidth = width;
         [self updateSummaryHeaderLayout];
-    }
-}
-
-- (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
-    [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
-    [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
-        [self updateSummaryHeaderLayout];
-    } completion:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
-        self.lastSummaryLayoutWidth = 0.0;
-        [self updateSummaryHeaderLayout];
-        NSArray<NSIndexPath *> *visibleIndexPaths = self.tableView.indexPathsForVisibleRows;
-        [UIView performWithoutAnimation:^{
-            if (visibleIndexPaths.count > 0) {
-                [self.tableView reloadRowsAtIndexPaths:visibleIndexPaths withRowAnimation:UITableViewRowAnimationNone];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (fabs(self.lastSummaryLayoutWidth - CGRectGetWidth(self.tableView.bounds)) > 0.5) {
+                return;
             }
-        }];
-    }];
+            [UIView performWithoutAnimation:^{
+                [self.tableView reloadData];
+            }];
+        });
+    }
 }
 
 - (void)actionTogglePrefIsolation:(UISwitch *)sender {
