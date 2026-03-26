@@ -54,7 +54,6 @@ static const CGFloat LauncherAccountExpandedMaxWidth = 220.0;
 @property(nonatomic) UILabel *statusCaptionLabel;
 @property(nonatomic) UILabel *heroSubtitleLabel;
 @property(nonatomic) CGFloat lastSidebarLayoutWidth;
-@property(nonatomic) NSString *lastAccountRenderSignature;
 @property(nonatomic) int lastSelectedIndex;
 @end
 
@@ -444,21 +443,6 @@ static const CGFloat LauncherAccountExpandedMaxWidth = 220.0;
     CGSize size = CGSizeMake(contentNavigationController.view.frame.size.width, contentNavigationController.view.frame.size.height);
     BOOL shouldShowTitle = size.width >= 620.0;
     CGFloat avatarSize = size.width >= 900.0 ? 38.0 : LauncherAccountCompactSize;
-    NSString *accountName = selected[@"username"] ?: @"";
-    NSString *profilePicURL = selected[@"profilePicURL"] ?: @"";
-    NSString *gamerTag = selected[@"xboxGamertag"] ?: @"";
-    NSString *renderSignature = [NSString stringWithFormat:@"%@|%@|%@|%@|%d|%.1f",
-        accountName,
-        profilePicURL,
-        gamerTag,
-        selected ? @"selected" : @"empty",
-        shouldShowTitle,
-        avatarSize];
-    if ([self.lastAccountRenderSignature isEqualToString:renderSignature]) {
-        return;
-    }
-    self.lastAccountRenderSignature = renderSignature;
-
     self.accountButton.contentEdgeInsets = UIEdgeInsetsMake(2, 0, 2, shouldShowTitle ? 6 : 0);
     self.accountButton.titleEdgeInsets = shouldShowTitle ? UIEdgeInsetsMake(0, 8, 0, -8) : UIEdgeInsetsZero;
     
@@ -521,6 +505,12 @@ static const CGFloat LauncherAccountExpandedMaxWidth = 220.0;
     if (shouldUpdateProfiles) {
         [contentNavigationController fetchLocalVersionList];
         [contentNavigationController performSelector:@selector(reloadProfileList)];
+    }
+
+    // Update tableView whenever we have
+    UITableViewController *tableVC = contentNavigationController.viewControllers.lastObject;
+    if ([tableVC isKindOfClass:UITableViewController.class]) {
+        [tableVC.tableView reloadData];
     }
 }
 
