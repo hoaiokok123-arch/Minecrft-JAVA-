@@ -49,6 +49,7 @@ static const CGFloat LauncherAccountExpandedMaxWidth = 220.0;
 @property(nonatomic) UIView *heroCard;
 @property(nonatomic) UILabel *statusLabel;
 @property(nonatomic) UILabel *heroSubtitleLabel;
+@property(nonatomic) CGFloat lastSidebarLayoutWidth;
 @property(nonatomic) int lastSelectedIndex;
 @end
 
@@ -115,9 +116,12 @@ static const CGFloat LauncherAccountExpandedMaxWidth = 220.0;
 
 - (void)updateSidebarChromeLayout {
     CGFloat width = CGRectGetWidth(self.tableView.bounds);
+    BOOL needsHeaderReapply = NO;
+    BOOL needsFooterReapply = NO;
 
     UIView *headerWrapper = self.tableView.tableHeaderView;
     if (headerWrapper) {
+        needsHeaderReapply = fabs(CGRectGetWidth(headerWrapper.frame) - width) > 0.5;
         headerWrapper.frame = CGRectMake(0, 0, width, 144.0);
         self.heroCard.frame = CGRectMake(16.0, 8.0, width - 32.0, 128.0);
         CGFloat textX = 108.0;
@@ -125,17 +129,22 @@ static const CGFloat LauncherAccountExpandedMaxWidth = 220.0;
         ((UIImageView *)self.heroCard.subviews[0]).frame = CGRectMake(20, 22, 72, 72);
         ((UILabel *)self.heroCard.subviews[1]).frame = CGRectMake(textX, 22, textWidth, 50.0);
         self.heroSubtitleLabel.frame = CGRectMake(textX, 74, textWidth, 38.0);
-        self.tableView.tableHeaderView = headerWrapper;
+        if (needsHeaderReapply) {
+            self.tableView.tableHeaderView = headerWrapper;
+        }
     }
 
     UIView *footerWrapper = self.tableView.tableFooterView;
     if (footerWrapper) {
+        needsFooterReapply = fabs(CGRectGetWidth(footerWrapper.frame) - width) > 0.5;
         footerWrapper.frame = CGRectMake(0, 0, width, 82.0);
         UIView *statusCard = footerWrapper.subviews.firstObject;
         statusCard.frame = CGRectMake(16.0, 8.0, width - 32.0, 58.0);
         statusCard.subviews[0].frame = CGRectMake(18.0, 10.0, statusCard.bounds.size.width - 36.0, 16.0);
         self.statusLabel.frame = CGRectMake(18.0, 28.0, statusCard.bounds.size.width - 36.0, 20.0);
-        self.tableView.tableFooterView = footerWrapper;
+        if (needsFooterReapply) {
+            self.tableView.tableFooterView = footerWrapper;
+        }
     }
 }
 
@@ -266,8 +275,12 @@ static const CGFloat LauncherAccountExpandedMaxWidth = 220.0;
 
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
-    [self updateSidebarChromeLayout];
-    [self updateAccountInfo];
+    CGFloat width = CGRectGetWidth(self.tableView.bounds);
+    if (fabs(self.lastSidebarLayoutWidth - width) > 0.5) {
+        self.lastSidebarLayoutWidth = width;
+        [self updateSidebarChromeLayout];
+        [self updateAccountInfo];
+    }
 }
 
 - (UIBarButtonItem *)drawAccountButton {
