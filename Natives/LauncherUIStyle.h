@@ -57,3 +57,38 @@ static inline void LauncherStyleField(UITextField *field) {
     field.leftView = paddingView;
     field.leftViewMode = UITextFieldViewModeAlways;
 }
+
+static inline CGFloat LauncherFitTableSupplementaryView(UITableView *tableView, UIView *supplementaryView, BOOL isHeader) {
+    if (!tableView || !supplementaryView) {
+        return 0.0;
+    }
+
+    CGFloat width = CGRectGetWidth(tableView.bounds);
+    if (width <= 0.0) {
+        return CGRectGetHeight(supplementaryView.frame);
+    }
+
+    CGRect oldFrame = supplementaryView.frame;
+    CGRect frame = oldFrame;
+    frame.size.width = width;
+    supplementaryView.frame = frame;
+    [supplementaryView setNeedsLayout];
+    [supplementaryView layoutIfNeeded];
+
+    CGSize fittedSize = [supplementaryView systemLayoutSizeFittingSize:CGSizeMake(width, UILayoutFittingCompressedSize.height)
+                                         withHorizontalFittingPriority:UILayoutPriorityRequired
+                                               verticalFittingPriority:UILayoutPriorityFittingSizeLevel];
+    CGFloat fittedHeight = MAX(ceil(fittedSize.height), 1.0);
+    BOOL needsUpdate = fabs(CGRectGetWidth(oldFrame) - width) > 0.5 || fabs(CGRectGetHeight(oldFrame) - fittedHeight) > 0.5;
+    if (!needsUpdate) {
+        return fittedHeight;
+    }
+
+    supplementaryView.frame = CGRectMake(0.0, 0.0, width, fittedHeight);
+    if (isHeader) {
+        tableView.tableHeaderView = supplementaryView;
+    } else {
+        tableView.tableFooterView = supplementaryView;
+    }
+    return fittedHeight;
+}

@@ -93,15 +93,10 @@
     }
 
     self.lastTableLayoutWidth = width;
-    dispatch_async(dispatch_get_main_queue(), ^{
-        if (fabs(self.lastTableLayoutWidth - CGRectGetWidth(self.tableView.bounds)) > 0.5) {
-            return;
-        }
-        [UIView performWithoutAnimation:^{
-            [self.tableView reloadData];
-            [self.tableView layoutIfNeeded];
-        }];
-    });
+    [UIView performWithoutAnimation:^{
+        [self.tableView reloadData];
+        [self.tableView layoutIfNeeded];
+    }];
 }
 
 #pragma mark UITableView
