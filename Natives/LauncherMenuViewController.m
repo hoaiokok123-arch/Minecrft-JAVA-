@@ -49,6 +49,15 @@
 
 #define contentNavigationController ((LauncherNavigationController *)self.splitViewController.viewControllers[1])
 
+- (instancetype)init {
+    UITableViewStyle style = UITableViewStyleGrouped;
+    if (@available(iOS 13.0, *)) {
+        style = UITableViewStyleInsetGrouped;
+    }
+    self = [super initWithStyle:style];
+    return self;
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     
@@ -114,6 +123,12 @@
     }
     
     self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    self.tableView.backgroundColor = UIColor.systemBackgroundColor;
+    self.tableView.rowHeight = 44;
+    self.tableView.cellLayoutMarginsFollowReadableWidth = NO;
+    if (@available(iOS 15.0, *)) {
+        self.tableView.sectionHeaderTopPadding = 0;
+    }
     
     self.navigationController.toolbarHidden = NO;
     UIActivityIndicatorViewStyle indicatorStyle = UIActivityIndicatorViewStyleMedium;
@@ -130,7 +145,7 @@
     
     [self updateAccountInfo];
     
-    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:1 inSection:0];
+    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:0 inSection:1];
     [self.tableView selectRowAtIndexPath:indexPath animated:YES scrollPosition:UITableViewScrollPositionNone];
     [self tableView:self.tableView didSelectRowAtIndexPath:indexPath];
     self.lastSelectedIndex = 1;
@@ -183,13 +198,28 @@
 
 - (void)restoreHighlightedSelection {
     // Restore the selected row when the view appears again
-    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:self.lastSelectedIndex inSection:0];
+    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:0 inSection:self.lastSelectedIndex];
     [self.tableView selectRowAtIndexPath:indexPath animated:NO scrollPosition:UITableViewScrollPositionNone];
+}
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
+{
+    return self.options.count;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    return self.options.count;
+    return 1;
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section
+{
+    return section == 0 ? 6 : 2;
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section
+{
+    return CGFLOAT_MIN;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -199,15 +229,25 @@
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"cell"];
     }
 
-    cell.textLabel.text = [self.options[indexPath.row] title];
+    LauncherMenuCustomItem *item = self.options[indexPath.section];
+    cell.textLabel.text = item.title;
+    cell.textLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightMedium];
+    cell.textLabel.adjustsFontSizeToFitWidth = YES;
+    cell.textLabel.minimumScaleFactor = 0.85;
+    cell.textLabel.textColor = UIColor.labelColor;
+    cell.backgroundColor = UIColor.secondarySystemGroupedBackgroundColor;
+    cell.tintColor = UIColor.labelColor;
+    cell.layoutMargins = UIEdgeInsetsMake(0, 12, 0, 12);
+    cell.contentView.preservesSuperviewLayoutMargins = NO;
+    cell.selectionStyle = UITableViewCellSelectionStyleDefault;
+    cell.imageView.image = nil;
     
-    UIImage *origImage = [UIImage systemImageNamed:[self.options[indexPath.row]
-        performSelector:@selector(imageName)]];
+    UIImage *origImage = [UIImage systemImageNamed:[item performSelector:@selector(imageName)]];
     if (origImage) {
-        UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:CGSizeMake(40, 40)];
+        UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:CGSizeMake(22, 22)];
         UIImage *image = [renderer imageWithActions:^(UIGraphicsImageRendererContext*_Nonnull myContext) {
-            CGFloat scaleFactor = 40/origImage.size.height;
-            [origImage drawInRect:CGRectMake(20 - origImage.size.width*scaleFactor/2, 0, origImage.size.width*scaleFactor, 40)];
+            CGFloat scaleFactor = 22/origImage.size.height;
+            [origImage drawInRect:CGRectMake(11 - origImage.size.width*scaleFactor/2, 0, origImage.size.width*scaleFactor, 22)];
         }];
         cell.imageView.image = [image imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
     }
@@ -215,16 +255,16 @@
     if (cell.imageView.image == nil) {
         cell.imageView.layer.magnificationFilter = kCAFilterNearest;
         cell.imageView.layer.minificationFilter = kCAFilterNearest;
-        cell.imageView.image = [UIImage imageNamed:[self.options[indexPath.row]
-            performSelector:@selector(imageName)]];
-        cell.imageView.image = [cell.imageView.image _imageWithSize:CGSizeMake(40, 40)];
+        cell.imageView.image = [UIImage imageNamed:[item performSelector:@selector(imageName)]];
+        cell.imageView.image = [cell.imageView.image _imageWithSize:CGSizeMake(22, 22)];
     }
+    cell.imageView.tintColor = UIColor.secondaryLabelColor;
     return cell;
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    LauncherMenuCustomItem *selected = self.options[indexPath.row];
+    LauncherMenuCustomItem *selected = self.options[indexPath.section];
     
     if (selected.action != nil) {
         [self restoreHighlightedSelection];
@@ -235,7 +275,7 @@
         } else {
             self.options[self.lastSelectedIndex].vcArray = contentNavigationController.viewControllers;
             [contentNavigationController setViewControllers:selected.vcArray animated:NO];
-            self.lastSelectedIndex = indexPath.row;
+            self.lastSelectedIndex = indexPath.section;
         }
         selected.vcArray[0].navigationItem.rightBarButtonItem = self.accountBtnItem;
         selected.vcArray[0].navigationItem.leftBarButtonItem = self.splitViewController.displayModeButtonItem;
