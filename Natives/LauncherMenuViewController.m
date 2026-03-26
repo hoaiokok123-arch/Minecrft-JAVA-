@@ -8,6 +8,7 @@
 #import "LauncherPreferences.h"
 #import "LauncherPreferencesViewController.h"
 #import "LauncherProfilesViewController.h"
+#import "LauncherUIStyle.h"
 #import "PLProfiles.h"
 #import "UIButton+AFNetworking.h"
 #import "UIImageView+AFNetworking.h"
@@ -45,13 +46,98 @@ static const CGFloat LauncherAccountExpandedMaxWidth = 220.0;
 
 @interface LauncherMenuViewController()
 @property(nonatomic) NSMutableArray<LauncherMenuCustomItem*> *options;
+@property(nonatomic) UIView *heroCard;
 @property(nonatomic) UILabel *statusLabel;
+@property(nonatomic) UILabel *heroSubtitleLabel;
 @property(nonatomic) int lastSelectedIndex;
 @end
 
 @implementation LauncherMenuViewController
 
 #define contentNavigationController ((LauncherNavigationController *)self.splitViewController.viewControllers[1])
+
+- (instancetype)init {
+    self = [super initWithStyle:UITableViewStyleInsetGrouped];
+    return self;
+}
+
+- (void)configureSidebarHeader {
+    UIView *wrapper = [[UIView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(self.tableView.bounds), 144.0)];
+    self.heroCard = [[UIView alloc] initWithFrame:CGRectMake(16.0, 8.0, wrapper.bounds.size.width - 32.0, 128.0)];
+    LauncherStylePanel(self.heroCard, 24.0);
+
+    UIImageView *logoView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"AppLogo"]];
+    logoView.contentMode = UIViewContentModeScaleAspectFit;
+    logoView.frame = CGRectMake(20, 22, 72, 72);
+
+    UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
+    titleLabel.text = @"Angel Aura Amethyst";
+    titleLabel.font = LauncherTitleFont(22.0);
+    titleLabel.textColor = UIColor.labelColor;
+    titleLabel.numberOfLines = 2;
+
+    self.heroSubtitleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
+    self.heroSubtitleLabel.font = LauncherBodyFont(13.0);
+    self.heroSubtitleLabel.textColor = UIColor.secondaryLabelColor;
+    self.heroSubtitleLabel.numberOfLines = 3;
+
+    NSString *version = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"1.0";
+    NSString *build = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleVersion"] ?: @"";
+    self.heroSubtitleLabel.text = [NSString stringWithFormat:@"%@ (%@)\n%@", version, build, UIDevice.currentDevice.completeOSVersion];
+
+    [self.heroCard addSubview:logoView];
+    [self.heroCard addSubview:titleLabel];
+    [self.heroCard addSubview:self.heroSubtitleLabel];
+    [wrapper addSubview:self.heroCard];
+    self.tableView.tableHeaderView = wrapper;
+}
+
+- (void)configureSidebarFooter {
+    UIView *wrapper = [[UIView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(self.tableView.bounds), 82.0)];
+    UIView *statusCard = [[UIView alloc] initWithFrame:CGRectMake(16.0, 8.0, wrapper.bounds.size.width - 32.0, 58.0)];
+    LauncherStylePanel(statusCard, 18.0);
+
+    UILabel *captionLabel = [[UILabel alloc] initWithFrame:CGRectMake(18.0, 10.0, statusCard.bounds.size.width - 36.0, 16.0)];
+    captionLabel.text = @"JIT";
+    captionLabel.font = LauncherCaptionFont(12.0);
+    captionLabel.textColor = UIColor.secondaryLabelColor;
+
+    self.statusLabel = [[UILabel alloc] initWithFrame:CGRectMake(18.0, 28.0, statusCard.bounds.size.width - 36.0, 20.0)];
+    self.statusLabel.font = LauncherTitleFont(15.0);
+    self.statusLabel.textColor = UIColor.labelColor;
+    self.statusLabel.text = isJITEnabled(false) ? localize(@"login.jit.enabled", nil) : localize(@"login.jit.checking", nil);
+
+    [statusCard addSubview:captionLabel];
+    [statusCard addSubview:self.statusLabel];
+    [wrapper addSubview:statusCard];
+    self.tableView.tableFooterView = wrapper;
+}
+
+- (void)updateSidebarChromeLayout {
+    CGFloat width = CGRectGetWidth(self.tableView.bounds);
+
+    UIView *headerWrapper = self.tableView.tableHeaderView;
+    if (headerWrapper) {
+        headerWrapper.frame = CGRectMake(0, 0, width, 144.0);
+        self.heroCard.frame = CGRectMake(16.0, 8.0, width - 32.0, 128.0);
+        CGFloat textX = 108.0;
+        CGFloat textWidth = self.heroCard.bounds.size.width - textX - 20.0;
+        ((UIImageView *)self.heroCard.subviews[0]).frame = CGRectMake(20, 22, 72, 72);
+        ((UILabel *)self.heroCard.subviews[1]).frame = CGRectMake(textX, 22, textWidth, 50.0);
+        self.heroSubtitleLabel.frame = CGRectMake(textX, 74, textWidth, 38.0);
+        self.tableView.tableHeaderView = headerWrapper;
+    }
+
+    UIView *footerWrapper = self.tableView.tableFooterView;
+    if (footerWrapper) {
+        footerWrapper.frame = CGRectMake(0, 0, width, 82.0);
+        UIView *statusCard = footerWrapper.subviews.firstObject;
+        statusCard.frame = CGRectMake(16.0, 8.0, width - 32.0, 58.0);
+        statusCard.subviews[0].frame = CGRectMake(18.0, 10.0, statusCard.bounds.size.width - 36.0, 16.0);
+        self.statusLabel.frame = CGRectMake(18.0, 28.0, statusCard.bounds.size.width - 36.0, 20.0);
+        self.tableView.tableFooterView = footerWrapper;
+    }
+}
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -117,11 +203,17 @@ static const CGFloat LauncherAccountExpandedMaxWidth = 220.0;
         }]];
     }
     
+    self.view.backgroundColor = UIColor.systemGroupedBackgroundColor;
+    self.tableView.backgroundColor = self.view.backgroundColor;
     self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
     self.tableView.rowHeight = 54.0;
+    self.tableView.sectionFooterHeight = 14.0;
     if (@available(iOS 15.0, *)) {
         self.tableView.sectionHeaderTopPadding = 12.0;
     }
+    self.tableView.contentInset = UIEdgeInsetsMake(0, 0, 20.0, 0);
+    [self configureSidebarHeader];
+    [self configureSidebarFooter];
     
     self.navigationController.toolbarHidden = NO;
     UIActivityIndicatorViewStyle indicatorStyle = UIActivityIndicatorViewStyleMedium;
@@ -172,6 +264,12 @@ static const CGFloat LauncherAccountExpandedMaxWidth = 220.0;
     [self restoreHighlightedSelection];
 }
 
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    [self updateSidebarChromeLayout];
+    [self updateAccountInfo];
+}
+
 - (UIBarButtonItem *)drawAccountButton {
     if (!self.accountBtnItem) {
         self.accountButton = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -215,6 +313,13 @@ static const CGFloat LauncherAccountExpandedMaxWidth = 220.0;
     }
 
     cell.textLabel.text = [self.options[indexPath.row] title];
+    cell.textLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightMedium];
+    cell.textLabel.adjustsFontSizeToFitWidth = YES;
+    cell.textLabel.minimumScaleFactor = 0.85;
+    cell.accessoryType = self.options[indexPath.row].action ? UITableViewCellAccessoryNone : UITableViewCellAccessoryDisclosureIndicator;
+    UIView *selectedBackgroundView = [[UIView alloc] initWithFrame:CGRectZero];
+    selectedBackgroundView.backgroundColor = LauncherPanelMutedColor();
+    cell.selectedBackgroundView = selectedBackgroundView;
     
     UIImage *origImage = [UIImage systemImageNamed:[self.options[indexPath.row]
         performSelector:@selector(imageName)]];
@@ -235,9 +340,7 @@ static const CGFloat LauncherAccountExpandedMaxWidth = 220.0;
             performSelector:@selector(imageName)]];
         cell.imageView.image = [cell.imageView.image _imageWithSize:CGSizeMake(LauncherMenuIconSize, LauncherMenuIconSize)];
     }
-    cell.textLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightMedium];
-    cell.textLabel.adjustsFontSizeToFitWidth = YES;
-    cell.textLabel.minimumScaleFactor = 0.85;
+    cell.imageView.preferredSymbolConfiguration = LauncherSymbolConfig(18.0);
     return cell;
 }
 
@@ -371,6 +474,7 @@ static const CGFloat LauncherAccountExpandedMaxWidth = 220.0;
         [(UIActivityIndicatorView *)self.toolbarItems[0].customView stopAnimating];
     } else {
         self.toolbarItems[1].title = status;
+        self.statusLabel.text = status;
     }
 }
 

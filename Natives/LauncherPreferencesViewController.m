@@ -8,6 +8,7 @@
 #import "LauncherPreferencesViewController.h"
 #import "LauncherPrefContCfgViewController.h"
 #import "LauncherPrefManageJREViewController.h"
+#import "LauncherUIStyle.h"
 #import "UIKit+hook.h"
 
 #import "config.h"
@@ -17,9 +18,59 @@
 @interface LauncherPreferencesViewController()
 @property(nonatomic) NSArray<NSString*> *rendererKeys, *rendererList;
 @property(nonatomic) NSArray<NSString*> *lwjglVersionKeys, *lwjglVersionList;
+@property(nonatomic) UIView *overviewCard;
+@property(nonatomic) UILabel *overviewTitleLabel;
+@property(nonatomic) UILabel *overviewSubtitleLabel;
 @end
 
 @implementation LauncherPreferencesViewController
+
+- (void)configureOverviewHeader {
+    UIView *wrapper = [[UIView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(self.tableView.bounds), 124.0)];
+    self.overviewCard = [[UIView alloc] initWithFrame:CGRectMake(16.0, 8.0, wrapper.bounds.size.width - 32.0, 104.0)];
+    LauncherStylePanel(self.overviewCard, 24.0);
+
+    UILabel *eyebrowLabel = [[UILabel alloc] initWithFrame:CGRectMake(20.0, 18.0, self.overviewCard.bounds.size.width - 40.0, 16.0)];
+    eyebrowLabel.text = self.title;
+    eyebrowLabel.font = LauncherCaptionFont(12.0);
+    eyebrowLabel.textColor = UIColor.secondaryLabelColor;
+
+    self.overviewTitleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
+    self.overviewTitleLabel.font = LauncherTitleFont(22.0);
+    self.overviewTitleLabel.textColor = UIColor.labelColor;
+    self.overviewTitleLabel.numberOfLines = 2;
+
+    self.overviewSubtitleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
+    self.overviewSubtitleLabel.font = LauncherBodyFont(13.0);
+    self.overviewSubtitleLabel.textColor = UIColor.secondaryLabelColor;
+    self.overviewSubtitleLabel.numberOfLines = 3;
+
+    NSString *version = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"1.0";
+    NSString *build = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleVersion"] ?: @"";
+    self.overviewTitleLabel.text = [NSString stringWithFormat:@"%@ (%@)", version, build];
+    self.overviewSubtitleLabel.text = UIDevice.currentDevice.completeOSVersion;
+
+    [self.overviewCard addSubview:eyebrowLabel];
+    [self.overviewCard addSubview:self.overviewTitleLabel];
+    [self.overviewCard addSubview:self.overviewSubtitleLabel];
+    [wrapper addSubview:self.overviewCard];
+    self.tableView.tableHeaderView = wrapper;
+}
+
+- (void)updateOverviewHeaderLayout {
+    UIView *wrapper = self.tableView.tableHeaderView;
+    if (!wrapper) {
+        return;
+    }
+
+    CGFloat width = CGRectGetWidth(self.tableView.bounds);
+    wrapper.frame = CGRectMake(0, 0, width, 124.0);
+    self.overviewCard.frame = CGRectMake(16.0, 8.0, width - 32.0, 104.0);
+    self.overviewCard.subviews[0].frame = CGRectMake(20.0, 18.0, self.overviewCard.bounds.size.width - 40.0, 16.0);
+    self.overviewTitleLabel.frame = CGRectMake(20.0, 36.0, self.overviewCard.bounds.size.width - 40.0, 30.0);
+    self.overviewSubtitleLabel.frame = CGRectMake(20.0, 66.0, self.overviewCard.bounds.size.width - 40.0, 26.0);
+    self.tableView.tableHeaderView = wrapper;
+}
 
 - (id)init {
     self = [super init];
@@ -419,6 +470,8 @@
     ];
 
     [super viewDidLoad];
+    [self configureOverviewHeader];
+    [self updateOverviewHeaderLayout];
     if (self.navigationController == nil) {
         self.tableView.alpha = 0.9;
     }
@@ -428,6 +481,11 @@
         [closeButton addTarget:self action:@selector(actionClose) forControlEvents:UIControlEventTouchUpInside];
         [self.view addSubview:closeButton];
     }
+}
+
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    [self updateOverviewHeaderLayout];
 }
 
 - (void)viewWillDisappear:(BOOL)animated {

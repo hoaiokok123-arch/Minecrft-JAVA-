@@ -8,6 +8,7 @@
 #import "LauncherMenuViewController.h"
 #import "LauncherNavigationController.h"
 #import "LauncherPreferences.h"
+#import "LauncherUIStyle.h"
 #import "MinecraftResourceDownloadTask.h"
 #import "MinecraftResourceUtils.h"
 #import "PickTextField.h"
@@ -31,6 +32,7 @@ static void *ProgressObserverContext = &ProgressObserverContext;
 @property(nonatomic) MinecraftResourceDownloadTask* task;
 @property(nonatomic) UINavigationController* progressVC;
 @property(nonatomic) NSArray* globalToolbarItems;
+@property(nonatomic) UIView* toolbarChromeView;
 @property(nonatomic) UIView* toolbarContentView;
 @property(nonatomic) PLPickerView* versionPickerView;
 @property(nonatomic) UITextField* versionTextField;
@@ -58,6 +60,7 @@ static const CGFloat LauncherToolbarFieldMaxWidth = 420.0;
         CGFloat availableWidth = CGRectGetWidth(self.view.bounds);
         CGFloat containerWidth = MIN(MAX(availableWidth - 140.0, 180.0), LauncherToolbarFieldMaxWidth);
         self.toolbarContentView.frame = CGRectMake(0, 0, containerWidth, LauncherToolbarControlHeight);
+        self.toolbarChromeView.frame = self.toolbarContentView.bounds;
         self.versionTextField.frame = self.toolbarContentView.bounds;
         self.progressText.frame = self.versionTextField.frame;
         self.progressViewMain.frame = CGRectMake(12.0, LauncherToolbarControlHeight - 3.0, MAX(containerWidth - 24.0, 0.0), 2.0);
@@ -77,6 +80,7 @@ static const CGFloat LauncherToolbarFieldMaxWidth = 420.0;
         CGFloat containerWidth = MAX(availableWidth - horizontalPadding * 2.0, 0.0);
         CGFloat containerHeight = MIN(MAX(CGRectGetHeight(targetToolbar.bounds) - 8.0, LauncherToolbarControlHeight), 44.0);
         self.toolbarContentView.frame = CGRectMake(safeInsets.left + horizontalPadding, (CGRectGetHeight(targetToolbar.bounds) - containerHeight) / 2.0, containerWidth, containerHeight);
+        self.toolbarChromeView.frame = self.toolbarContentView.bounds;
 
         CGFloat playWidth = MIN(LauncherToolbarPlayMaxWidth, MAX(LauncherToolbarPlayMinWidth, containerWidth * 0.24));
         if (containerWidth - playWidth - gap < LauncherToolbarFieldMinWidth) {
@@ -109,6 +113,9 @@ static const CGFloat LauncherToolbarFieldMaxWidth = 420.0;
     self.usesLiquidGlassToolbar = hasLiquidGlass;
     self.toolbarContentView = [[UIView alloc] initWithFrame:CGRectZero];
     self.toolbarContentView.backgroundColor = UIColor.clearColor;
+    self.toolbarChromeView = [[UIView alloc] initWithFrame:CGRectZero];
+    self.toolbarChromeView.userInteractionEnabled = NO;
+    LauncherStylePanel(self.toolbarChromeView, 18.0);
     self.versionTextField = [[PickTextField alloc] initWithFrame:CGRectMake(0, 0, LauncherToolbarFieldMaxWidth, LauncherToolbarControlHeight)];
     self.progressViewMain = [[UIProgressView alloc] initWithFrame:CGRectZero];
     [self.versionTextField addTarget:self.versionTextField action:@selector(resignFirstResponder) forControlEvents:UIControlEventEditingDidEndOnExit];
@@ -127,6 +134,14 @@ static const CGFloat LauncherToolbarFieldMaxWidth = 420.0;
     self.versionTextField.leftViewMode = UITextFieldViewModeAlways;
     self.versionTextField.rightViewMode = UITextFieldViewModeAlways;
     self.versionTextField.textAlignment = NSTextAlignmentCenter;
+    self.versionTextField.textColor = UIColor.labelColor;
+    self.versionTextField.backgroundColor = LauncherPanelMutedColor();
+    self.versionTextField.layer.cornerRadius = 14.0;
+    self.versionTextField.layer.borderWidth = 1.0 / UIScreen.mainScreen.scale;
+    self.versionTextField.layer.borderColor = LauncherOutlineColor().CGColor;
+    if ([self.versionTextField.layer respondsToSelector:@selector(setCornerCurve:)]) {
+        self.versionTextField.layer.cornerCurve = kCACornerCurveContinuous;
+    }
 
     self.versionPickerView = [[PLPickerView alloc] init];
     self.versionPickerView.delegate = self;
@@ -136,6 +151,7 @@ static const CGFloat LauncherToolbarFieldMaxWidth = 420.0;
 
     self.versionTextField.inputView = self.versionPickerView;
 
+    [self.toolbarContentView addSubview:self.toolbarChromeView];
     [self.toolbarContentView addSubview:self.progressViewMain];
     [self.toolbarContentView addSubview:self.versionTextField];
 
@@ -155,10 +171,11 @@ static const CGFloat LauncherToolbarFieldMaxWidth = 420.0;
         setButtonPointerInteraction(self.buttonInstall);
         [self.buttonInstall setTitle:localize(@"Play", nil) forState:UIControlStateNormal];
         self.buttonInstall.autoresizingMask = AUTORESIZE_MASKS;
-        self.buttonInstall.backgroundColor = [UIColor colorWithRed:121/255.0 green:56/255.0 blue:162/255.0 alpha:1.0];
-        self.buttonInstall.layer.cornerRadius = 5;
+        self.buttonInstall.backgroundColor = LauncherAccentColor();
+        self.buttonInstall.layer.cornerRadius = 16.0;
         self.buttonInstall.titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightSemibold];
         self.buttonInstall.tintColor = UIColor.whiteColor;
+        self.buttonInstall.contentEdgeInsets = UIEdgeInsetsMake(0, 18, 0, 18);
         self.buttonInstall.enabled = NO;
         [self.buttonInstall addTarget:self action:@selector(performInstallOrShowDetails:) forControlEvents:UIControlEventPrimaryActionTriggered];
         [self.toolbarContentView addSubview:self.buttonInstall];
@@ -168,11 +185,13 @@ static const CGFloat LauncherToolbarFieldMaxWidth = 420.0;
     self.progressViewMain.hidden = YES;
     self.progressText = [[UILabel alloc] initWithFrame:CGRectZero];
     self.progressText.adjustsFontSizeToFitWidth = YES;
-    self.progressText.font = [self.progressText.font fontWithSize:16];
+    self.progressText.font = LauncherCaptionFont(14.0);
+    self.progressText.textColor = UIColor.secondaryLabelColor;
     self.progressText.textAlignment = NSTextAlignmentCenter;
     self.progressText.userInteractionEnabled = NO;
     self.progressText.minimumScaleFactor = 0.75;
     [self.toolbarContentView addSubview:self.progressText];
+    self.progressViewMain.trackTintColor = UIColor.clearColor;
 
     [self layoutToolbarControls];
 
