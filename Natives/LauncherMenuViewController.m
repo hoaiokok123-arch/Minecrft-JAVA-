@@ -17,6 +17,10 @@
 
 #include <dlfcn.h>
 
+static const CGFloat LauncherMenuIconSize = 34.0;
+static const CGFloat LauncherAccountCompactSize = 34.0;
+static const CGFloat LauncherAccountExpandedMaxWidth = 220.0;
+
 @implementation LauncherMenuCustomItem
 
 + (LauncherMenuCustomItem *)title:(NSString *)title imageName:(NSString *)imageName action:(id)action {
@@ -56,8 +60,8 @@
     
     UIImageView *titleView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"AppLogo"]];
     [titleView setContentMode:UIViewContentModeScaleAspectFit];
+    titleView.frame = CGRectMake(0, 0, 124, 30);
     self.navigationItem.titleView = titleView;
-    [titleView sizeToFit];
     
     self.options = @[
         [LauncherMenuCustomItem vcClass:LauncherNewsViewController.class],
@@ -114,6 +118,10 @@
     }
     
     self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    self.tableView.rowHeight = 54.0;
+    if (@available(iOS 15.0, *)) {
+        self.tableView.sectionHeaderTopPadding = 12.0;
+    }
     
     self.navigationController.toolbarHidden = NO;
     UIActivityIndicatorViewStyle indicatorStyle = UIActivityIndicatorViewStyleMedium;
@@ -169,10 +177,17 @@
         self.accountButton = [UIButton buttonWithType:UIButtonTypeCustom];
         [self.accountButton addTarget:self action:@selector(selectAccount:) forControlEvents:UIControlEventPrimaryActionTriggered];
         self.accountButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
-
-        self.accountButton.titleEdgeInsets = UIEdgeInsetsMake(0, 4, 0, -4);
+        self.accountButton.contentVerticalAlignment = UIControlContentVerticalAlignmentCenter;
+        self.accountButton.contentEdgeInsets = UIEdgeInsetsMake(2, 0, 2, 6);
+        self.accountButton.titleEdgeInsets = UIEdgeInsetsMake(0, 8, 0, -8);
         self.accountButton.imageView.contentMode = UIViewContentModeScaleAspectFit;
+        self.accountButton.imageView.clipsToBounds = YES;
         self.accountButton.titleLabel.lineBreakMode = NSLineBreakByWordWrapping;
+        self.accountButton.titleLabel.numberOfLines = 2;
+        self.accountButton.titleLabel.adjustsFontSizeToFitWidth = YES;
+        self.accountButton.titleLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightSemibold];
+        self.accountButton.tintColor = UIColor.labelColor;
+        self.accountButton.frame = CGRectMake(0, 0, LauncherAccountCompactSize, LauncherAccountCompactSize);
         self.accountBtnItem = [[UIBarButtonItem alloc] initWithCustomView:self.accountButton];
     }
 
@@ -204,10 +219,11 @@
     UIImage *origImage = [UIImage systemImageNamed:[self.options[indexPath.row]
         performSelector:@selector(imageName)]];
     if (origImage) {
-        UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:CGSizeMake(40, 40)];
+        UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:CGSizeMake(LauncherMenuIconSize, LauncherMenuIconSize)];
         UIImage *image = [renderer imageWithActions:^(UIGraphicsImageRendererContext*_Nonnull myContext) {
-            CGFloat scaleFactor = 40/origImage.size.height;
-            [origImage drawInRect:CGRectMake(20 - origImage.size.width*scaleFactor/2, 0, origImage.size.width*scaleFactor, 40)];
+            CGFloat scaleFactor = LauncherMenuIconSize / origImage.size.height;
+            CGFloat originX = (LauncherMenuIconSize - origImage.size.width * scaleFactor) / 2.0;
+            [origImage drawInRect:CGRectMake(originX, 0, origImage.size.width * scaleFactor, LauncherMenuIconSize)];
         }];
         cell.imageView.image = [image imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
     }
@@ -217,8 +233,11 @@
         cell.imageView.layer.minificationFilter = kCAFilterNearest;
         cell.imageView.image = [UIImage imageNamed:[self.options[indexPath.row]
             performSelector:@selector(imageName)]];
-        cell.imageView.image = [cell.imageView.image _imageWithSize:CGSizeMake(40, 40)];
+        cell.imageView.image = [cell.imageView.image _imageWithSize:CGSizeMake(LauncherMenuIconSize, LauncherMenuIconSize)];
     }
+    cell.textLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightMedium];
+    cell.textLabel.adjustsFontSizeToFitWidth = YES;
+    cell.textLabel.minimumScaleFactor = 0.85;
     return cell;
 }
 
@@ -274,15 +293,20 @@
 - (void)updateAccountInfo {
     NSDictionary *selected = BaseAuthenticator.current.authData;
     CGSize size = CGSizeMake(contentNavigationController.view.frame.size.width, contentNavigationController.view.frame.size.height);
+    BOOL shouldShowTitle = size.width >= 620.0;
+    CGFloat avatarSize = size.width >= 900.0 ? 38.0 : LauncherAccountCompactSize;
+    self.accountButton.contentEdgeInsets = UIEdgeInsetsMake(2, 0, 2, shouldShowTitle ? 6 : 0);
+    self.accountButton.titleEdgeInsets = shouldShowTitle ? UIEdgeInsetsMake(0, 8, 0, -8) : UIEdgeInsetsZero;
     
     if (selected == nil) {
-        if((size.width / 3) > 200) {
+        if (shouldShowTitle) {
             [self.accountButton setAttributedTitle:[[NSAttributedString alloc] initWithString:localize(@"login.option.select", nil)] forState:UIControlStateNormal];
         } else {
             [self.accountButton setAttributedTitle:(NSAttributedString *)@"" forState:UIControlStateNormal];
         }
         [self.accountButton setImage:[UIImage imageNamed:@"DefaultAccount"] forState:UIControlStateNormal];
-        [self.accountButton sizeToFit];
+        self.accountButton.frame = CGRectMake(0, 0, shouldShowTitle ? 148.0 : avatarSize, MAX(36.0, avatarSize));
+        self.accountButton.imageView.layer.cornerRadius = avatarSize / 5.0;
         return;
     }
 
@@ -313,7 +337,7 @@
     [title appendAttributedString:[[NSAttributedString alloc] initWithString:@"\n" attributes:nil]];
     [title appendAttributedString:subtitle];
     
-    if((size.width / 3) > 200) {
+    if (shouldShowTitle) {
         [self.accountButton setAttributedTitle:title forState:UIControlStateNormal];
     } else {
         [self.accountButton setAttributedTitle:(NSAttributedString *)@"" forState:UIControlStateNormal];
@@ -325,6 +349,9 @@
     [self.accountButton setImageForState:UIControlStateNormal withURL:url placeholderImage:placeholder];
     [self.accountButton.imageView setImageWithURL:url placeholderImage:placeholder];
     [self.accountButton sizeToFit];
+    CGFloat buttonWidth = shouldShowTitle ? MIN(MAX(self.accountButton.bounds.size.width, avatarSize + 84.0), LauncherAccountExpandedMaxWidth) : avatarSize;
+    self.accountButton.frame = CGRectMake(0, 0, buttonWidth, MAX(36.0, avatarSize));
+    self.accountButton.imageView.layer.cornerRadius = avatarSize / 5.0;
 
     // Update profiles and local version list if needed
     if (shouldUpdateProfiles) {

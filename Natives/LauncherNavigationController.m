@@ -31,15 +31,71 @@ static void *ProgressObserverContext = &ProgressObserverContext;
 @property(nonatomic) MinecraftResourceDownloadTask* task;
 @property(nonatomic) UINavigationController* progressVC;
 @property(nonatomic) NSArray* globalToolbarItems;
+@property(nonatomic) UIView* toolbarContentView;
 @property(nonatomic) PLPickerView* versionPickerView;
 @property(nonatomic) UITextField* versionTextField;
 @property(nonatomic) UIButton* buttonInstall;
 @property(nonatomic) UIBarButtonItem* buttonInstallItem;
+@property(nonatomic) BOOL usesLiquidGlassToolbar;
 @property(nonatomic) int profileSelectedAt;
 
 @end
 
 @implementation LauncherNavigationController
+
+static const CGFloat LauncherToolbarControlHeight = 36.0;
+static const CGFloat LauncherToolbarPlayMinWidth = 86.0;
+static const CGFloat LauncherToolbarPlayMaxWidth = 132.0;
+static const CGFloat LauncherToolbarFieldMinWidth = 150.0;
+static const CGFloat LauncherToolbarFieldMaxWidth = 420.0;
+
+- (void)layoutToolbarControls {
+    if (!self.toolbarContentView || !self.versionTextField) {
+        return;
+    }
+
+    if (self.usesLiquidGlassToolbar) {
+        CGFloat availableWidth = CGRectGetWidth(self.view.bounds);
+        CGFloat containerWidth = MIN(MAX(availableWidth - 140.0, 180.0), LauncherToolbarFieldMaxWidth);
+        self.toolbarContentView.frame = CGRectMake(0, 0, containerWidth, LauncherToolbarControlHeight);
+        self.versionTextField.frame = self.toolbarContentView.bounds;
+        self.progressText.frame = self.versionTextField.frame;
+        self.progressViewMain.frame = CGRectMake(12.0, LauncherToolbarControlHeight - 3.0, MAX(containerWidth - 24.0, 0.0), 2.0);
+        if (self.buttonInstallItem.buttonGlassView) {
+            self.buttonInstallItem.buttonGlassView.backgroundColor = [UIColor colorWithRed:121/255.0 green:56/255.0 blue:162/255.0 alpha:0.5];
+        }
+    } else {
+        UIToolbar *targetToolbar = self.toolbar;
+        if (!targetToolbar) {
+            return;
+        }
+
+        UIEdgeInsets safeInsets = targetToolbar.safeAreaInsets;
+        CGFloat availableWidth = CGRectGetWidth(targetToolbar.bounds) - safeInsets.left - safeInsets.right;
+        CGFloat horizontalPadding = MIN(MAX(availableWidth * 0.03, 8.0), 16.0);
+        CGFloat gap = MIN(MAX(availableWidth * 0.025, 8.0), 12.0);
+        CGFloat containerWidth = MAX(availableWidth - horizontalPadding * 2.0, 0.0);
+        CGFloat containerHeight = MIN(MAX(CGRectGetHeight(targetToolbar.bounds) - 8.0, LauncherToolbarControlHeight), 44.0);
+        self.toolbarContentView.frame = CGRectMake(safeInsets.left + horizontalPadding, (CGRectGetHeight(targetToolbar.bounds) - containerHeight) / 2.0, containerWidth, containerHeight);
+
+        CGFloat playWidth = MIN(LauncherToolbarPlayMaxWidth, MAX(LauncherToolbarPlayMinWidth, containerWidth * 0.24));
+        if (containerWidth - playWidth - gap < LauncherToolbarFieldMinWidth) {
+            playWidth = MAX(76.0, containerWidth - gap - LauncherToolbarFieldMinWidth);
+        }
+        CGFloat fieldWidth = MAX(containerWidth - playWidth - gap, 0.0);
+        self.versionTextField.frame = CGRectMake(0, 0, fieldWidth, containerHeight);
+        self.buttonInstall.frame = CGRectMake(CGRectGetMaxX(self.versionTextField.frame) + gap, 0, playWidth, containerHeight);
+        self.progressText.frame = self.versionTextField.frame;
+        self.progressViewMain.frame = CGRectMake(12.0, containerHeight - 3.0, MAX(fieldWidth - 24.0, 0.0), 2.0);
+    }
+
+    CGFloat controlHeight = CGRectGetHeight(self.versionTextField.frame);
+    CGFloat accessorySize = MIN(MAX(controlHeight - 10.0, 20.0), 28.0);
+    UIImageView *leftView = (UIImageView *)self.versionTextField.leftView;
+    UIImageView *rightView = (UIImageView *)self.versionTextField.rightView;
+    leftView.frame = CGRectMake(0, 0, accessorySize + 14.0, controlHeight);
+    rightView.frame = CGRectMake(0, 0, accessorySize + 8.0, controlHeight);
+}
 
 - (void)viewDidLoad
 {
@@ -50,20 +106,24 @@ static void *ProgressObserverContext = &ProgressObserverContext;
     }
     UIToolbar *targetToolbar = self.toolbar;
     BOOL hasLiquidGlass = _UISolariumEnabled && _UISolariumEnabled();
-    
-    if(hasLiquidGlass) {
-        self.versionTextField = [[PickTextField alloc] initWithFrame:CGRectMake(0, 0, MIN(self.view.frame.size.width,self.view.frame.size.height)*0.8 - 40, 36)];
-        self.progressViewMain = [[UIProgressView alloc] initWithFrame:CGRectMake(20, -5, self.versionTextField.frame.size.width-40, 0)];
-    } else {
-        self.versionTextField = [[PickTextField alloc] initWithFrame:CGRectMake(4, 4, self.toolbar.frame.size.width * 0.8 - 8, self.toolbar.frame.size.height - 8)];
-        self.progressViewMain = [[UIProgressView alloc] initWithFrame:CGRectMake(0, 0, targetToolbar.frame.size.width, 0)];
-    }
+    self.usesLiquidGlassToolbar = hasLiquidGlass;
+    self.toolbarContentView = [[UIView alloc] initWithFrame:CGRectZero];
+    self.toolbarContentView.backgroundColor = UIColor.clearColor;
+    self.versionTextField = [[PickTextField alloc] initWithFrame:CGRectMake(0, 0, LauncherToolbarFieldMaxWidth, LauncherToolbarControlHeight)];
+    self.progressViewMain = [[UIProgressView alloc] initWithFrame:CGRectZero];
     [self.versionTextField addTarget:self.versionTextField action:@selector(resignFirstResponder) forControlEvents:UIControlEventEditingDidEndOnExit];
-    self.versionTextField.autoresizingMask = AUTORESIZE_MASKS;
     self.versionTextField.placeholder = @"Specify version...";
-    self.versionTextField.leftView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 40, 40)];
-    self.versionTextField.rightView = [[UIImageView alloc] initWithImage:[[UIImage imageNamed:@"SpinnerArrow"] _imageWithSize:CGSizeMake(30, 30)]];
-    self.versionTextField.rightView.frame = CGRectMake(0, 0, self.versionTextField.frame.size.height * 0.9, self.versionTextField.frame.size.height * 0.9);
+    self.versionTextField.font = [UIFont systemFontOfSize:16 weight:UIFontWeightSemibold];
+    self.versionTextField.adjustsFontSizeToFitWidth = YES;
+    self.versionTextField.minimumFontSize = 13.0;
+    UIImageView *profileImageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 34, 34)];
+    profileImageView.contentMode = UIViewContentModeScaleAspectFit;
+    profileImageView.isSizeFixed = YES;
+    self.versionTextField.leftView = profileImageView;
+    UIImageView *spinnerImageView = [[UIImageView alloc] initWithImage:[[UIImage imageNamed:@"SpinnerArrow"] _imageWithSize:CGSizeMake(24, 24)]];
+    spinnerImageView.contentMode = UIViewContentModeScaleAspectFit;
+    spinnerImageView.isSizeFixed = YES;
+    self.versionTextField.rightView = spinnerImageView;
     self.versionTextField.leftViewMode = UITextFieldViewModeAlways;
     self.versionTextField.rightViewMode = UITextFieldViewModeAlways;
     self.versionTextField.textAlignment = NSTextAlignmentCenter;
@@ -76,20 +136,16 @@ static void *ProgressObserverContext = &ProgressObserverContext;
 
     self.versionTextField.inputView = self.versionPickerView;
 
-    UIView *textFieldContainer = nil;
+    [self.toolbarContentView addSubview:self.progressViewMain];
+    [self.toolbarContentView addSubview:self.versionTextField];
+
     if(hasLiquidGlass) {
-        textFieldContainer = [[UIView alloc] initWithFrame:self.versionTextField.frame];
-        [textFieldContainer addSubview:self.progressViewMain];
         self.buttonInstallItem = [[UIBarButtonItem alloc] initWithTitle:localize(@"Play", nil)
                                                                   style:UIBarButtonItemStylePlain
                                                                  target:self
                                                                  action:@selector(performInstallOrShowDetails:)];
         self.buttonInstallItem.enabled = NO;
-        dispatch_async(dispatch_get_main_queue(), ^{
-            self.buttonInstallItem.buttonGlassView.backgroundColor = [UIColor colorWithRed:121/255.0 green:56/255.0 blue:162/255.0 alpha:0.5];
-        });
-        [textFieldContainer addSubview:self.versionTextField];
-        UIBarButtonItem *textFieldItem = [[UIBarButtonItem alloc] initWithCustomView:textFieldContainer];
+        UIBarButtonItem *textFieldItem = [[UIBarButtonItem alloc] initWithCustomView:self.toolbarContentView];
         self.globalToolbarItems = @[
             textFieldItem,
             self.buttonInstallItem,
@@ -101,29 +157,24 @@ static void *ProgressObserverContext = &ProgressObserverContext;
         self.buttonInstall.autoresizingMask = AUTORESIZE_MASKS;
         self.buttonInstall.backgroundColor = [UIColor colorWithRed:121/255.0 green:56/255.0 blue:162/255.0 alpha:1.0];
         self.buttonInstall.layer.cornerRadius = 5;
-        self.buttonInstall.frame = CGRectMake(self.toolbar.frame.size.width * 0.8, 4, self.toolbar.frame.size.width * 0.2, self.toolbar.frame.size.height - 8);
+        self.buttonInstall.titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightSemibold];
         self.buttonInstall.tintColor = UIColor.whiteColor;
         self.buttonInstall.enabled = NO;
         [self.buttonInstall addTarget:self action:@selector(performInstallOrShowDetails:) forControlEvents:UIControlEventPrimaryActionTriggered];
-        [targetToolbar addSubview:self.progressViewMain];
-        [targetToolbar addSubview:self.versionTextField];
-        [targetToolbar addSubview:self.buttonInstall];
+        [self.toolbarContentView addSubview:self.buttonInstall];
+        [targetToolbar addSubview:self.toolbarContentView];
     }
     
-    self.progressViewMain.autoresizingMask = AUTORESIZE_MASKS;
     self.progressViewMain.hidden = YES;
-    self.progressText = [[UILabel alloc] initWithFrame:self.versionTextField.frame];
+    self.progressText = [[UILabel alloc] initWithFrame:CGRectZero];
     self.progressText.adjustsFontSizeToFitWidth = YES;
-    self.progressText.autoresizingMask = AUTORESIZE_MASKS;
     self.progressText.font = [self.progressText.font fontWithSize:16];
     self.progressText.textAlignment = NSTextAlignmentCenter;
     self.progressText.userInteractionEnabled = NO;
-    
-    if(hasLiquidGlass) {
-        [textFieldContainer addSubview:self.progressText];
-    } else {
-        [targetToolbar addSubview:self.progressText];
-    }
+    self.progressText.minimumScaleFactor = 0.75;
+    [self.toolbarContentView addSubview:self.progressText];
+
+    [self layoutToolbarControls];
 
     [self fetchRemoteVersionList];
     [NSNotificationCenter.defaultCenter addObserver:self
@@ -524,11 +575,8 @@ static void *ProgressObserverContext = &ProgressObserverContext;
         if (!self.viewControllers.firstObject.toolbarItems) {
             self.viewControllers.firstObject.toolbarItems = self.globalToolbarItems;
         }
-        // resize textFieldContainer to fit, need dispatch queue or it freezes for some reason...
-        dispatch_async(dispatch_get_main_queue(), ^{
-            self.versionTextField.superview.frame = CGRectMake(0, 0, MIN(self.view.frame.size.width,self.view.frame.size.height)*0.8 - 40, 36);
-        });
     }
+    [self layoutToolbarControls];
 }
 
 @end
