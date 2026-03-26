@@ -9,7 +9,6 @@ extern NSMutableDictionary *prefDict;
 
 @interface LauncherSplitViewController ()<UISplitViewControllerDelegate>{
 }
-@property(nonatomic) CGSize lastAppliedLayoutSize;
 @end
 
 @implementation LauncherSplitViewController
@@ -18,26 +17,18 @@ extern NSMutableDictionary *prefDict;
     if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad || NSProcessInfo.processInfo.isMacCatalystApp) {
         return UIInterfaceOrientationMaskAll;
     }
-    return UIInterfaceOrientationMaskAllButUpsideDown;
+    return UIInterfaceOrientationMaskPortrait;
 }
 
 - (UIInterfaceOrientation)preferredInterfaceOrientationForPresentation {
     return UIInterfaceOrientationPortrait;
 }
 
-- (BOOL)shouldUseTiledSidebarForSize:(CGSize)size {
-    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad || NSProcessInfo.processInfo.isMacCatalystApp) {
-        return self.traitCollection.horizontalSizeClass != UIUserInterfaceSizeClassCompact && size.width >= 700.0;
-    }
-    return NO;
-}
-
 - (CGFloat)preferredSidebarWidthForSize:(CGSize)size {
-    BOOL usesTiledSidebar = [self shouldUseTiledSidebarForSize:size];
+    BOOL isPortrait = size.height > size.width;
     CGFloat shorterSide = MIN(size.width, size.height);
-    CGFloat preferredWidth = shorterSide * (usesTiledSidebar ? 0.34 : 0.86);
-    CGFloat maximumWidth = usesTiledSidebar ? 380.0 : MIN(MAX(size.width - 24.0, 300.0), 360.0);
-    return MIN(MAX(preferredWidth, 300.0), maximumWidth);
+    CGFloat preferredWidth = shorterSide * (isPortrait ? 0.86 : 0.34);
+    return MIN(MAX(preferredWidth, 300.0), isPortrait ? 360.0 : 380.0);
 }
 
 - (void)viewDidLoad {
@@ -48,7 +39,6 @@ extern NSMutableDictionary *prefDict;
     }
 
     self.delegate = self;
-    self.presentsWithGesture = YES;
 
     UINavigationController *masterVc = [[UINavigationController alloc] initWithRootViewController:[[LauncherMenuViewController alloc] init]];
     LauncherNavigationController *detailVc = [[LauncherNavigationController alloc] initWithRootViewController:[[LauncherProfilesViewController alloc] init]];
@@ -58,46 +48,39 @@ extern NSMutableDictionary *prefDict;
     [self changeDisplayModeForSize:self.view.frame.size];
 }
 
-- (void)viewDidLayoutSubviews {
-    [super viewDidLayoutSubviews];
-    CGSize size = self.view.bounds.size;
-    if (fabs(self.lastAppliedLayoutSize.width - size.width) > 0.5 || fabs(self.lastAppliedLayoutSize.height - size.height) > 0.5) {
-        self.lastAppliedLayoutSize = size;
-        [self changeDisplayModeForSize:size];
+- (void)splitViewController:(UISplitViewController *)svc willChangeToDisplayMode:(UISplitViewControllerDisplayMode)displayMode {
+    if (self.preferredDisplayMode != displayMode && self.displayMode != UISplitViewControllerDisplayModeSecondaryOnly) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            self.preferredDisplayMode = UISplitViewControllerDisplayModeSecondaryOnly;
+        });
     }
 }
 
 - (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator
 {
     [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
-    [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
-        [self changeDisplayModeForSize:size];
-    } completion:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
-        [self changeDisplayModeForSize:size];
-    }];
+    [self changeDisplayModeForSize:size];
 }
 
 - (void)changeDisplayModeForSize:(CGSize)size {
-    if (size.width <= 0.0 || size.height <= 0.0) {
-        return;
-    }
-
-    BOOL usesTiledSidebar = [self shouldUseTiledSidebarForSize:size];
+    BOOL isPortrait = size.height > size.width;
     CGFloat sidebarWidth = [self preferredSidebarWidthForSize:size];
     self.minimumPrimaryColumnWidth = MIN(sidebarWidth, 300.0);
     self.preferredPrimaryColumnWidth = sidebarWidth;
-    self.maximumPrimaryColumnWidth = MAX(self.minimumPrimaryColumnWidth, MIN(MAX(sidebarWidth + 24.0, sidebarWidth), size.width - 16.0));
+    self.maximumPrimaryColumnWidth = MIN(MAX(sidebarWidth + 24.0, sidebarWidth), size.width * 0.95);
 
-    if (getPrefBool(@"general.hidden_sidebar")) {
-        self.preferredDisplayMode = UISplitViewControllerDisplayModeSecondaryOnly;
-    } else if (usesTiledSidebar) {
-        self.preferredDisplayMode = UISplitViewControllerDisplayModeOneBesideSecondary;
-    } else {
-        self.preferredDisplayMode = UISplitViewControllerDisplayModeOneOverSecondary;
+    if (self.preferredDisplayMode == 0 || self.displayMode != UISplitViewControllerDisplayModeSecondaryOnly) {
+        if(!getPrefBool(@"general.hidden_sidebar")) {
+            self.preferredDisplayMode = isPortrait ?
+                UISplitViewControllerDisplayModeOneOverSecondary :
+                UISplitViewControllerDisplayModeOneBesideSecondary;
+        } else {
+            self.preferredDisplayMode = UISplitViewControllerDisplayModeSecondaryOnly;
+        }
     }
-    self.preferredSplitBehavior = usesTiledSidebar ?
-        UISplitViewControllerSplitBehaviorTile :
-        UISplitViewControllerSplitBehaviorOverlay;
+    self.preferredSplitBehavior = isPortrait ?
+        UISplitViewControllerSplitBehaviorOverlay :
+        UISplitViewControllerSplitBehaviorTile;
 }
 
 - (void)dismissViewController {

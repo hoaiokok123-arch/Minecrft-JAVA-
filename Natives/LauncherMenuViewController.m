@@ -63,119 +63,88 @@ static const CGFloat LauncherAccountExpandedMaxWidth = 220.0;
 }
 
 - (void)configureSidebarHeader {
-    UIView *wrapper = [[UIView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(self.tableView.bounds), 1.0)];
-    wrapper.backgroundColor = UIColor.clearColor;
-
-    self.heroCard = [[UIView alloc] initWithFrame:CGRectZero];
-    self.heroCard.translatesAutoresizingMaskIntoConstraints = NO;
+    UIView *wrapper = [[UIView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(self.tableView.bounds), 144.0)];
+    self.heroCard = [[UIView alloc] initWithFrame:CGRectMake(16.0, 8.0, wrapper.bounds.size.width - 32.0, 128.0)];
     LauncherStylePanel(self.heroCard, 24.0);
 
     UIImageView *logoView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"AppLogo"]];
-    logoView.translatesAutoresizingMaskIntoConstraints = NO;
     logoView.contentMode = UIViewContentModeScaleAspectFit;
+    logoView.frame = CGRectMake(20, 22, 72, 72);
 
     UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-    titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
     titleLabel.text = @"Angel Aura Amethyst";
     titleLabel.font = LauncherTitleFont(22.0);
     titleLabel.textColor = UIColor.labelColor;
     titleLabel.numberOfLines = 2;
 
     self.heroSubtitleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-    self.heroSubtitleLabel.translatesAutoresizingMaskIntoConstraints = NO;
     self.heroSubtitleLabel.font = LauncherBodyFont(13.0);
     self.heroSubtitleLabel.textColor = UIColor.secondaryLabelColor;
-    self.heroSubtitleLabel.numberOfLines = 0;
+    self.heroSubtitleLabel.numberOfLines = 3;
 
     NSString *version = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"1.0";
     NSString *build = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleVersion"] ?: @"";
     self.heroSubtitleLabel.text = [NSString stringWithFormat:@"%@ (%@)\n%@", version, build, UIDevice.currentDevice.completeOSVersion];
 
-    [wrapper addSubview:self.heroCard];
     [self.heroCard addSubview:logoView];
     [self.heroCard addSubview:titleLabel];
     [self.heroCard addSubview:self.heroSubtitleLabel];
-
-    [NSLayoutConstraint activateConstraints:@[
-        [self.heroCard.topAnchor constraintEqualToAnchor:wrapper.topAnchor constant:8.0],
-        [self.heroCard.leadingAnchor constraintEqualToAnchor:wrapper.leadingAnchor constant:16.0],
-        [self.heroCard.trailingAnchor constraintEqualToAnchor:wrapper.trailingAnchor constant:-16.0],
-        [self.heroCard.bottomAnchor constraintEqualToAnchor:wrapper.bottomAnchor constant:-8.0],
-
-        [logoView.leadingAnchor constraintEqualToAnchor:self.heroCard.leadingAnchor constant:20.0],
-        [logoView.topAnchor constraintGreaterThanOrEqualToAnchor:self.heroCard.topAnchor constant:20.0],
-        [logoView.bottomAnchor constraintLessThanOrEqualToAnchor:self.heroCard.bottomAnchor constant:-20.0],
-        [logoView.centerYAnchor constraintEqualToAnchor:self.heroCard.centerYAnchor],
-        [logoView.widthAnchor constraintEqualToConstant:72.0],
-        [logoView.heightAnchor constraintEqualToConstant:72.0],
-
-        [titleLabel.topAnchor constraintEqualToAnchor:self.heroCard.topAnchor constant:20.0],
-        [titleLabel.leadingAnchor constraintEqualToAnchor:logoView.trailingAnchor constant:16.0],
-        [titleLabel.trailingAnchor constraintEqualToAnchor:self.heroCard.trailingAnchor constant:-20.0],
-
-        [self.heroSubtitleLabel.topAnchor constraintEqualToAnchor:titleLabel.bottomAnchor constant:6.0],
-        [self.heroSubtitleLabel.leadingAnchor constraintEqualToAnchor:titleLabel.leadingAnchor],
-        [self.heroSubtitleLabel.trailingAnchor constraintEqualToAnchor:titleLabel.trailingAnchor],
-        [self.heroSubtitleLabel.bottomAnchor constraintEqualToAnchor:self.heroCard.bottomAnchor constant:-20.0]
-    ]];
+    [wrapper addSubview:self.heroCard];
     self.tableView.tableHeaderView = wrapper;
-    LauncherFitTableSupplementaryView(self.tableView, wrapper, YES);
 }
 
 - (void)configureSidebarFooter {
-    UIView *wrapper = [[UIView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(self.tableView.bounds), 1.0)];
-    wrapper.backgroundColor = UIColor.clearColor;
-
-    UIView *statusCard = [[UIView alloc] initWithFrame:CGRectZero];
-    statusCard.translatesAutoresizingMaskIntoConstraints = NO;
+    UIView *wrapper = [[UIView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(self.tableView.bounds), 82.0)];
+    UIView *statusCard = [[UIView alloc] initWithFrame:CGRectMake(16.0, 8.0, wrapper.bounds.size.width - 32.0, 58.0)];
     LauncherStylePanel(statusCard, 18.0);
 
-    UILabel *captionLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-    captionLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    UILabel *captionLabel = [[UILabel alloc] initWithFrame:CGRectMake(18.0, 10.0, statusCard.bounds.size.width - 36.0, 16.0)];
     captionLabel.text = @"JIT";
     captionLabel.font = LauncherCaptionFont(12.0);
     captionLabel.textColor = UIColor.secondaryLabelColor;
 
-    self.statusLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-    self.statusLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    self.statusLabel = [[UILabel alloc] initWithFrame:CGRectMake(18.0, 28.0, statusCard.bounds.size.width - 36.0, 20.0)];
     self.statusLabel.font = LauncherTitleFont(15.0);
     self.statusLabel.textColor = UIColor.labelColor;
     self.statusLabel.text = isJITEnabled(false) ? localize(@"login.jit.enabled", nil) : localize(@"login.jit.checking", nil);
-    self.statusLabel.numberOfLines = 0;
 
-    [wrapper addSubview:statusCard];
     [statusCard addSubview:captionLabel];
     [statusCard addSubview:self.statusLabel];
-
-    [NSLayoutConstraint activateConstraints:@[
-        [statusCard.topAnchor constraintEqualToAnchor:wrapper.topAnchor constant:8.0],
-        [statusCard.leadingAnchor constraintEqualToAnchor:wrapper.leadingAnchor constant:16.0],
-        [statusCard.trailingAnchor constraintEqualToAnchor:wrapper.trailingAnchor constant:-16.0],
-        [statusCard.bottomAnchor constraintEqualToAnchor:wrapper.bottomAnchor constant:-8.0],
-
-        [captionLabel.topAnchor constraintEqualToAnchor:statusCard.topAnchor constant:12.0],
-        [captionLabel.leadingAnchor constraintEqualToAnchor:statusCard.leadingAnchor constant:18.0],
-        [captionLabel.trailingAnchor constraintEqualToAnchor:statusCard.trailingAnchor constant:-18.0],
-
-        [self.statusLabel.topAnchor constraintEqualToAnchor:captionLabel.bottomAnchor constant:4.0],
-        [self.statusLabel.leadingAnchor constraintEqualToAnchor:captionLabel.leadingAnchor],
-        [self.statusLabel.trailingAnchor constraintEqualToAnchor:captionLabel.trailingAnchor],
-        [self.statusLabel.bottomAnchor constraintEqualToAnchor:statusCard.bottomAnchor constant:-12.0]
-    ]];
-
+    [wrapper addSubview:statusCard];
     self.tableView.tableFooterView = wrapper;
-    LauncherFitTableSupplementaryView(self.tableView, wrapper, NO);
 }
 
 - (void)updateSidebarChromeLayout {
+    CGFloat width = CGRectGetWidth(self.tableView.bounds);
+    BOOL needsHeaderReapply = NO;
+    BOOL needsFooterReapply = NO;
+
     UIView *headerWrapper = self.tableView.tableHeaderView;
     if (headerWrapper) {
-        LauncherFitTableSupplementaryView(self.tableView, headerWrapper, YES);
+        needsHeaderReapply = fabs(CGRectGetWidth(headerWrapper.frame) - width) > 0.5;
+        headerWrapper.frame = CGRectMake(0, 0, width, 144.0);
+        self.heroCard.frame = CGRectMake(16.0, 8.0, width - 32.0, 128.0);
+        CGFloat textX = 108.0;
+        CGFloat textWidth = self.heroCard.bounds.size.width - textX - 20.0;
+        ((UIImageView *)self.heroCard.subviews[0]).frame = CGRectMake(20, 22, 72, 72);
+        ((UILabel *)self.heroCard.subviews[1]).frame = CGRectMake(textX, 22, textWidth, 50.0);
+        self.heroSubtitleLabel.frame = CGRectMake(textX, 74, textWidth, 38.0);
+        if (needsHeaderReapply) {
+            self.tableView.tableHeaderView = headerWrapper;
+        }
     }
 
     UIView *footerWrapper = self.tableView.tableFooterView;
     if (footerWrapper) {
-        LauncherFitTableSupplementaryView(self.tableView, footerWrapper, NO);
+        needsFooterReapply = fabs(CGRectGetWidth(footerWrapper.frame) - width) > 0.5;
+        footerWrapper.frame = CGRectMake(0, 0, width, 82.0);
+        UIView *statusCard = footerWrapper.subviews.firstObject;
+        statusCard.frame = CGRectMake(16.0, 8.0, width - 32.0, 58.0);
+        statusCard.subviews[0].frame = CGRectMake(18.0, 10.0, statusCard.bounds.size.width - 36.0, 16.0);
+        self.statusLabel.frame = CGRectMake(18.0, 28.0, statusCard.bounds.size.width - 36.0, 20.0);
+        if (needsFooterReapply) {
+            self.tableView.tableFooterView = footerWrapper;
+        }
     }
 }
 
@@ -406,7 +375,6 @@ static const CGFloat LauncherAccountExpandedMaxWidth = 220.0;
         selected.vcArray[0].navigationItem.rightBarButtonItem = self.accountBtnItem;
         selected.vcArray[0].navigationItem.leftBarButtonItem = self.splitViewController.displayModeButtonItem;
         selected.vcArray[0].navigationItem.leftItemsSupplementBackButton = true;
-        [self.splitViewController showDetailViewController:contentNavigationController sender:self];
     }
 }
 
@@ -520,7 +488,6 @@ static const CGFloat LauncherAccountExpandedMaxWidth = 220.0;
     } else {
         self.toolbarItems[1].title = status;
         self.statusLabel.text = status;
-        [self updateSidebarChromeLayout];
     }
 }
 

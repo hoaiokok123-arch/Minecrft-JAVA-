@@ -15,7 +15,6 @@
 @interface PLPrefTableViewController()<UIContextMenuInteractionDelegate>{}
 @property(nonatomic) UIMenu* currentMenu;
 @property(nonatomic) UIBarButtonItem *helpBtn;
-@property(nonatomic) CGFloat lastTableLayoutWidth;
 
 @end
 
@@ -85,20 +84,6 @@
     [self.tableView reloadRowsAtIndexPaths:indexPaths withRowAnimation:UITableViewRowAnimationNone];
 }
 
-- (void)viewDidLayoutSubviews {
-    [super viewDidLayoutSubviews];
-    CGFloat width = CGRectGetWidth(self.tableView.bounds);
-    if (width <= 0.0 || fabs(self.lastTableLayoutWidth - width) <= 0.5) {
-        return;
-    }
-
-    self.lastTableLayoutWidth = width;
-    [UIView performWithoutAnimation:^{
-        [self.tableView reloadData];
-        [self.tableView layoutIfNeeded];
-    }];
-}
-
 #pragma mark UITableView
 
 - (void)toggleDetailVisibility {
@@ -115,21 +100,6 @@
         return self.prefContents[section].count;
     }
     return 1;
-}
-
-- (CGFloat)preferredAccessoryWidthForTableViewCell:(UITableViewCell *)cell minimumWidth:(CGFloat)minimumWidth maximumWidth:(CGFloat)maximumWidth minimumLabelWidth:(CGFloat)minimumLabelWidth {
-    CGFloat cellWidth = CGRectGetWidth(cell.contentView.bounds);
-    if (cellWidth <= 0.0) {
-        cellWidth = CGRectGetWidth(self.tableView.bounds);
-    }
-    if (cellWidth <= 0.0) {
-        return minimumWidth;
-    }
-
-    CGFloat availableWidth = MAX(cellWidth - 52.0, minimumWidth);
-    CGFloat preferredWidth = availableWidth * 0.42;
-    CGFloat maximumAllowedWidth = MAX(120.0, availableWidth - minimumLabelWidth);
-    return MIN(MAX(preferredWidth, minimumWidth), MIN(maximumWidth, maximumAllowedWidth));
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -251,12 +221,8 @@
     self.typeTextField = ^void(UITableViewCell *cell, NSString *section, NSString *key, NSDictionary *item) {
         Class cls = item[@"customClass"];
         if (!cls) cls = UITextField.class;
-        CGFloat accessoryWidth = [weakSelf preferredAccessoryWidthForTableViewCell:cell
-                                                                      minimumWidth:136.0
-                                                                      maximumWidth:320.0
-                                                                 minimumLabelWidth:150.0];
-        CGFloat accessoryHeight = MAX(CGRectGetHeight(cell.bounds) - 14.0, 38.0);
-        UITextField *view = [[cls alloc] initWithFrame:CGRectMake(0, 0, accessoryWidth, accessoryHeight)];
+        CGFloat accessoryWidth = MAX(160.0, cell.bounds.size.width * 0.42);
+        UITextField *view = [[cls alloc] initWithFrame:CGRectMake(0, 0, accessoryWidth, MAX(cell.bounds.size.height - 14.0, 38.0))];
         [view addTarget:view action:@selector(resignFirstResponder) forControlEvents:UIControlEventEditingDidEndOnExit];
         view.adjustsFontSizeToFitWidth = YES;
         view.autocorrectionType = UITextAutocorrectionTypeNo;
@@ -281,12 +247,8 @@
     };
 
     self.typeSlider = ^void(UITableViewCell *cell, NSString *section, NSString *key, NSDictionary *item) {
-        CGFloat accessoryWidth = [weakSelf preferredAccessoryWidthForTableViewCell:cell
-                                                                      minimumWidth:148.0
-                                                                      maximumWidth:340.0
-                                                                 minimumLabelWidth:140.0];
-        CGFloat accessoryHeight = MAX(CGRectGetHeight(cell.bounds), 44.0);
-        DBNumberedSlider *view = [[DBNumberedSlider alloc] initWithFrame:CGRectMake(0, 0, accessoryWidth, accessoryHeight)];
+        CGFloat accessoryWidth = MAX(168.0, cell.bounds.size.width * 0.42);
+        DBNumberedSlider *view = [[DBNumberedSlider alloc] initWithFrame:CGRectMake(0, 0, accessoryWidth, cell.bounds.size.height)];
         [view addTarget:weakSelf action:@selector(sliderMoved:) forControlEvents:UIControlEventValueChanged];
         view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleLeftMargin;
         view.minimumValue = [item[@"min"] intValue];

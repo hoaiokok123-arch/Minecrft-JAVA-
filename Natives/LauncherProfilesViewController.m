@@ -50,15 +50,11 @@ static const CGFloat LauncherProfileIconSize = 34.0;
 }
 
 - (void)configureSummaryHeader {
-    UIView *wrapper = [[UIView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(self.tableView.bounds), 1.0)];
-    wrapper.backgroundColor = UIColor.clearColor;
-
-    self.summaryCard = [[UIView alloc] initWithFrame:CGRectZero];
-    self.summaryCard.translatesAutoresizingMaskIntoConstraints = NO;
+    UIView *wrapper = [[UIView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(self.tableView.bounds), 144.0)];
+    self.summaryCard = [[UIView alloc] initWithFrame:CGRectMake(16.0, 8.0, wrapper.bounds.size.width - 32.0, 124.0)];
     LauncherStylePanel(self.summaryCard, 24.0);
 
-    self.summaryImageView = [[UIImageView alloc] initWithFrame:CGRectZero];
-    self.summaryImageView.translatesAutoresizingMaskIntoConstraints = NO;
+    self.summaryImageView = [[UIImageView alloc] initWithFrame:CGRectMake(20.0, 22.0, 64.0, 64.0)];
     self.summaryImageView.contentMode = UIViewContentModeScaleAspectFit;
     self.summaryImageView.layer.cornerRadius = 16.0;
     self.summaryImageView.clipsToBounds = YES;
@@ -66,68 +62,32 @@ static const CGFloat LauncherProfileIconSize = 34.0;
     self.summaryImageView.layer.minificationFilter = kCAFilterNearest;
 
     UILabel *eyebrowLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-    eyebrowLabel.translatesAutoresizingMaskIntoConstraints = NO;
     eyebrowLabel.text = localize(@"Profiles", nil);
     eyebrowLabel.font = LauncherCaptionFont(12.0);
     eyebrowLabel.textColor = UIColor.secondaryLabelColor;
     eyebrowLabel.tag = 101;
 
     self.summaryTitleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-    self.summaryTitleLabel.translatesAutoresizingMaskIntoConstraints = NO;
     self.summaryTitleLabel.font = LauncherTitleFont(22.0);
     self.summaryTitleLabel.textColor = UIColor.labelColor;
-    self.summaryTitleLabel.numberOfLines = 0;
+    self.summaryTitleLabel.numberOfLines = 2;
 
     self.summarySubtitleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-    self.summarySubtitleLabel.translatesAutoresizingMaskIntoConstraints = NO;
     self.summarySubtitleLabel.font = LauncherBodyFont(13.0);
     self.summarySubtitleLabel.textColor = UIColor.secondaryLabelColor;
-    self.summarySubtitleLabel.numberOfLines = 0;
+    self.summarySubtitleLabel.numberOfLines = 2;
 
     self.summaryMetaLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-    self.summaryMetaLabel.translatesAutoresizingMaskIntoConstraints = NO;
     self.summaryMetaLabel.font = LauncherCaptionFont(12.0);
     self.summaryMetaLabel.textColor = UIColor.secondaryLabelColor;
 
-    [wrapper addSubview:self.summaryCard];
     [self.summaryCard addSubview:self.summaryImageView];
     [self.summaryCard addSubview:eyebrowLabel];
     [self.summaryCard addSubview:self.summaryTitleLabel];
     [self.summaryCard addSubview:self.summarySubtitleLabel];
     [self.summaryCard addSubview:self.summaryMetaLabel];
-
-    [NSLayoutConstraint activateConstraints:@[
-        [self.summaryCard.topAnchor constraintEqualToAnchor:wrapper.topAnchor constant:8.0],
-        [self.summaryCard.leadingAnchor constraintEqualToAnchor:wrapper.leadingAnchor constant:16.0],
-        [self.summaryCard.trailingAnchor constraintEqualToAnchor:wrapper.trailingAnchor constant:-16.0],
-        [self.summaryCard.bottomAnchor constraintEqualToAnchor:wrapper.bottomAnchor constant:-12.0],
-
-        [self.summaryImageView.leadingAnchor constraintEqualToAnchor:self.summaryCard.leadingAnchor constant:20.0],
-        [self.summaryImageView.topAnchor constraintGreaterThanOrEqualToAnchor:self.summaryCard.topAnchor constant:20.0],
-        [self.summaryImageView.bottomAnchor constraintLessThanOrEqualToAnchor:self.summaryCard.bottomAnchor constant:-20.0],
-        [self.summaryImageView.centerYAnchor constraintEqualToAnchor:self.summaryCard.centerYAnchor],
-        [self.summaryImageView.widthAnchor constraintEqualToConstant:64.0],
-        [self.summaryImageView.heightAnchor constraintEqualToConstant:64.0],
-
-        [eyebrowLabel.topAnchor constraintEqualToAnchor:self.summaryCard.topAnchor constant:18.0],
-        [eyebrowLabel.leadingAnchor constraintEqualToAnchor:self.summaryImageView.trailingAnchor constant:18.0],
-        [eyebrowLabel.trailingAnchor constraintEqualToAnchor:self.summaryCard.trailingAnchor constant:-20.0],
-
-        [self.summaryTitleLabel.topAnchor constraintEqualToAnchor:eyebrowLabel.bottomAnchor constant:2.0],
-        [self.summaryTitleLabel.leadingAnchor constraintEqualToAnchor:eyebrowLabel.leadingAnchor],
-        [self.summaryTitleLabel.trailingAnchor constraintEqualToAnchor:eyebrowLabel.trailingAnchor],
-
-        [self.summarySubtitleLabel.topAnchor constraintEqualToAnchor:self.summaryTitleLabel.bottomAnchor constant:6.0],
-        [self.summarySubtitleLabel.leadingAnchor constraintEqualToAnchor:eyebrowLabel.leadingAnchor],
-        [self.summarySubtitleLabel.trailingAnchor constraintEqualToAnchor:eyebrowLabel.trailingAnchor],
-
-        [self.summaryMetaLabel.topAnchor constraintEqualToAnchor:self.summarySubtitleLabel.bottomAnchor constant:8.0],
-        [self.summaryMetaLabel.leadingAnchor constraintEqualToAnchor:eyebrowLabel.leadingAnchor],
-        [self.summaryMetaLabel.trailingAnchor constraintEqualToAnchor:eyebrowLabel.trailingAnchor],
-        [self.summaryMetaLabel.bottomAnchor constraintEqualToAnchor:self.summaryCard.bottomAnchor constant:-18.0]
-    ]];
+    [wrapper addSubview:self.summaryCard];
     self.tableView.tableHeaderView = wrapper;
-    LauncherFitTableSupplementaryView(self.tableView, wrapper, YES);
 }
 
 - (void)updateSummaryHeader {
@@ -142,7 +102,6 @@ static const CGFloat LauncherProfileIconSize = 34.0;
     UIImage *fallbackImage = [[UIImage imageNamed:@"DefaultProfile"] _imageWithSize:CGSizeMake(64, 64)];
     NSString *iconURL = selectedProfile[@"icon"];
     [self.summaryImageView setImageWithURL:[NSURL URLWithString:iconURL] placeholderImage:fallbackImage];
-    [self updateSummaryHeaderLayout];
 }
 
 - (void)updateSummaryHeaderLayout {
@@ -150,7 +109,21 @@ static const CGFloat LauncherProfileIconSize = 34.0;
     if (!wrapper) {
         return;
     }
-    LauncherFitTableSupplementaryView(self.tableView, wrapper, YES);
+
+    CGFloat width = CGRectGetWidth(self.tableView.bounds);
+    BOOL needsHeaderReapply = fabs(CGRectGetWidth(wrapper.frame) - width) > 0.5;
+    wrapper.frame = CGRectMake(0, 0, width, 144.0);
+    self.summaryCard.frame = CGRectMake(16.0, 8.0, width - 32.0, 124.0);
+    self.summaryImageView.frame = CGRectMake(20.0, 22.0, 64.0, 64.0);
+    CGFloat textX = 102.0;
+    CGFloat textWidth = self.summaryCard.bounds.size.width - textX - 20.0;
+    [self.summaryCard viewWithTag:101].frame = CGRectMake(textX, 18.0, textWidth, 16.0);
+    self.summaryTitleLabel.frame = CGRectMake(textX, 36.0, textWidth, 30.0);
+    self.summarySubtitleLabel.frame = CGRectMake(textX, 66.0, textWidth, 34.0);
+    self.summaryMetaLabel.frame = CGRectMake(textX, 100.0, textWidth, 16.0);
+    if (needsHeaderReapply) {
+        self.tableView.tableHeaderView = wrapper;
+    }
 }
 
 - (void)viewDidLoad
@@ -221,9 +194,6 @@ static const CGFloat LauncherProfileIconSize = 34.0;
     if (fabs(self.lastSummaryLayoutWidth - width) > 0.5) {
         self.lastSummaryLayoutWidth = width;
         [self updateSummaryHeaderLayout];
-        [UIView performWithoutAnimation:^{
-            [self.tableView reloadData];
-        }];
     }
 }
 
@@ -277,19 +247,13 @@ static const CGFloat LauncherProfileIconSize = 34.0;
 
 - (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
     UILabel *label = [[UILabel alloc] initWithFrame:CGRectZero];
-    label.translatesAutoresizingMaskIntoConstraints = NO;
     label.text = [self tableView:tableView titleForHeaderInSection:section].uppercaseString;
     label.font = LauncherCaptionFont(12.0);
     label.textColor = UIColor.secondaryLabelColor;
 
     UIView *view = [[UIView alloc] initWithFrame:CGRectZero];
     [view addSubview:label];
-    [NSLayoutConstraint activateConstraints:@[
-        [label.leadingAnchor constraintEqualToAnchor:view.leadingAnchor constant:22.0],
-        [label.trailingAnchor constraintEqualToAnchor:view.trailingAnchor constant:-22.0],
-        [label.topAnchor constraintEqualToAnchor:view.topAnchor constant:10.0],
-        [label.bottomAnchor constraintEqualToAnchor:view.bottomAnchor constant:-6.0]
-    ]];
+    label.frame = CGRectMake(22.0, 10.0, tableView.bounds.size.width - 44.0, 16.0);
     return view;
 }
 
@@ -353,8 +317,6 @@ static const CGFloat LauncherProfileIconSize = 34.0;
     if (cell == nil) {
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:cellID];
         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-        cell.textLabel.adjustsFontSizeToFitWidth = YES;
-        cell.textLabel.minimumScaleFactor = 0.85;
         cell.detailTextLabel.numberOfLines = 0;
         cell.detailTextLabel.lineBreakMode = NSLineBreakByWordWrapping;
         if (indexPath.section == kProfiles) {

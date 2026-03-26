@@ -78,11 +78,10 @@
     [self.webContainerView addSubview:self.webView];
     [self.webView loadRequest:request];
 
-    UILayoutGuide *safeArea = self.view.safeAreaLayoutGuide;
     [NSLayoutConstraint activateConstraints:@[
-        [self.headerCard.topAnchor constraintEqualToAnchor:safeArea.topAnchor constant:12.0],
-        [self.headerCard.leadingAnchor constraintEqualToAnchor:safeArea.leadingAnchor constant:16.0],
-        [self.headerCard.trailingAnchor constraintEqualToAnchor:safeArea.trailingAnchor constant:-16.0],
+        [self.headerCard.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor constant:12.0],
+        [self.headerCard.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:16.0],
+        [self.headerCard.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-16.0],
 
         [titleLabel.topAnchor constraintEqualToAnchor:self.headerCard.topAnchor constant:18.0],
         [titleLabel.leadingAnchor constraintEqualToAnchor:self.headerCard.leadingAnchor constant:20.0],
@@ -97,9 +96,9 @@
         [self.loadingIndicator.trailingAnchor constraintEqualToAnchor:self.headerCard.trailingAnchor constant:-20.0],
 
         [self.webContainerView.topAnchor constraintEqualToAnchor:self.headerCard.bottomAnchor constant:14.0],
-        [self.webContainerView.leadingAnchor constraintEqualToAnchor:safeArea.leadingAnchor constant:12.0],
-        [self.webContainerView.trailingAnchor constraintEqualToAnchor:safeArea.trailingAnchor constant:-12.0],
-        [self.webContainerView.bottomAnchor constraintEqualToAnchor:safeArea.bottomAnchor constant:-12.0],
+        [self.webContainerView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:12.0],
+        [self.webContainerView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-12.0],
+        [self.webContainerView.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor constant:-12.0],
 
         [self.webView.topAnchor constraintEqualToAnchor:self.webContainerView.topAnchor],
         [self.webView.leadingAnchor constraintEqualToAnchor:self.webContainerView.leadingAnchor],
