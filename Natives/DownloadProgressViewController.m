@@ -2,6 +2,7 @@
 #import <objc/runtime.h>
 #import "DownloadProgressViewController.h"
 #import "WFWorkflowProgressView.h"
+#import "utils.h"
 
 static void *CellProgressObserverContext = &CellProgressObserverContext;
 static void *TotalProgressObserverContext = &TotalProgressObserverContext;
