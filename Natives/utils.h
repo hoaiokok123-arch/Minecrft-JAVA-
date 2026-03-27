@@ -84,6 +84,8 @@ void PLApplyCompactTextField(UITextField *textField, CGFloat width, CGFloat heig
 void PLApplyCompactSlider(UIView *view, CGFloat width, CGFloat height);
 void PLApplyCompactSwitch(UISwitch *toggle);
 UIColor *PLLauncherAccentColor(void);
+UIColor *PLLauncherGlassFillColor(CGFloat alpha);
+UIColor *PLLauncherGlassBorderColor(CGFloat alpha);
 void PLApplyLauncherNavigationBarChrome(UINavigationBar *navigationBar);
 void PLApplyLauncherToolbarChrome(UIToolbar *toolbar);
 void PLApplyLauncherViewChrome(UIView *view);
