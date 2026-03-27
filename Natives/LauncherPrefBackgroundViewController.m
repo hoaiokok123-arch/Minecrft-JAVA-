@@ -9,6 +9,10 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
     LauncherBackgroundRowCurrent,
     LauncherBackgroundRowChoose,
     LauncherBackgroundRowClear,
+    LauncherBackgroundRowScale,
+    LauncherBackgroundRowOffsetX,
+    LauncherBackgroundRowOffsetY,
+    LauncherBackgroundRowReset,
 };
 
 @interface LauncherPrefBackgroundViewController ()<UIDocumentPickerDelegate>
@@ -30,13 +34,125 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
     self.view.backgroundColor = UIColor.systemBackgroundColor;
     self.tableView.backgroundColor = UIColor.systemBackgroundColor;
     PLApplyCompactTableLayout(self.tableView, 40);
+    [self applyTableAppearance];
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleLauncherAppearanceDidChange:)
+        name:PLLauncherAppearanceDidChangeNotification object:nil];
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    [self.tableView reloadData];
+}
+
+- (void)dealloc {
+    [NSNotificationCenter.defaultCenter removeObserver:self];
+}
+
+- (void)applyTableAppearance {
+    self.tableView.separatorStyle = getLauncherOutlineControlsEnabled() ?
+        UITableViewCellSeparatorStyleNone :
+        UITableViewCellSeparatorStyleSingleLine;
+}
+
+- (BOOL)hasSelectedVideo {
+    return getLauncherBackgroundVideoPath().length > 0;
+}
+
+- (BOOL)hasCustomAdjustments {
+    return getPrefInt(@"general.launcher_background_video_scale") != 100 ||
+        getPrefInt(@"general.launcher_background_video_offset_x") != 0 ||
+        getPrefInt(@"general.launcher_background_video_offset_y") != 0;
+}
+
+- (BOOL)isSliderRow:(LauncherBackgroundRow)row {
+    return row >= LauncherBackgroundRowScale && row <= LauncherBackgroundRowOffsetY;
+}
+
+- (NSString *)preferenceKeyForSliderRow:(LauncherBackgroundRow)row {
+    switch (row) {
+        case LauncherBackgroundRowScale:
+            return @"general.launcher_background_video_scale";
+        case LauncherBackgroundRowOffsetX:
+            return @"general.launcher_background_video_offset_x";
+        case LauncherBackgroundRowOffsetY:
+            return @"general.launcher_background_video_offset_y";
+        default:
+            return nil;
+    }
+}
+
+- (NSString *)titleForSliderRow:(LauncherBackgroundRow)row value:(NSInteger)value {
+    NSString *title;
+    switch (row) {
+        case LauncherBackgroundRowScale:
+            title = localize(@"preference.title.launcher_background_scale", nil);
+            return [NSString stringWithFormat:@"%@ %ld%%", title, (long)value];
+        case LauncherBackgroundRowOffsetX:
+            title = localize(@"preference.title.launcher_background_offset_x", nil);
+            return [NSString stringWithFormat:@"%@ %+ld%%", title, (long)value];
+        case LauncherBackgroundRowOffsetY:
+            title = localize(@"preference.title.launcher_background_offset_y", nil);
+            return [NSString stringWithFormat:@"%@ %+ld%%", title, (long)value];
+        default:
+            return @"";
+    }
+}
+
+- (void)handleLauncherAppearanceDidChange:(NSNotification *)notification {
+    [self applyTableAppearance];
+    [self.tableView reloadData];
+}
+
+- (void)backgroundSliderChanged:(UISlider *)sender {
+    NSInteger value = lroundf(sender.value);
+    sender.value = value;
+    NSString *key = [self preferenceKeyForSliderRow:(LauncherBackgroundRow)sender.tag];
+    if (!key) {
+        return;
+    }
+    setPrefInt(key, value);
+    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:sender.tag inSection:0];
+    UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
+    cell.textLabel.text = [self titleForSliderRow:(LauncherBackgroundRow)sender.tag value:value];
+    postLauncherAppearanceDidChange();
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    return 3;
+    return 7;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    if ([self isSliderRow:(LauncherBackgroundRow)indexPath.row]) {
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"BackgroundSlider"];
+        if (!cell) {
+            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"BackgroundSlider"];
+            UISlider *slider = [[UISlider alloc] initWithFrame:CGRectMake(0, 0, MIN(220, tableView.bounds.size.width * 0.42), 28)];
+            [slider addTarget:self action:@selector(backgroundSliderChanged:) forControlEvents:UIControlEventValueChanged];
+            cell.accessoryView = slider;
+        }
+
+        PLApplyCompactTableCell(cell);
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        cell.textLabel.textColor = UIColor.labelColor;
+        cell.textLabel.enabled = self.hasSelectedVideo;
+        UISlider *slider = (UISlider *)cell.accessoryView;
+        slider.frame = CGRectMake(0, 0, MIN(220, tableView.bounds.size.width * 0.42), 28);
+        slider.tag = indexPath.row;
+        slider.minimumValue = indexPath.row == LauncherBackgroundRowScale ? 50 : -100;
+        slider.maximumValue = indexPath.row == LauncherBackgroundRowScale ? 250 : 100;
+        slider.enabled = self.hasSelectedVideo;
+        NSInteger value = getPrefInt([self preferenceKeyForSliderRow:(LauncherBackgroundRow)indexPath.row]);
+        slider.value = value;
+        cell.textLabel.text = [self titleForSliderRow:(LauncherBackgroundRow)indexPath.row value:value];
+        if (getLauncherOutlineControlsEnabled()) {
+            PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
+        } else if (@available(iOS 14.0, *)) {
+            cell.backgroundConfiguration = nil;
+            cell.layer.borderWidth = 0;
+        }
+        return cell;
+    }
+
     UITableViewCellStyle style = indexPath.row == LauncherBackgroundRowCurrent ?
         UITableViewCellStyleValue1 : UITableViewCellStyleDefault;
     NSString *cellID = indexPath.row == LauncherBackgroundRowCurrent ? @"BackgroundValue1" : @"BackgroundDefault";
@@ -74,9 +190,29 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
             cell.userInteractionEnabled = getLauncherBackgroundVideoPath().length > 0;
             cell.textLabel.enabled = cell.userInteractionEnabled;
             break;
+        case LauncherBackgroundRowReset:
+            cell.imageView.image = [UIImage systemImageNamed:@"arrow.counterclockwise"];
+            cell.textLabel.text = localize(@"preference.title.launcher_background_reset_adjustments", nil);
+            cell.selectionStyle = UITableViewCellSelectionStyleGray;
+            cell.userInteractionEnabled = self.hasCustomAdjustments;
+            cell.textLabel.enabled = cell.userInteractionEnabled;
+            break;
+    }
+
+    if (getLauncherOutlineControlsEnabled()) {
+        PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
+    } else {
+        if (@available(iOS 14.0, *)) {
+            cell.backgroundConfiguration = nil;
+        }
+        cell.layer.borderWidth = 0;
     }
 
     return cell;
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
+    return [self isSliderRow:(LauncherBackgroundRow)indexPath.row] ? 46 : 40;
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
@@ -107,6 +243,9 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
         [self presentVideoPicker];
     } else if (indexPath.row == LauncherBackgroundRowClear && getLauncherBackgroundVideoPath().length > 0) {
         clearLauncherBackgroundVideo();
+        [self.tableView reloadData];
+    } else if (indexPath.row == LauncherBackgroundRowReset && self.hasCustomAdjustments) {
+        resetLauncherBackgroundVideoAdjustments();
         [self.tableView reloadData];
     }
 }

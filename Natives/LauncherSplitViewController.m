@@ -12,6 +12,7 @@ extern NSMutableDictionary *prefDict;
 @interface LauncherSplitViewController ()<UISplitViewControllerDelegate>{
 }
 @property(nonatomic) UIView *backgroundVideoView;
+@property(nonatomic) UIView *backgroundVideoContentView;
 @property(nonatomic) UIView *backgroundDimView;
 @property(nonatomic) AVQueuePlayer *backgroundPlayer;
 @property(nonatomic) AVPlayerLooper *backgroundLooper;
@@ -36,6 +37,35 @@ extern NSMutableDictionary *prefDict;
     self.preferredPrimaryColumnWidthFraction = compactWidth / MAX(size.width, 1);
 }
 
+- (void)applyBackgroundVideoLayout {
+    if (!self.backgroundLayer) {
+        return;
+    }
+
+    CGRect bounds = self.backgroundVideoView.bounds;
+    CGFloat scale = getLauncherBackgroundVideoScale();
+    CGFloat offsetX = getLauncherBackgroundVideoOffsetX() * bounds.size.width * 0.5;
+    CGFloat offsetY = getLauncherBackgroundVideoOffsetY() * bounds.size.height * 0.5;
+    CGSize scaledSize = CGSizeMake(bounds.size.width * scale, bounds.size.height * scale);
+    self.backgroundVideoContentView.frame = CGRectMake(
+        CGRectGetMidX(bounds) - scaledSize.width * 0.5 + offsetX,
+        CGRectGetMidY(bounds) - scaledSize.height * 0.5 + offsetY,
+        scaledSize.width,
+        scaledSize.height);
+    self.backgroundLayer.frame = self.backgroundVideoContentView.bounds;
+}
+
+- (void)resumeBackgroundPlaybackIfNeeded {
+    if (!self.backgroundPlayer || self.backgroundVideoView.hidden || self.view.window == nil) {
+        return;
+    }
+    if (self.backgroundPlayer.items.count == 0 || self.backgroundPlayer.currentItem.status == AVPlayerItemStatusFailed) {
+        [self reloadBackgroundVideo];
+        return;
+    }
+    [self.backgroundPlayer play];
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = UIColor.blackColor;
@@ -46,8 +76,13 @@ extern NSMutableDictionary *prefDict;
     self.delegate = self;
     self.backgroundVideoView = [[UIView alloc] initWithFrame:self.view.bounds];
     self.backgroundVideoView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    self.backgroundVideoView.clipsToBounds = YES;
     self.backgroundVideoView.userInteractionEnabled = NO;
     [self.view addSubview:self.backgroundVideoView];
+
+    self.backgroundVideoContentView = [[UIView alloc] initWithFrame:self.backgroundVideoView.bounds];
+    self.backgroundVideoContentView.userInteractionEnabled = NO;
+    [self.backgroundVideoView addSubview:self.backgroundVideoContentView];
 
     self.backgroundDimView = [[UIView alloc] initWithFrame:self.view.bounds];
     self.backgroundDimView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
@@ -69,6 +104,14 @@ extern NSMutableDictionary *prefDict;
 
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleLauncherBackgroundDidChange:)
         name:PLLauncherBackgroundDidChangeNotification object:nil];
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleLauncherAppearanceDidChange:)
+        name:PLLauncherAppearanceDidChangeNotification object:nil];
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleApplicationDidBecomeActive:)
+        name:UIApplicationDidBecomeActiveNotification object:nil];
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleApplicationWillResignActive:)
+        name:UIApplicationWillResignActiveNotification object:nil];
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleBackgroundPlaybackStalled:)
+        name:AVPlayerItemPlaybackStalledNotification object:nil];
 }
 
 - (void)splitViewController:(UISplitViewController *)svc willChangeToDisplayMode:(UISplitViewControllerDisplayMode)displayMode {
@@ -85,13 +128,13 @@ extern NSMutableDictionary *prefDict;
     [self changeDisplayModeForSize:size];
     [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
         [self updatePrimaryColumnWidthForSize:size];
-        self.backgroundLayer.frame = self.backgroundVideoView.bounds;
+        [self applyBackgroundVideoLayout];
     } completion:nil];
 }
 
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
-    self.backgroundLayer.frame = self.backgroundVideoView.bounds;
+    [self applyBackgroundVideoLayout];
     [self sendBackgroundViewsToBack];
 }
 
@@ -118,7 +161,7 @@ extern NSMutableDictionary *prefDict;
 
 - (void)viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
-    [self.backgroundPlayer play];
+    [self resumeBackgroundPlaybackIfNeeded];
 }
 
 - (void)viewDidDisappear:(BOOL)animated {
@@ -128,6 +171,9 @@ extern NSMutableDictionary *prefDict;
 
 - (void)reloadBackgroundVideo {
     [self.backgroundPlayer pause];
+    [self.backgroundPlayer removeAllItems];
+    [self.backgroundLayer removeAllAnimations];
+    self.backgroundLayer.player = nil;
     [self.backgroundLayer removeFromSuperlayer];
     self.backgroundLayer = nil;
     self.backgroundLooper = nil;
@@ -149,18 +195,38 @@ extern NSMutableDictionary *prefDict;
     self.backgroundLayer = [AVPlayerLayer playerLayerWithPlayer:player];
     self.backgroundLayer.videoGravity = AVLayerVideoGravityResizeAspect;
     self.backgroundLayer.backgroundColor = UIColor.blackColor.CGColor;
-    self.backgroundLayer.frame = self.backgroundVideoView.bounds;
-    [self.backgroundVideoView.layer addSublayer:self.backgroundLayer];
+    [self.backgroundVideoContentView.layer addSublayer:self.backgroundLayer];
+    [self applyBackgroundVideoLayout];
 
     self.backgroundVideoView.hidden = NO;
     self.backgroundDimView.hidden = NO;
     self.backgroundDimView.backgroundColor = [UIColor colorWithWhite:0 alpha:0.65];
     [self sendBackgroundViewsToBack];
-    [player play];
+    [self resumeBackgroundPlaybackIfNeeded];
 }
 
 - (void)handleLauncherBackgroundDidChange:(NSNotification *)notification {
     [self reloadBackgroundVideo];
+}
+
+- (void)handleLauncherAppearanceDidChange:(NSNotification *)notification {
+    [self applyBackgroundVideoLayout];
+    [self resumeBackgroundPlaybackIfNeeded];
+}
+
+- (void)handleApplicationDidBecomeActive:(NSNotification *)notification {
+    [self resumeBackgroundPlaybackIfNeeded];
+}
+
+- (void)handleApplicationWillResignActive:(NSNotification *)notification {
+    [self.backgroundPlayer pause];
+}
+
+- (void)handleBackgroundPlaybackStalled:(NSNotification *)notification {
+    if (notification.object != self.backgroundPlayer.currentItem) {
+        return;
+    }
+    [self resumeBackgroundPlaybackIfNeeded];
 }
 
 - (void)dealloc {

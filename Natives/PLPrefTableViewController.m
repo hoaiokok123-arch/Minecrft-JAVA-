@@ -43,6 +43,9 @@
         // Display one singe section if prefSection is unspecified
         self.prefSectionsVisibility = (id)@[@YES];
     }
+    [self applyLauncherTableAppearance];
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleLauncherAppearanceDidChange:)
+        name:PLLauncherAppearanceDidChangeNotification object:nil];
 }
 
 - (UIBarButtonItem *)drawHelpButton {
@@ -80,6 +83,17 @@
 
 - (void)toggleDetailVisibility {
     self.prefDetailVisible = !self.prefDetailVisible;
+    [self.tableView reloadData];
+}
+
+- (void)applyLauncherTableAppearance {
+    self.tableView.separatorStyle = getLauncherOutlineControlsEnabled() ?
+        UITableViewCellSeparatorStyleNone :
+        UITableViewCellSeparatorStyleSingleLine;
+}
+
+- (void)handleLauncherAppearanceDidChange:(NSNotification *)notification {
+    [self applyLauncherTableAppearance];
     [self.tableView reloadData];
 }
 
@@ -154,6 +168,14 @@
     BOOL destructive = [item[@"destructive"] boolValue];
     cell.imageView.tintColor = destructive ? UIColor.systemRedColor : nil;
     cell.imageView.image = [UIImage systemImageNamed:item[@"icon"]];
+    if (getLauncherOutlineControlsEnabled()) {
+        PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
+    } else {
+        if (@available(iOS 14.0, *)) {
+            cell.backgroundConfiguration = nil;
+        }
+        cell.layer.borderWidth = 0;
+    }
     
     if (cellStyle != UITableViewCellStyleValue1) {
         cell.detailTextLabel.text = nil;
@@ -456,6 +478,10 @@
     NSString *key = objc_getAssociatedObject(sender, @"key");
 
     self.setPreference(section, key, sender.text);
+}
+
+- (void)dealloc {
+    [NSNotificationCenter.defaultCenter removeObserver:self];
 }
 
 @end

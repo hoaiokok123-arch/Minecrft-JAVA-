@@ -83,6 +83,10 @@ void PLApplyCompactTableCell(UITableViewCell *cell);
 void PLApplyCompactTextField(UITextField *textField, CGFloat width, CGFloat height);
 void PLApplyCompactSlider(UIView *view, CGFloat width, CGFloat height);
 void PLApplyCompactSwitch(UISwitch *toggle);
+UIColor *PLLauncherAccentColor(void);
+void PLApplyLauncherCardChrome(UITableViewCell *cell, BOOL selected, NSDirectionalEdgeInsets insets, CGFloat cornerRadius);
+void PLApplyLauncherActionButtonChrome(UIButton *button);
+void PLApplyLauncherInputChrome(UITextField *textField);
 CGSize PLCompactPopoverSize(CGFloat width, CGFloat height);
 CGSize PLCompactSheetSize(CGFloat width, CGFloat height);
 

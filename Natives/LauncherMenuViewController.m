@@ -131,6 +131,9 @@
     if (@available(iOS 15.0, *)) {
         self.tableView.sectionHeaderTopPadding = 0;
     }
+    [self applyLauncherAppearance];
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleLauncherAppearanceDidChange:)
+        name:PLLauncherAppearanceDidChangeNotification object:nil];
     
     self.navigationController.toolbarHidden = NO;
     UIActivityIndicatorViewStyle indicatorStyle = UIActivityIndicatorViewStyleMedium;
@@ -178,6 +181,7 @@
 
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
+    [self applyLauncherAppearance];
     [self restoreHighlightedSelection];
 }
 
@@ -194,8 +198,22 @@
     }
 
     [self updateAccountInfo];
+    [self applyLauncherAppearance];
     
     return self.accountBtnItem;
+}
+
+- (void)applyLauncherAppearance {
+    self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    self.accountButton.layer.cornerRadius = 10;
+    self.accountButton.layer.borderWidth = getLauncherOutlineControlsEnabled() ? 1.0 : 0.0;
+    self.accountButton.layer.borderColor = [UIColor colorWithWhite:1 alpha:0.18].CGColor;
+    self.accountButton.contentEdgeInsets = UIEdgeInsetsMake(4, 4, 4, 6);
+}
+
+- (void)handleLauncherAppearanceDidChange:(NSNotification *)notification {
+    [self applyLauncherAppearance];
+    [self.tableView reloadData];
 }
 
 - (void)restoreHighlightedSelection {
@@ -244,14 +262,7 @@
     cell.contentView.preservesSuperviewLayoutMargins = NO;
     cell.selectionStyle = UITableViewCellSelectionStyleNone;
     cell.imageView.image = nil;
-    if (@available(iOS 14.0, *)) {
-        UIBackgroundConfiguration *backgroundConfig = [UIBackgroundConfiguration clearConfiguration];
-        backgroundConfig.backgroundInsets = NSDirectionalEdgeInsetsMake(0, 18, 0, 18);
-        backgroundConfig.cornerRadius = 9;
-        backgroundConfig.backgroundColor = indexPath.section == self.lastSelectedIndex ?
-            UIColor.tertiarySystemFillColor : UIColor.secondarySystemGroupedBackgroundColor;
-        cell.backgroundConfiguration = backgroundConfig;
-    }
+    PLApplyLauncherCardChrome(cell, indexPath.section == self.lastSelectedIndex, NSDirectionalEdgeInsetsMake(0, 18, 0, 18), 9);
     
     UIImage *origImage = [UIImage systemImageNamed:[item performSelector:@selector(imageName)]];
     if (origImage) {
@@ -424,6 +435,10 @@
             [connection disconnect];
         }];
     }];
+}
+
+- (void)dealloc {
+    [NSNotificationCenter.defaultCenter removeObserver:self];
 }
 
 @end

@@ -119,6 +119,14 @@
               @"canDismissWithSwipe": @YES,
               @"enableCondition": whenNotInGame
             },
+            @{@"key": @"launcher_outline_controls",
+              @"icon": @"square.dashed",
+              @"type": self.typeSwitch,
+              @"enableCondition": whenNotInGame,
+              @"action": ^(BOOL enabled){
+                  postLauncherAppearanceDidChange();
+              }
+            },
             @{@"key": @"hidden_sidebar",
               @"hasDetail": @YES,
               @"icon": @"sidebar.leading",

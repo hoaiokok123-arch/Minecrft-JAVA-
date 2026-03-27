@@ -125,6 +125,9 @@ static void *ProgressObserverContext = &ProgressObserverContext;
     } else {
         [targetToolbar addSubview:self.progressText];
     }
+    [self applyLauncherAppearance];
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleLauncherAppearanceDidChange:)
+        name:PLLauncherAppearanceDidChangeNotification object:nil];
 
     [self fetchRemoteVersionList];
     [NSNotificationCenter.defaultCenter addObserver:self
@@ -145,6 +148,38 @@ static void *ProgressObserverContext = &ProgressObserverContext;
             }
         };
         [BaseAuthenticator.current refreshTokenWithCallback:callback];
+    }
+}
+
+- (void)applyLauncherAppearance {
+    PLApplyLauncherInputChrome(self.versionTextField);
+    if (self.buttonInstall) {
+        PLApplyLauncherActionButtonChrome(self.buttonInstall);
+    }
+    if (self.buttonInstallItem) {
+        self.buttonInstallItem.tintColor = getLauncherOutlineControlsEnabled() ?
+            PLLauncherAccentColor() :
+            UIColor.whiteColor;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            UIView *glassView = self.buttonInstallItem.buttonGlassView;
+            if (!glassView) {
+                return;
+            }
+            glassView.layer.cornerRadius = 12;
+            glassView.layer.borderWidth = getLauncherOutlineControlsEnabled() ? 1.0 : 0.0;
+            glassView.layer.borderColor = PLLauncherAccentColor().CGColor;
+            glassView.backgroundColor = getLauncherOutlineControlsEnabled() ?
+                UIColor.clearColor :
+                [PLLauncherAccentColor() colorWithAlphaComponent:0.5];
+        });
+    }
+}
+
+- (void)handleLauncherAppearanceDidChange:(NSNotification *)notification {
+    [self applyLauncherAppearance];
+    UIViewController *topController = self.viewControllers.lastObject;
+    if ([topController isKindOfClass:UITableViewController.class]) {
+        [((UITableViewController *)topController).tableView reloadData];
     }
 }
 
@@ -394,6 +429,10 @@ static void *ProgressObserverContext = &ProgressObserverContext;
         self.task = nil;
         [self setInteractionEnabled:YES forDownloading:YES];
     });
+}
+
+- (void)dealloc {
+    [NSNotificationCenter.defaultCenter removeObserver:self];
 }
 
 - (void)receiveNotification:(NSNotification *)notification {

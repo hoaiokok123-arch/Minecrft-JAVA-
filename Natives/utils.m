@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <dirent.h>
 
+#import "LauncherPreferences.h"
 #include "utils.h"
 
 CFTypeRef SecTaskCopyValueForEntitlement(void* task, NSString* entitlement, CFErrorRef  _Nullable *error);
@@ -108,6 +109,54 @@ void PLApplyCompactSlider(UIView *view, CGFloat width, CGFloat height) {
 
 void PLApplyCompactSwitch(UISwitch *toggle) {
     toggle.transform = CGAffineTransformMakeScale(0.82, 0.82);
+}
+
+UIColor *PLLauncherAccentColor(void) {
+    return [UIColor colorWithRed:121/255.0 green:56/255.0 blue:162/255.0 alpha:1.0];
+}
+
+void PLApplyLauncherCardChrome(UITableViewCell *cell, BOOL selected, NSDirectionalEdgeInsets insets, CGFloat cornerRadius) {
+    cell.backgroundColor = UIColor.clearColor;
+    cell.contentView.backgroundColor = UIColor.clearColor;
+    if (@available(iOS 14.0, *)) {
+        UIBackgroundConfiguration *backgroundConfig = [UIBackgroundConfiguration clearConfiguration];
+        backgroundConfig.backgroundInsets = insets;
+        backgroundConfig.cornerRadius = cornerRadius;
+        if (getLauncherOutlineControlsEnabled()) {
+            backgroundConfig.strokeWidth = 1.0 / UIScreen.mainScreen.scale;
+            backgroundConfig.strokeColor = selected ? PLLauncherAccentColor() : [UIColor colorWithWhite:1 alpha:0.18];
+            backgroundConfig.backgroundColor = selected ? [PLLauncherAccentColor() colorWithAlphaComponent:0.14] : UIColor.clearColor;
+        } else {
+            backgroundConfig.backgroundColor = selected ? UIColor.tertiarySystemFillColor : UIColor.secondarySystemGroupedBackgroundColor;
+        }
+        cell.backgroundConfiguration = backgroundConfig;
+    } else if (getLauncherOutlineControlsEnabled()) {
+        cell.layer.cornerRadius = cornerRadius;
+        cell.layer.borderWidth = 1.0 / UIScreen.mainScreen.scale;
+        cell.layer.borderColor = (selected ? PLLauncherAccentColor() : [UIColor colorWithWhite:1 alpha:0.18]).CGColor;
+    } else {
+        cell.layer.borderWidth = 0;
+    }
+}
+
+void PLApplyLauncherActionButtonChrome(UIButton *button) {
+    BOOL outline = getLauncherOutlineControlsEnabled();
+    UIColor *accentColor = PLLauncherAccentColor();
+    button.layer.cornerRadius = MAX(button.layer.cornerRadius, 5);
+    button.layer.borderWidth = outline ? 1.0 : 0.0;
+    button.layer.borderColor = (outline ? accentColor : UIColor.clearColor).CGColor;
+    button.backgroundColor = outline ? UIColor.clearColor : accentColor;
+    button.tintColor = outline ? accentColor : UIColor.whiteColor;
+}
+
+void PLApplyLauncherInputChrome(UITextField *textField) {
+    BOOL outline = getLauncherOutlineControlsEnabled();
+    textField.layer.cornerRadius = 6;
+    textField.layer.borderWidth = outline ? 1.0 : 0.0;
+    textField.layer.borderColor = (outline ? [UIColor colorWithWhite:1 alpha:0.22] : UIColor.clearColor).CGColor;
+    if (outline) {
+        textField.backgroundColor = UIColor.clearColor;
+    }
 }
 
 CGSize PLCompactPopoverSize(CGFloat width, CGFloat height) {

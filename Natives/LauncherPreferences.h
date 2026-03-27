@@ -1,6 +1,7 @@
 #import <UIKit/UIKit.h>
 
 FOUNDATION_EXPORT NSString * const PLLauncherBackgroundDidChangeNotification;
+FOUNDATION_EXPORT NSString * const PLLauncherAppearanceDidChangeNotification;
 
 void loadPreferences(BOOL reset);
 void toggleIsolatedPref(BOOL forceEnable);
@@ -30,5 +31,11 @@ NSArray* getRendererNames(BOOL containsDefault);
 
 NSString *getLauncherBackgroundVideoPath(void);
 NSString *getLauncherBackgroundVideoDisplayName(void);
+CGFloat getLauncherBackgroundVideoScale(void);
+CGFloat getLauncherBackgroundVideoOffsetX(void);
+CGFloat getLauncherBackgroundVideoOffsetY(void);
+BOOL getLauncherOutlineControlsEnabled(void);
+void resetLauncherBackgroundVideoAdjustments(void);
+void postLauncherAppearanceDidChange(void);
 NSError *setLauncherBackgroundVideoFromURL(NSURL *url);
 void clearLauncherBackgroundVideo(void);

@@ -82,10 +82,14 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
     self.view.backgroundColor = UIColor.clearColor;
     self.tableView.backgroundColor = UIColor.clearColor;
     PLApplyCompactTableLayout(self.tableView, 42);
+    [self applyLauncherAppearance];
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleLauncherAppearanceDidChange:)
+        name:PLLauncherAppearanceDidChangeNotification object:nil];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
+    [self applyLauncherAppearance];
 
     // Put navigation buttons back in place
     self.navigationItem.rightBarButtonItems = @[[sidebarViewController drawAccountButton], self.createButtonItem];
@@ -94,6 +98,17 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
     [PLProfiles updateCurrent];
     [self.tableView reloadData];
     [self.navigationController performSelector:@selector(reloadProfileList)];
+}
+
+- (void)applyLauncherAppearance {
+    self.tableView.separatorStyle = getLauncherOutlineControlsEnabled() ?
+        UITableViewCellSeparatorStyleNone :
+        UITableViewCellSeparatorStyleSingleLine;
+}
+
+- (void)handleLauncherAppearanceDidChange:(NSNotification *)notification {
+    [self applyLauncherAppearance];
+    [self.tableView reloadData];
 }
 
 - (void)actionTogglePrefIsolation:(UISwitch *)sender {
@@ -221,6 +236,14 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
         cell.accessoryView = nil;
     }
     PLApplyCompactTableCell(cell);
+    if (getLauncherOutlineControlsEnabled()) {
+        PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 12);
+    } else {
+        if (@available(iOS 14.0, *)) {
+            cell.backgroundConfiguration = nil;
+        }
+        cell.layer.borderWidth = 0;
+    }
 
     if (indexPath.section == kInstances) {
         [self setupInstanceCell:cell atRow:indexPath.row];
@@ -281,6 +304,10 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
         return UITableViewCellEditingStyleNone;
     }
     return UITableViewCellEditingStyleDelete;
+}
+
+- (void)dealloc {
+    [NSNotificationCenter.defaultCenter removeObserver:self];
 }
 
 @end
