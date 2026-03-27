@@ -50,7 +50,7 @@
     NSInteger rowCount = self.accountList.count + 1;
     NSInteger visibleRowCount = MIN(MAX(rowCount, 1), 5);
     CGFloat targetHeight = visibleRowCount * 42.0 + 2.0;
-    self.preferredContentSize = PLCompactPopoverSize(320, targetHeight);
+    self.preferredContentSize = CGSizeMake(320, targetHeight);
     if (self.isViewLoaded) {
         self.tableView.scrollEnabled = rowCount > visibleRowCount;
     }
