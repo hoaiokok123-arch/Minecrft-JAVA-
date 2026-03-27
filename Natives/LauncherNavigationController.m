@@ -25,7 +25,7 @@
 
 static void *ProgressObserverContext = &ProgressObserverContext;
 
-@interface LauncherNavigationController () <UIDocumentPickerDelegate, UIPickerViewDataSource, PLPickerViewDelegate, UIPopoverPresentationControllerDelegate> {
+@interface LauncherNavigationController () <UIDocumentPickerDelegate, UIPickerViewDataSource, PLPickerViewDelegate, UIPopoverPresentationControllerDelegate, UINavigationControllerDelegate> {
 }
 
 @property(nonatomic) MinecraftResourceDownloadTask* task;
@@ -41,10 +41,22 @@ static void *ProgressObserverContext = &ProgressObserverContext;
 
 @implementation LauncherNavigationController
 
+- (void)updateVisibleStackController:(UIViewController *)visibleController {
+    for (UIViewController *controller in self.viewControllers) {
+        if (!controller.isViewLoaded) {
+            continue;
+        }
+        BOOL shouldShow = controller == visibleController;
+        controller.view.hidden = !shouldShow;
+        controller.view.userInteractionEnabled = shouldShow;
+    }
+}
+
 - (void)viewDidLoad
 {
     [super viewDidLoad];
     self.view.backgroundColor = UIColor.clearColor;
+    self.delegate = self;
 
     if ([self respondsToSelector:@selector(setNeedsUpdateOfScreenEdgesDeferringSystemGestures)]) {
         [self setNeedsUpdateOfScreenEdgesDeferringSystemGestures];
@@ -152,6 +164,11 @@ static void *ProgressObserverContext = &ProgressObserverContext;
     }
 }
 
+- (void)viewDidAppear:(BOOL)animated {
+    [super viewDidAppear:animated];
+    [self updateVisibleStackController:self.topViewController];
+}
+
 - (void)applyLauncherAppearance {
     PLApplyLauncherNavigationBarChrome(self.navigationBar);
     PLApplyLauncherToolbarChrome(self.toolbar);
@@ -192,6 +209,18 @@ static void *ProgressObserverContext = &ProgressObserverContext;
     if (!viewControllers.firstObject.toolbarItems && self.globalToolbarItems) {
         viewControllers.firstObject.toolbarItems = self.globalToolbarItems;
     }
+    [self updateVisibleStackController:self.topViewController];
+}
+
+- (void)navigationController:(UINavigationController *)navigationController willShowViewController:(UIViewController *)viewController animated:(BOOL)animated {
+    if (viewController.isViewLoaded) {
+        viewController.view.hidden = NO;
+        viewController.view.userInteractionEnabled = YES;
+    }
+}
+
+- (void)navigationController:(UINavigationController *)navigationController didShowViewController:(UIViewController *)viewController animated:(BOOL)animated {
+    [self updateVisibleStackController:viewController];
 }
 
 - (BOOL)isVersionInstalled:(NSString *)versionId {

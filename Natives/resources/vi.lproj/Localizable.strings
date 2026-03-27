@@ -290,7 +290,6 @@
 "preference.title.launcher_background_clear" = "X\U00F3a video";
 "preference.title.launcher_background_none" = "T\U1EAFt";
 "preference.title.launcher_background_scale" = "Thu ph\U00F3ng video";
-"preference.title.launcher_background_offset_x" = "V\U1ECB tr\U00ED ngang";
-"preference.title.launcher_background_offset_y" = "V\U1ECB tr\U00ED d\U1ECDc";
-"preference.title.launcher_background_reset_adjustments" = "\U0110\u1EB7t l\U1EA1i c\U0103n ch\U1EC9nh video";
+"preference.title.launcher_background_rotate" = "Xoay video d\U1ECDc th\U00E0nh ngang";
+"preference.title.launcher_background_reset_adjustments" = "\U0110\U1EB7t l\U1EA1i c\U0103n ch\U1EC9nh video";
 "preference.title.launcher_outline_controls" = "N\U00FAt/card vi\U1EC1n trong su\U1ED1t";

@@ -12,6 +12,7 @@ static NSString * const PLLauncherBackgroundVideoKey = @"general.launcher_backgr
 static NSString * const PLLauncherBackgroundVideoScaleKey = @"general.launcher_background_video_scale";
 static NSString * const PLLauncherBackgroundVideoOffsetXKey = @"general.launcher_background_video_offset_x";
 static NSString * const PLLauncherBackgroundVideoOffsetYKey = @"general.launcher_background_video_offset_y";
+static NSString * const PLLauncherBackgroundVideoRotateKey = @"general.launcher_background_video_rotate";
 static NSString * const PLLauncherOutlineControlsKey = @"general.launcher_outline_controls";
 
 static void PLRunLauncherBlockOnMainThread(void (^block)(void)) {
@@ -47,6 +48,11 @@ static void PLCleanupManagedLauncherBackgrounds(NSString *keepPath) {
 static void PLPostLauncherBackgroundDidChange(void) {
     [NSNotificationCenter.defaultCenter postNotificationName:PLLauncherBackgroundDidChangeNotification object:nil];
     [NSNotificationCenter.defaultCenter postNotificationName:PLLauncherAppearanceDidChangeNotification object:nil];
+}
+
+static void PLClearLegacyLauncherBackgroundOffsets(void) {
+    setPrefInt(PLLauncherBackgroundVideoOffsetXKey, 0);
+    setPrefInt(PLLauncherBackgroundVideoOffsetYKey, 0);
 }
 
 void postLauncherAppearanceDidChange(void) {
@@ -234,12 +240,14 @@ CGFloat getLauncherBackgroundVideoScale(void) {
     return clamp(getPrefInt(PLLauncherBackgroundVideoScaleKey), 50, 250) / 100.0;
 }
 
-CGFloat getLauncherBackgroundVideoOffsetX(void) {
-    return clamp(getPrefInt(PLLauncherBackgroundVideoOffsetXKey), -100, 100) / 100.0;
+BOOL getLauncherBackgroundVideoRotateEnabled(void) {
+    return getPrefBool(PLLauncherBackgroundVideoRotateKey);
 }
 
-CGFloat getLauncherBackgroundVideoOffsetY(void) {
-    return clamp(getPrefInt(PLLauncherBackgroundVideoOffsetYKey), -100, 100) / 100.0;
+void setLauncherBackgroundVideoRotateEnabled(BOOL enabled) {
+    PLClearLegacyLauncherBackgroundOffsets();
+    setPrefBool(PLLauncherBackgroundVideoRotateKey, enabled);
+    postLauncherAppearanceDidChange();
 }
 
 BOOL getLauncherOutlineControlsEnabled(void) {
@@ -248,8 +256,8 @@ BOOL getLauncherOutlineControlsEnabled(void) {
 
 void resetLauncherBackgroundVideoAdjustments(void) {
     setPrefInt(PLLauncherBackgroundVideoScaleKey, 100);
-    setPrefInt(PLLauncherBackgroundVideoOffsetXKey, 0);
-    setPrefInt(PLLauncherBackgroundVideoOffsetYKey, 0);
+    PLClearLegacyLauncherBackgroundOffsets();
+    setPrefBool(PLLauncherBackgroundVideoRotateKey, NO);
     postLauncherAppearanceDidChange();
 }
 
@@ -275,6 +283,7 @@ NSError *setLauncherBackgroundVideoFromURL(NSURL *url) {
     }
 
     PLRunLauncherBlockOnMainThread(^{
+        PLClearLegacyLauncherBackgroundOffsets();
         setPrefObject(PLLauncherBackgroundVideoKey, destination);
         PLPostLauncherBackgroundDidChange();
     });
@@ -287,6 +296,7 @@ NSError *setLauncherBackgroundVideoFromURL(NSURL *url) {
 
 void clearLauncherBackgroundVideo(void) {
     NSString *path = getLauncherBackgroundVideoPath();
+    PLClearLegacyLauncherBackgroundOffsets();
     setPrefObject(PLLauncherBackgroundVideoKey, @"");
     PLPostLauncherBackgroundDidChange();
     if (path.length > 0 && PLLauncherBackgroundPathIsManaged(path)) {

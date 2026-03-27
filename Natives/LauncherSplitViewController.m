@@ -50,14 +50,20 @@ extern NSMutableDictionary *prefDict;
 
     CGRect bounds = self.backgroundVideoView.bounds;
     CGFloat scale = getLauncherBackgroundVideoScale();
-    CGFloat offsetX = getLauncherBackgroundVideoOffsetX() * bounds.size.width * 0.5;
-    CGFloat offsetY = getLauncherBackgroundVideoOffsetY() * bounds.size.height * 0.5;
+    BOOL rotateVideo = getLauncherBackgroundVideoRotateEnabled();
     CGSize scaledSize = CGSizeMake(bounds.size.width * scale, bounds.size.height * scale);
+    CGSize contentSize = rotateVideo ?
+        CGSizeMake(scaledSize.height, scaledSize.width) :
+        scaledSize;
+    self.backgroundVideoContentView.transform = CGAffineTransformIdentity;
     self.backgroundVideoContentView.frame = CGRectMake(
-        CGRectGetMidX(bounds) - scaledSize.width * 0.5 + offsetX,
-        CGRectGetMidY(bounds) - scaledSize.height * 0.5 + offsetY,
-        scaledSize.width,
-        scaledSize.height);
+        CGRectGetMidX(bounds) - contentSize.width * 0.5,
+        CGRectGetMidY(bounds) - contentSize.height * 0.5,
+        contentSize.width,
+        contentSize.height);
+    self.backgroundVideoContentView.transform = rotateVideo ?
+        CGAffineTransformMakeRotation((CGFloat)M_PI_2) :
+        CGAffineTransformIdentity;
     self.backgroundLayer.frame = self.backgroundVideoContentView.bounds;
 }
 

@@ -344,7 +344,6 @@
 "preference.title.launcher_background_clear" = "Clear video";
 "preference.title.launcher_background_none" = "Off";
 "preference.title.launcher_background_scale" = "Video zoom";
-"preference.title.launcher_background_offset_x" = "Horizontal position";
-"preference.title.launcher_background_offset_y" = "Vertical position";
+"preference.title.launcher_background_rotate" = "Rotate portrait video";
 "preference.title.launcher_background_reset_adjustments" = "Reset video adjustments";
 "preference.title.launcher_outline_controls" = "Outline launcher buttons";

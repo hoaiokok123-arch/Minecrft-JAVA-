@@ -11,8 +11,7 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
     LauncherBackgroundRowChoose,
     LauncherBackgroundRowClear,
     LauncherBackgroundRowScale,
-    LauncherBackgroundRowOffsetX,
-    LauncherBackgroundRowOffsetY,
+    LauncherBackgroundRowRotate,
     LauncherBackgroundRowReset,
 };
 
@@ -71,22 +70,17 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
 
 - (BOOL)hasCustomAdjustments {
     return getPrefInt(@"general.launcher_background_video_scale") != 100 ||
-        getPrefInt(@"general.launcher_background_video_offset_x") != 0 ||
-        getPrefInt(@"general.launcher_background_video_offset_y") != 0;
+        getLauncherBackgroundVideoRotateEnabled();
 }
 
 - (BOOL)isSliderRow:(LauncherBackgroundRow)row {
-    return row >= LauncherBackgroundRowScale && row <= LauncherBackgroundRowOffsetY;
+    return row == LauncherBackgroundRowScale;
 }
 
 - (NSString *)preferenceKeyForSliderRow:(LauncherBackgroundRow)row {
     switch (row) {
         case LauncherBackgroundRowScale:
             return @"general.launcher_background_video_scale";
-        case LauncherBackgroundRowOffsetX:
-            return @"general.launcher_background_video_offset_x";
-        case LauncherBackgroundRowOffsetY:
-            return @"general.launcher_background_video_offset_y";
         default:
             return nil;
     }
@@ -98,12 +92,6 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
         case LauncherBackgroundRowScale:
             title = localize(@"preference.title.launcher_background_scale", nil);
             return [NSString stringWithFormat:@"%@ %ld%%", title, (long)value];
-        case LauncherBackgroundRowOffsetX:
-            title = localize(@"preference.title.launcher_background_offset_x", nil);
-            return [NSString stringWithFormat:@"%@ %+ld%%", title, (long)value];
-        case LauncherBackgroundRowOffsetY:
-            title = localize(@"preference.title.launcher_background_offset_y", nil);
-            return [NSString stringWithFormat:@"%@ %+ld%%", title, (long)value];
         default:
             return @"";
     }
@@ -152,12 +140,22 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
     });
 }
 
+- (BOOL)selectedVideoLooksPortrait:(AVAsset *)asset {
+    AVAssetTrack *track = [asset tracksWithMediaType:AVMediaTypeVideo].firstObject;
+    if (!track) {
+        return NO;
+    }
+    CGSize transformedSize = CGSizeApplyAffineTransform(track.naturalSize, track.preferredTransform);
+    return fabs(transformedSize.height) > fabs(transformedSize.width);
+}
+
 - (void)beginImportVideoFromURL:(NSURL *)url {
     NSURL *selectedURL = [url copy];
     self.importingVideo = YES;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         @autoreleasepool {
             AVURLAsset *asset = [AVURLAsset URLAssetWithURL:selectedURL options:nil];
+            BOOL shouldRotatePortraitVideo = [self selectedVideoLooksPortrait:asset];
             if ([asset tracksWithMediaType:AVMediaTypeVideo].count == 0) {
                 [self finishImportWithError:[self backgroundImportError:@"Unable to load the selected video."]];
                 return;
@@ -206,6 +204,9 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
                 if (session.status == AVAssetExportSessionStatusCompleted) {
                     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
                         NSError *error = setLauncherBackgroundVideoFromURL(stagedURL);
+                        if (!error) {
+                            setLauncherBackgroundVideoRotateEnabled(shouldRotatePortraitVideo);
+                        }
                         [NSFileManager.defaultManager removeItemAtURL:stagedURL error:nil];
                         [self finishImportWithError:error];
                     });
@@ -237,11 +238,20 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
     NSIndexPath *indexPath = [NSIndexPath indexPathForRow:sender.tag inSection:0];
     UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
     cell.textLabel.text = [self titleForSliderRow:(LauncherBackgroundRow)sender.tag value:value];
+    NSIndexPath *resetIndexPath = [NSIndexPath indexPathForRow:LauncherBackgroundRowReset inSection:0];
+    [self.tableView reloadRowsAtIndexPaths:@[resetIndexPath] withRowAnimation:UITableViewRowAnimationNone];
     postLauncherAppearanceDidChange();
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    return 7;
+    return 6;
+}
+
+- (void)backgroundRotateChanged:(UISwitch *)sender {
+    setLauncherBackgroundVideoRotateEnabled(sender.isOn);
+    NSIndexPath *rotateIndexPath = [NSIndexPath indexPathForRow:LauncherBackgroundRowRotate inSection:0];
+    NSIndexPath *resetIndexPath = [NSIndexPath indexPathForRow:LauncherBackgroundRowReset inSection:0];
+    [self.tableView reloadRowsAtIndexPaths:@[rotateIndexPath, resetIndexPath] withRowAnimation:UITableViewRowAnimationNone];
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -261,8 +271,8 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
         UISlider *slider = (UISlider *)cell.accessoryView;
         slider.frame = CGRectMake(0, 0, MIN(220, tableView.bounds.size.width * 0.42), 28);
         slider.tag = indexPath.row;
-        slider.minimumValue = indexPath.row == LauncherBackgroundRowScale ? 50 : -100;
-        slider.maximumValue = indexPath.row == LauncherBackgroundRowScale ? 250 : 100;
+        slider.minimumValue = 50;
+        slider.maximumValue = 250;
         slider.enabled = self.hasSelectedVideo;
         NSInteger value = getPrefInt([self preferenceKeyForSliderRow:(LauncherBackgroundRow)indexPath.row]);
         slider.value = value;
@@ -287,6 +297,7 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
 
     PLApplyCompactTableCell(cell);
     cell.accessoryType = UITableViewCellAccessoryNone;
+    cell.accessoryView = nil;
     cell.selectionStyle = UITableViewCellSelectionStyleNone;
     cell.textLabel.textColor = UIColor.labelColor;
     cell.imageView.tintColor = UIColor.secondaryLabelColor;
@@ -313,6 +324,23 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
             cell.userInteractionEnabled = getLauncherBackgroundVideoPath().length > 0;
             cell.textLabel.enabled = cell.userInteractionEnabled;
             break;
+        case LauncherBackgroundRowRotate: {
+            if (![cell.accessoryView isKindOfClass:UISwitch.class]) {
+                UISwitch *toggle = [UISwitch new];
+                [toggle addTarget:self action:@selector(backgroundRotateChanged:) forControlEvents:UIControlEventValueChanged];
+                PLApplyCompactSwitch(toggle);
+                cell.accessoryView = toggle;
+            }
+            UISwitch *toggle = (UISwitch *)cell.accessoryView;
+            toggle.on = getLauncherBackgroundVideoRotateEnabled();
+            toggle.enabled = self.hasSelectedVideo;
+            cell.imageView.image = [UIImage systemImageNamed:@"rotate.right"];
+            cell.textLabel.text = localize(@"preference.title.launcher_background_rotate", nil);
+            cell.selectionStyle = UITableViewCellSelectionStyleGray;
+            cell.userInteractionEnabled = self.hasSelectedVideo;
+            cell.textLabel.enabled = self.hasSelectedVideo;
+            break;
+        }
         case LauncherBackgroundRowReset:
             cell.imageView.image = [UIImage systemImageNamed:@"arrow.counterclockwise"];
             cell.textLabel.text = localize(@"preference.title.launcher_background_reset_adjustments", nil);
@@ -372,6 +400,11 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
     } else if (indexPath.row == LauncherBackgroundRowClear && getLauncherBackgroundVideoPath().length > 0) {
         clearLauncherBackgroundVideo();
         [self.tableView reloadData];
+    } else if (indexPath.row == LauncherBackgroundRowRotate && self.hasSelectedVideo) {
+        BOOL enabled = !getLauncherBackgroundVideoRotateEnabled();
+        setLauncherBackgroundVideoRotateEnabled(enabled);
+        NSIndexPath *resetIndexPath = [NSIndexPath indexPathForRow:LauncherBackgroundRowReset inSection:0];
+        [self.tableView reloadRowsAtIndexPaths:@[indexPath, resetIndexPath] withRowAnimation:UITableViewRowAnimationNone];
     } else if (indexPath.row == LauncherBackgroundRowReset && self.hasCustomAdjustments) {
         resetLauncherBackgroundVideoAdjustments();
         [self.tableView reloadData];

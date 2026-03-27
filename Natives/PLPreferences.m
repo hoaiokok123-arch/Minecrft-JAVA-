@@ -78,8 +78,7 @@
             @"appicon": @"AppIcon-Light",
             @"launcher_background_video": @"",
             @"launcher_background_video_scale": @(100),
-            @"launcher_background_video_offset_x": @(0),
-            @"launcher_background_video_offset_y": @(0),
+            @"launcher_background_video_rotate": @NO,
             @"launcher_outline_controls": @NO
         };
         [defaults[@"general"] addEntriesFromDictionary:general];
