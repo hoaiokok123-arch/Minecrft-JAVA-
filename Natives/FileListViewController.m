@@ -1,4 +1,5 @@
 #import "FileListViewController.h"
+#import "LauncherPreferences.h"
 #import "utils.h"
 
 @interface FileListViewController () {

@@ -1,6 +1,7 @@
 #import <dlfcn.h>
 #import <objc/runtime.h>
 #import "DownloadProgressViewController.h"
+#import "LauncherPreferences.h"
 #import "WFWorkflowProgressView.h"
 #import "utils.h"
 
