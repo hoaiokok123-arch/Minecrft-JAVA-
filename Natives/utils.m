@@ -213,27 +213,31 @@ void PLApplyLauncherToolbarChrome(UIToolbar *toolbar) {
 }
 
 void PLApplyLauncherCardChrome(UITableViewCell *cell, BOOL selected, NSDirectionalEdgeInsets insets, CGFloat cornerRadius) {
+    UIColor *fillColor = selected ?
+        [PLLauncherAccentColor() colorWithAlphaComponent(getLauncherOutlineControlsEnabled() ? 0.18 : 0.22)] :
+        [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.24];
+    UIColor *strokeColor = selected ?
+        [PLLauncherAccentColor() colorWithAlphaComponent(getLauncherOutlineControlsEnabled() ? 0.9 : 0.6)] :
+        [UIColor colorWithWhite:1 alpha:getLauncherOutlineControlsEnabled() ? 0.18 : 0.12];
+
     cell.backgroundColor = UIColor.clearColor;
     cell.contentView.backgroundColor = UIColor.clearColor;
     if (@available(iOS 14.0, *)) {
         UIBackgroundConfiguration *backgroundConfig = [UIBackgroundConfiguration clearConfiguration];
         backgroundConfig.backgroundInsets = insets;
         backgroundConfig.cornerRadius = cornerRadius;
-        if (getLauncherOutlineControlsEnabled()) {
-            backgroundConfig.strokeWidth = 1.0 / UIScreen.mainScreen.scale;
-            backgroundConfig.strokeColor = selected ? PLLauncherAccentColor() : [UIColor colorWithWhite:1 alpha:0.18];
-            backgroundConfig.backgroundColor = selected ? [PLLauncherAccentColor() colorWithAlphaComponent:0.14] : UIColor.clearColor;
-        } else {
-            backgroundConfig.backgroundColor = selected ? [PLLauncherAccentColor() colorWithAlphaComponent:0.16] : UIColor.clearColor;
-        }
+        backgroundConfig.strokeWidth = 1.0 / UIScreen.mainScreen.scale;
+        backgroundConfig.strokeColor = strokeColor;
+        backgroundConfig.backgroundColor = fillColor;
         cell.backgroundConfiguration = backgroundConfig;
-    } else if (getLauncherOutlineControlsEnabled()) {
+    } else {
         cell.layer.cornerRadius = cornerRadius;
         cell.layer.borderWidth = 1.0 / UIScreen.mainScreen.scale;
-        cell.layer.borderColor = (selected ? PLLauncherAccentColor() : [UIColor colorWithWhite:1 alpha:0.18]).CGColor;
-    } else {
-        cell.layer.borderWidth = 0;
-        cell.contentView.backgroundColor = selected ? [PLLauncherAccentColor() colorWithAlphaComponent:0.16] : UIColor.clearColor;
+        cell.layer.borderColor = strokeColor.CGColor;
+        cell.layer.masksToBounds = NO;
+        cell.contentView.layer.cornerRadius = cornerRadius;
+        cell.contentView.layer.masksToBounds = YES;
+        cell.contentView.backgroundColor = fillColor;
     }
 }
 

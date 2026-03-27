@@ -177,14 +177,7 @@
     BOOL destructive = [item[@"destructive"] boolValue];
     cell.imageView.tintColor = destructive ? UIColor.systemRedColor : nil;
     cell.imageView.image = [UIImage systemImageNamed:item[@"icon"]];
-    if (getLauncherOutlineControlsEnabled()) {
-        PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
-    } else {
-        if (@available(iOS 14.0, *)) {
-            cell.backgroundConfiguration = nil;
-        }
-        cell.layer.borderWidth = 0;
-    }
+    PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
     
     if (cellStyle != UITableViewCellStyleValue1) {
         cell.detailTextLabel.text = nil;

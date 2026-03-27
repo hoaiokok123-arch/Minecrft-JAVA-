@@ -65,11 +65,7 @@
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"cell"];
     }
     PLApplyCompactTableCell(cell);
-    if (getLauncherOutlineControlsEnabled()) {
-        PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
-    } else if (@available(iOS 14.0, *)) {
-        cell.backgroundConfiguration = nil;
-    }
+    PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
 
     cell.textLabel.text = [self.fileList objectAtIndex:indexPath.row];
     return cell;

@@ -201,11 +201,7 @@ static WFWorkflowProgressView* currentProgressView;
         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
     }
     PLApplyCompactTableCell(cell);
-    if (getLauncherOutlineControlsEnabled()) {
-        PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
-    } else if (@available(iOS 14.0, *)) {
-        cell.backgroundConfiguration = nil;
-    }
+    PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
     cell.textLabel.text = localize(self.javaRuntimes[@DEFAULT_JRE][indexPath.row], nil);
     cell.detailTextLabel.text = [NSString stringWithFormat:@"Java %@",
         ((NSDictionary *)self.selectedRuntimes[@"0"])[self.selectedRTTags[indexPath.row]]];
@@ -218,11 +214,7 @@ static WFWorkflowProgressView* currentProgressView;
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"RTCell"];
     }
     PLApplyCompactTableCell(cell);
-    if (getLauncherOutlineControlsEnabled()) {
-        PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
-    } else if (@available(iOS 14.0, *)) {
-        cell.backgroundConfiguration = nil;
-    }
+    PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
     NSNumber *version = self.sortedJavaVersions[indexPath.section];
     NSString *name = self.javaRuntimes[version][indexPath.row];
     BOOL isInternal = [objc_getAssociatedObject(name, @"internalJRE") boolValue];

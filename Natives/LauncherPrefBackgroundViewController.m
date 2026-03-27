@@ -296,12 +296,7 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
         NSInteger value = getPrefInt([self preferenceKeyForSliderRow:(LauncherBackgroundRow)indexPath.row]);
         slider.value = value;
         cell.textLabel.text = [self titleForSliderRow:(LauncherBackgroundRow)indexPath.row value:value];
-        if (getLauncherOutlineControlsEnabled()) {
-            PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
-        } else if (@available(iOS 14.0, *)) {
-            cell.backgroundConfiguration = nil;
-            cell.layer.borderWidth = 0;
-        }
+        PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
         return cell;
     }
 
@@ -369,14 +364,7 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
             break;
     }
 
-    if (getLauncherOutlineControlsEnabled()) {
-        PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
-    } else {
-        if (@available(iOS 14.0, *)) {
-            cell.backgroundConfiguration = nil;
-        }
-        cell.layer.borderWidth = 0;
-    }
+    PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
 
     return cell;
 }

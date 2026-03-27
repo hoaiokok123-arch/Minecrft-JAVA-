@@ -130,11 +130,7 @@
         cell.nameField.delegate = self;
     }
     PLApplyCompactTableCell(cell);
-    if (getLauncherOutlineControlsEnabled()) {
-        PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
-    } else if (@available(iOS 14.0, *)) {
-        cell.backgroundConfiguration = nil;
-    }
+    PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
     NSString *name = self.array[indexPath.row];
     cell.representedName = name;
     cell.nameField.placeholder = name;

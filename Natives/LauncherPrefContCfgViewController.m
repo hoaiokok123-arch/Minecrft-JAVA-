@@ -161,11 +161,7 @@ typedef void(^CreateView)(UITableViewCell *, NSString *, NSDictionary *);
         }
     }
     PLApplyCompactTableCell(cell);
-    if (getLauncherOutlineControlsEnabled()) {
-        PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
-    } else if (@available(iOS 14.0, *)) {
-        cell.backgroundConfiguration = nil;
-    }
+    PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
     if (cell.accessoryView && [cell.accessoryView isKindOfClass:UITextField.class]) {
         PLApplyLauncherInputChrome((UITextField *)cell.accessoryView);
     }

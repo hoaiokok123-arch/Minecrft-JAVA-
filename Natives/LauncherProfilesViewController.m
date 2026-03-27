@@ -246,14 +246,7 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
         cell.accessoryView = nil;
     }
     PLApplyCompactTableCell(cell);
-    if (getLauncherOutlineControlsEnabled()) {
-        PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 12);
-    } else {
-        if (@available(iOS 14.0, *)) {
-            cell.backgroundConfiguration = nil;
-        }
-        cell.layer.borderWidth = 0;
-    }
+    PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 12);
 
     if (indexPath.section == kInstances) {
         [self setupInstanceCell:cell atRow:indexPath.row];
