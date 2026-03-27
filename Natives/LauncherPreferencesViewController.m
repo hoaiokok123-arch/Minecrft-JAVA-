@@ -42,8 +42,8 @@
         setPrefObject(keyFull, value);
     };
     
-    self.hasDetail = YES;
-    self.prefDetailVisible = self.navigationController == nil;
+    self.hasDetail = NO;
+    self.prefDetailVisible = NO;
     
     self.prefSections = @[@"general", @"video", @"control", @"java", @"debug"];
 
@@ -436,6 +436,13 @@
     [super viewWillDisappear:animated];
     if (self.navigationController == nil) {
         [self.presentingViewController performSelector:@selector(updatePreferenceChanges)];
+    }
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    if (self.navigationController) {
+        self.navigationItem.rightBarButtonItems = @[[sidebarViewController drawAccountButton]];
     }
 }
 

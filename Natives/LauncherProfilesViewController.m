@@ -148,11 +148,15 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
-    switch (section) {
-        case 0: return localize(@"profile.section.instance", nil);
-        case 1: return localize(@"profile.section.profiles", nil);
-    }
     return nil;
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
+    return 4;
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
+    return 0.01;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
@@ -168,7 +172,7 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
     if (row == 0) {
         cell.imageView.image = [UIImage systemImageNamed:@"folder"];
         cell.textLabel.text = localize(@"preference.title.game_directory", nil);
-        cell.detailTextLabel.text = getenv("DEMO_LOCK") ? @".demo" : getPrefObject(@"general.game_directory");
+        cell.detailTextLabel.text = nil;
     } else {
         NSString *imageName;
         if (@available(iOS 15.0, *)) {
@@ -178,7 +182,7 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
         }
         cell.imageView.image = [UIImage systemImageNamed:imageName];
         cell.textLabel.text = localize(@"profile.title.separate_preference", nil);
-        cell.detailTextLabel.text = localize(@"profile.detail.separate_preference", nil);
+        cell.detailTextLabel.text = nil;
         UISwitch *view = [UISwitch new];
         [view setOn:getPrefBool(@"internal.isolated") animated:NO];
         [view addTarget:self action:@selector(actionTogglePrefIsolation:) forControlEvents:UIControlEventValueChanged];
@@ -191,7 +195,7 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
     NSMutableDictionary *profile = PLProfiles.current.profiles.allValues[row];
 
     cell.textLabel.text = profile[@"name"];
-    cell.detailTextLabel.text = profile[@"lastVersionId"];
+    cell.detailTextLabel.text = nil;
     cell.imageView.layer.magnificationFilter = kCAFilterNearest;
 
     UIImage *fallbackImage = [[UIImage imageNamed:@"DefaultProfile"] _imageWithSize:CGSizeMake(32, 32)];
@@ -203,10 +207,8 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
     NSString *cellID = indexPath.section == kInstances ? @"InstanceCell" : @"ProfileCell";
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellID];
     if (cell == nil) {
-        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:cellID];
+        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellID];
         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-        cell.detailTextLabel.numberOfLines = 0;
-        cell.detailTextLabel.lineBreakMode = NSLineBreakByWordWrapping;
         if (indexPath.section == kProfiles) {
             cell.imageView.frame = CGRectMake(0, 0, 32, 32);
             cell.imageView.isSizeFixed = YES;
