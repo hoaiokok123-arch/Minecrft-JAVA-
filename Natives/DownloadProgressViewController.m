@@ -63,7 +63,6 @@ static void *TotalProgressObserverContext = &TotalProgressObserverContext;
     if (self.presentationController.containerView) {
         PLApplyLauncherViewChrome(self.presentationController.containerView);
     }
-    PLApplyLauncherGlassPane(self.view, self.tableView, 22);
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {

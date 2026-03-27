@@ -13,44 +13,9 @@
 
 @property(nonatomic, strong) NSMutableArray *accountList;
 @property(nonatomic) ASWebAuthenticationSession *authVC;
-@property(nonatomic) UIVisualEffectView *glassBackgroundView;
-@property(nonatomic) UIView *glassTintView;
-
 @end
 
 @implementation AccountListViewController
-
-- (void)ensureGlassBackgroundView {
-    if (self.glassBackgroundView) {
-        return;
-    }
-
-    UIBlurEffectStyle blurStyle = UIBlurEffectStyleSystemUltraThinMaterialDark;
-    self.glassBackgroundView = [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:blurStyle]];
-    self.glassBackgroundView.userInteractionEnabled = NO;
-    self.glassBackgroundView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    self.glassBackgroundView.clipsToBounds = YES;
-
-    self.glassTintView = [[UIView alloc] initWithFrame:CGRectZero];
-    self.glassTintView.userInteractionEnabled = NO;
-    self.glassTintView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    [self.glassBackgroundView.contentView addSubview:self.glassTintView];
-
-    [self.view insertSubview:self.glassBackgroundView belowSubview:self.tableView];
-}
-
-- (void)applyGlassSurfaceStyle {
-    [self ensureGlassBackgroundView];
-
-    CGRect bounds = self.view.bounds;
-    self.glassBackgroundView.frame = bounds;
-    self.glassTintView.frame = self.glassBackgroundView.bounds;
-    self.glassBackgroundView.effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemUltraThinMaterialDark];
-    self.glassBackgroundView.layer.cornerRadius = 22;
-    self.glassBackgroundView.layer.borderWidth = 1.0 / UIScreen.mainScreen.scale;
-    self.glassBackgroundView.layer.borderColor = [UIColor colorWithWhite:1 alpha:0.16].CGColor;
-    self.glassTintView.backgroundColor = [UIColor colorWithWhite:0.08 alpha:0.18];
-}
 
 - (void)applyPopoverChrome {
     PLApplyLauncherViewChrome(self.view);
@@ -61,7 +26,6 @@
     if (self.presentationController.containerView) {
         PLApplyLauncherViewChrome(self.presentationController.containerView);
     }
-    [self applyGlassSurfaceStyle];
 }
 
 - (instancetype)init {

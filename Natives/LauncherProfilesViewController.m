@@ -105,7 +105,6 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
     PLApplyLauncherViewChrome(self.view);
-    PLApplyLauncherGlassPane(self.view, self.tableView, 22);
 }
 
 - (void)applyLauncherAppearance {
