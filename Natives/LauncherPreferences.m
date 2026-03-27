@@ -13,7 +13,6 @@ static NSString * const PLLauncherBackgroundVideoScaleKey = @"general.launcher_b
 static NSString * const PLLauncherBackgroundVideoOffsetXKey = @"general.launcher_background_video_offset_x";
 static NSString * const PLLauncherBackgroundVideoOffsetYKey = @"general.launcher_background_video_offset_y";
 static NSString * const PLLauncherBackgroundVideoRotateKey = @"general.launcher_background_video_rotate";
-static NSString * const PLLauncherOutlineControlsKey = @"general.launcher_outline_controls";
 
 static void PLRunLauncherBlockOnMainThread(void (^block)(void)) {
     if (NSThread.isMainThread) {
@@ -251,7 +250,7 @@ void setLauncherBackgroundVideoRotateEnabled(BOOL enabled) {
 }
 
 BOOL getLauncherOutlineControlsEnabled(void) {
-    return getPrefBool(PLLauncherOutlineControlsKey);
+    return NO;
 }
 
 void resetLauncherBackgroundVideoAdjustments(void) {

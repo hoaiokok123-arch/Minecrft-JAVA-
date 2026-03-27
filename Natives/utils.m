@@ -220,8 +220,8 @@ void PLApplyLauncherCardChrome(UITableViewCell *cell, BOOL selected, NSDirection
         insets.trailing + 1.5
     );
     UIColor *fillColor = selected ?
-        [PLLauncherAccentColor() colorWithAlphaComponent:(getLauncherOutlineControlsEnabled() ? 0.28 : 0.32)] :
-        [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.38];
+        [PLLauncherAccentColor() colorWithAlphaComponent:(getLauncherOutlineControlsEnabled() ? 0.32 : 0.36)] :
+        [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.44];
     UIColor *strokeColor = selected ?
         [PLLauncherAccentColor() colorWithAlphaComponent:(getLauncherOutlineControlsEnabled() ? 0.92 : 0.66)] :
         [UIColor colorWithWhite:1 alpha:(getLauncherOutlineControlsEnabled() ? 0.28 : 0.18)];
@@ -266,8 +266,8 @@ void PLApplyLauncherActionButtonChrome(UIButton *button) {
     button.layer.shadowRadius = 12;
     button.layer.shadowOffset = CGSizeMake(0, 6);
     button.backgroundColor = outline ?
-        [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.34] :
-        [accentColor colorWithAlphaComponent:0.9];
+        [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.4] :
+        [accentColor colorWithAlphaComponent:0.94];
     button.tintColor = outline ? accentColor : UIColor.whiteColor;
 }
 
@@ -275,7 +275,7 @@ void PLApplyLauncherInputChrome(UITextField *textField) {
     BOOL outline = getLauncherOutlineControlsEnabled();
     textField.borderStyle = UITextBorderStyleNone;
     textField.background = nil;
-    textField.backgroundColor = [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.3];
+    textField.backgroundColor = [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.36];
     textField.layer.cornerRadius = 6;
     textField.layer.borderWidth = outline ? 1.0 : 0.0;
     textField.layer.borderColor = (outline ? [UIColor colorWithWhite:1 alpha:0.3] : UIColor.clearColor).CGColor;
