@@ -121,14 +121,6 @@ UIColor *PLLauncherAccentColor(void) {
     return [UIColor colorWithRed:121/255.0 green:56/255.0 blue:162/255.0 alpha:1.0];
 }
 
-UIColor *PLLauncherGlassFillColor(CGFloat alpha) {
-    return [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:alpha];
-}
-
-UIColor *PLLauncherGlassBorderColor(CGFloat alpha) {
-    return [UIColor colorWithWhite:1 alpha:alpha];
-}
-
 static void PLClearLauncherBackdropRecursive(UIView *view) {
     if (!view) {
         return;
@@ -178,49 +170,19 @@ void PLApplyLauncherViewChrome(UIView *view) {
     PLClearLauncherBackdropRecursive(view);
 }
 
-static void PLApplyLauncherBarBackgroundTint(UIView *view, UIColor *fillColor) {
-    for (UIView *subview in view.subviews) {
-        NSString *className = NSStringFromClass(subview.class);
-        BOOL isBarBackground =
-            [className containsString:@"BarBackground"] ||
-            [className containsString:@"ToolbarBackground"] ||
-            [className containsString:@"NavBarBackground"];
-
-        if (isBarBackground) {
-            subview.hidden = NO;
-            subview.opaque = NO;
-            subview.backgroundColor = fillColor;
-            for (UIView *nested in subview.subviews) {
-                NSString *nestedName = NSStringFromClass(nested.class);
-                if ([nested isKindOfClass:UIVisualEffectView.class]) {
-                    ((UIVisualEffectView *)nested).effect = nil;
-                }
-                if ([nestedName containsString:@"Shadow"]) {
-                    nested.hidden = YES;
-                } else {
-                    nested.hidden = NO;
-                    nested.opaque = NO;
-                    nested.backgroundColor = fillColor;
-                }
-            }
-        }
-    }
-}
-
 void PLApplyLauncherNavigationBarChrome(UINavigationBar *navigationBar) {
     if (!navigationBar) {
         return;
     }
 
-    UIColor *fillColor = PLLauncherGlassFillColor(0.22);
     navigationBar.translucent = YES;
-    navigationBar.backgroundColor = fillColor;
-    navigationBar.barTintColor = fillColor;
+    navigationBar.backgroundColor = UIColor.clearColor;
+    navigationBar.barTintColor = UIColor.clearColor;
 
     if (@available(iOS 13.0, *)) {
         UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
         [appearance configureWithTransparentBackground];
-        appearance.backgroundColor = fillColor;
+        appearance.backgroundColor = UIColor.clearColor;
         appearance.backgroundEffect = nil;
         appearance.shadowColor = UIColor.clearColor;
         navigationBar.standardAppearance = appearance;
@@ -234,7 +196,6 @@ void PLApplyLauncherNavigationBarChrome(UINavigationBar *navigationBar) {
         navigationBar.shadowImage = [UIImage new];
     }
     PLApplyLauncherViewChrome(navigationBar);
-    PLApplyLauncherBarBackgroundTint(navigationBar, fillColor);
 }
 
 void PLApplyLauncherToolbarChrome(UIToolbar *toolbar) {
@@ -242,22 +203,20 @@ void PLApplyLauncherToolbarChrome(UIToolbar *toolbar) {
         return;
     }
 
-    UIColor *fillColor = PLLauncherGlassFillColor(0.2);
     toolbar.translucent = YES;
-    toolbar.backgroundColor = fillColor;
-    toolbar.barTintColor = fillColor;
+    toolbar.backgroundColor = UIColor.clearColor;
+    toolbar.barTintColor = UIColor.clearColor;
     [toolbar setBackgroundImage:[UIImage new] forToolbarPosition:UIBarPositionAny barMetrics:UIBarMetricsDefault];
     [toolbar setBackgroundImage:[UIImage new] forToolbarPosition:UIBarPositionAny barMetrics:UIBarMetricsCompact];
     [toolbar setShadowImage:[UIImage new] forToolbarPosition:UIBarPositionAny];
     PLApplyLauncherViewChrome(toolbar);
-    PLApplyLauncherBarBackgroundTint(toolbar, fillColor);
 }
 
 void PLApplyLauncherCardChrome(UITableViewCell *cell, BOOL selected, NSDirectionalEdgeInsets insets, CGFloat cornerRadius) {
-    UIColor *glassFillColor = PLLauncherGlassFillColor(selected ? 0.26 : 0.2);
+    UIColor *glassFillColor = [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:selected ? 0.26 : 0.2];
     UIColor *strokeColor = selected ?
         [PLLauncherAccentColor() colorWithAlphaComponent(getLauncherOutlineControlsEnabled() ? 0.95 : 0.45)] :
-        PLLauncherGlassBorderColor(getLauncherOutlineControlsEnabled() ? 0.18 : 0.1);
+        [UIColor colorWithWhite:1 alpha:getLauncherOutlineControlsEnabled() ? 0.18 : 0.1];
 
     cell.backgroundColor = UIColor.clearColor;
     cell.contentView.backgroundColor = UIColor.clearColor;
@@ -265,14 +224,19 @@ void PLApplyLauncherCardChrome(UITableViewCell *cell, BOOL selected, NSDirection
         UIBackgroundConfiguration *backgroundConfig = [UIBackgroundConfiguration clearConfiguration];
         backgroundConfig.backgroundInsets = insets;
         backgroundConfig.cornerRadius = cornerRadius;
-        backgroundConfig.strokeWidth = 1.0 / UIScreen.mainScreen.scale;
-        backgroundConfig.strokeColor = strokeColor;
+        if (getLauncherOutlineControlsEnabled()) {
+            backgroundConfig.strokeWidth = 1.0 / UIScreen.mainScreen.scale;
+            backgroundConfig.strokeColor = strokeColor;
+        }
         backgroundConfig.backgroundColor = selected ? [PLLauncherAccentColor() colorWithAlphaComponent:0.18] : glassFillColor;
         cell.backgroundConfiguration = backgroundConfig;
-    } else {
+    } else if (getLauncherOutlineControlsEnabled()) {
         cell.layer.cornerRadius = cornerRadius;
         cell.layer.borderWidth = 1.0 / UIScreen.mainScreen.scale;
         cell.layer.borderColor = strokeColor.CGColor;
+        cell.contentView.backgroundColor = selected ? [PLLauncherAccentColor() colorWithAlphaComponent:0.18] : glassFillColor;
+    } else {
+        cell.layer.borderWidth = 0;
         cell.contentView.backgroundColor = selected ? [PLLauncherAccentColor() colorWithAlphaComponent:0.18] : glassFillColor;
     }
 }
@@ -281,9 +245,11 @@ void PLApplyLauncherActionButtonChrome(UIButton *button) {
     BOOL outline = getLauncherOutlineControlsEnabled();
     UIColor *accentColor = PLLauncherAccentColor();
     button.layer.cornerRadius = MAX(button.layer.cornerRadius, 5);
-    button.layer.borderWidth = 1.0 / UIScreen.mainScreen.scale;
-    button.layer.borderColor = (outline ? accentColor : [accentColor colorWithAlphaComponent:0.42]).CGColor;
-    button.backgroundColor = outline ? PLLauncherGlassFillColor(0.22) : [accentColor colorWithAlphaComponent:0.78];
+    button.layer.borderWidth = outline ? 1.0 / UIScreen.mainScreen.scale : 0.0;
+    button.layer.borderColor = (outline ? accentColor : UIColor.clearColor).CGColor;
+    button.backgroundColor = outline ?
+        [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.22] :
+        [accentColor colorWithAlphaComponent:0.78];
     button.tintColor = outline ? accentColor : UIColor.whiteColor;
 }
 
@@ -291,12 +257,10 @@ void PLApplyLauncherInputChrome(UITextField *textField) {
     BOOL outline = getLauncherOutlineControlsEnabled();
     textField.borderStyle = UITextBorderStyleNone;
     textField.background = nil;
-    textField.backgroundColor = PLLauncherGlassFillColor(0.2);
+    textField.backgroundColor = [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.2];
     textField.layer.cornerRadius = 6;
-    textField.layer.borderWidth = 1.0 / UIScreen.mainScreen.scale;
-    textField.layer.borderColor = (outline ?
-        PLLauncherGlassBorderColor(0.22) :
-        PLLauncherGlassBorderColor(0.1)).CGColor;
+    textField.layer.borderWidth = outline ? 1.0 / UIScreen.mainScreen.scale : 0.0;
+    textField.layer.borderColor = (outline ? [UIColor colorWithWhite:1 alpha:0.22] : UIColor.clearColor).CGColor;
 }
 
 CGSize PLCompactPopoverSize(CGFloat width, CGFloat height) {
