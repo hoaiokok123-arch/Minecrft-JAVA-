@@ -89,6 +89,7 @@ static WFWorkflowProgressView* currentProgressView;
     PLApplyLauncherViewChrome(self.view);
     PLApplyLauncherNavigationBarChrome(self.navigationController.navigationBar);
     PLApplyLauncherToolbarChrome(self.navigationController.toolbar);
+    PLApplyLauncherGlassPane(self.view, self.tableView, 22);
 }
 
 + (void)actionCancelImportRuntime {

@@ -26,6 +26,8 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    self.view.backgroundColor = UIColor.clearColor;
+    self.tableView.backgroundColor = UIColor.clearColor;
 
     //NSString *curseforgeAPIKey = CONFIG_CURSEFORGE_API_KEY;
     self.searchController = [[UISearchController alloc] initWithSearchResultsController:nil];
@@ -40,6 +42,14 @@
         // mcVersion
     }.mutableCopy;
     [self updateSearchResults];
+}
+
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    PLApplyLauncherViewChrome(self.view);
+    PLApplyLauncherNavigationBarChrome(self.navigationController.navigationBar);
+    PLApplyLauncherToolbarChrome(self.navigationController.toolbar);
+    PLApplyLauncherGlassPane(self.view, self.tableView, 22);
 }
 
 - (void)loadSearchResultsWithPrevList:(BOOL)prevList {

@@ -170,6 +170,56 @@ void PLApplyLauncherViewChrome(UIView *view) {
     PLClearLauncherBackdropRecursive(view);
 }
 
+void PLApplyLauncherGlassPane(UIView *containerView, UIView *contentView, CGFloat cornerRadius) {
+    if (!containerView) {
+        return;
+    }
+
+    static const NSInteger glassPaneTag = 0x504C4742;
+    static const NSInteger glassTintTag = 0x504C4754;
+
+    UIVisualEffectView *glassView = (UIVisualEffectView *)[containerView viewWithTag:glassPaneTag];
+    UIView *tintView = nil;
+    if (!glassView) {
+        glassView = [[UIVisualEffectView alloc] initWithEffect:nil];
+        glassView.tag = glassPaneTag;
+        glassView.userInteractionEnabled = NO;
+        glassView.backgroundColor = UIColor.clearColor;
+        glassView.clipsToBounds = YES;
+
+        tintView = [[UIView alloc] initWithFrame:CGRectZero];
+        tintView.tag = glassTintTag;
+        tintView.userInteractionEnabled = NO;
+        [glassView.contentView addSubview:tintView];
+
+        if (contentView && contentView.superview == containerView) {
+            [containerView insertSubview:glassView belowSubview:contentView];
+        } else {
+            [containerView addSubview:glassView];
+            [containerView sendSubviewToBack:glassView];
+        }
+    } else {
+        tintView = [glassView.contentView viewWithTag:glassTintTag];
+        if (!tintView) {
+            tintView = [[UIView alloc] initWithFrame:CGRectZero];
+            tintView.tag = glassTintTag;
+            tintView.userInteractionEnabled = NO;
+            [glassView.contentView addSubview:tintView];
+        }
+        if (contentView && contentView.superview == containerView) {
+            [containerView insertSubview:glassView belowSubview:contentView];
+        }
+    }
+
+    glassView.frame = containerView.bounds;
+    tintView.frame = glassView.bounds;
+    glassView.effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemUltraThinMaterialDark];
+    glassView.layer.cornerRadius = cornerRadius;
+    glassView.layer.borderWidth = 1.0 / UIScreen.mainScreen.scale;
+    glassView.layer.borderColor = [UIColor colorWithWhite:1 alpha:0.14].CGColor;
+    tintView.backgroundColor = [UIColor colorWithWhite:0.08 alpha:0.18];
+}
+
 void PLApplyLauncherNavigationBarChrome(UINavigationBar *navigationBar) {
     if (!navigationBar) {
         return;

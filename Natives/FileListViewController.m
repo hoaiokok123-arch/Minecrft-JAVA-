@@ -44,6 +44,13 @@
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
     PLApplyLauncherViewChrome(self.view);
+    if (self.presentationController.presentedView) {
+        PLApplyLauncherViewChrome(self.presentationController.presentedView);
+    }
+    if (self.presentationController.containerView) {
+        PLApplyLauncherViewChrome(self.presentationController.containerView);
+    }
+    PLApplyLauncherGlassPane(self.view, self.tableView, 22);
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
