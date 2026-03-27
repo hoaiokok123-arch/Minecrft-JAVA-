@@ -6,8 +6,60 @@
 #import "ios_uikit_bridge.h"
 #import "utils.h"
 
+@interface LauncherPrefGameDirCell : UITableViewCell
+@property(nonatomic) UITextField *nameField;
+@property(nonatomic) UILabel *sizeLabel;
+@property(nonatomic) NSString *representedName;
+@end
+
+@implementation LauncherPrefGameDirCell
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier {
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        self.selectionStyle = UITableViewCellSelectionStyleGray;
+
+        self.nameField = [[UITextField alloc] init];
+        self.nameField.translatesAutoresizingMaskIntoConstraints = NO;
+        self.nameField.autocorrectionType = UITextAutocorrectionTypeNo;
+        self.nameField.autocapitalizationType = UITextAutocapitalizationTypeNone;
+        self.nameField.returnKeyType = UIReturnKeyDone;
+        self.nameField.adjustsFontSizeToFitWidth = YES;
+        self.nameField.minimumFontSize = 11;
+        self.nameField.font = [UIFont systemFontOfSize:13.5 weight:UIFontWeightMedium];
+        [self.contentView addSubview:self.nameField];
+
+        self.sizeLabel = [[UILabel alloc] init];
+        self.sizeLabel.translatesAutoresizingMaskIntoConstraints = NO;
+        self.sizeLabel.font = [UIFont systemFontOfSize:10.5];
+        self.sizeLabel.textColor = UIColor.secondaryLabelColor;
+        self.sizeLabel.textAlignment = NSTextAlignmentRight;
+        self.sizeLabel.adjustsFontSizeToFitWidth = YES;
+        self.sizeLabel.minimumScaleFactor = 0.7;
+        [self.contentView addSubview:self.sizeLabel];
+
+        [self.sizeLabel setContentCompressionResistancePriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];
+        [self.sizeLabel setContentHuggingPriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];
+        [self.nameField setContentCompressionResistancePriority:UILayoutPriorityDefaultLow forAxis:UILayoutConstraintAxisHorizontal];
+
+        [NSLayoutConstraint activateConstraints:@[
+            [self.nameField.leadingAnchor constraintEqualToAnchor:self.contentView.leadingAnchor constant:18],
+            [self.nameField.topAnchor constraintEqualToAnchor:self.contentView.topAnchor constant:7],
+            [self.nameField.bottomAnchor constraintEqualToAnchor:self.contentView.bottomAnchor constant:-7],
+            [self.nameField.trailingAnchor constraintLessThanOrEqualToAnchor:self.sizeLabel.leadingAnchor constant:-10],
+            [self.sizeLabel.centerYAnchor constraintEqualToAnchor:self.contentView.centerYAnchor],
+            [self.sizeLabel.trailingAnchor constraintEqualToAnchor:self.contentView.trailingAnchor constant:-4],
+            [self.sizeLabel.widthAnchor constraintGreaterThanOrEqualToConstant:34]
+        ]];
+    }
+    return self;
+}
+
+@end
+
 @interface LauncherPrefGameDirViewController ()<UITextFieldDelegate>
 @property(nonatomic) NSMutableArray *array;
+@property(nonatomic) UITextField *footerTextField;
 @end
 
 @implementation LauncherPrefGameDirViewController
@@ -22,8 +74,8 @@
 
     self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
-    self.tableView.sectionFooterHeight = 36;
-    PLApplyCompactTableLayout(self.tableView, 42);
+    self.tableView.sectionFooterHeight = 44;
+    PLApplyCompactTableLayout(self.tableView, 44);
 
     NSString *path = [NSString stringWithFormat:@"%s/instances", getenv("POJAV_HOME")];
 
@@ -31,7 +83,8 @@
     NSArray *files = [fm contentsOfDirectoryAtPath:path error:nil];
     BOOL isDir;
     for (NSString *file in files) {
-        [fm fileExistsAtPath:path isDirectory:(&isDir)];
+        NSString *filePath = [path stringByAppendingPathComponent:file];
+        [fm fileExistsAtPath:filePath isDirectory:(&isDir)];
         if (isDir && ![file isEqualToString:@"default"]) {
             [self.array addObject:file];
         }
@@ -58,39 +111,34 @@
 
 - (UITableViewCell *)tableView:(nonnull UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    UITextField *view;
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell"];
+    LauncherPrefGameDirCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell"];
     if (cell == nil) {
-        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"cell"];
-        view = [[UITextField alloc] initWithFrame:CGRectMake(20, 10, (cell.bounds.size.width-40)/2, cell.bounds.size.height-20)];
-        [view addTarget:view action:@selector(resignFirstResponder) forControlEvents:UIControlEventEditingDidEndOnExit];
-        view.autocorrectionType = UITextAutocorrectionTypeNo;
-        view.autocapitalizationType = UITextAutocapitalizationTypeNone;
-        view.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-        view.delegate = self;
-        view.returnKeyType = UIReturnKeyDone;
-        view.userInteractionEnabled = indexPath.row != 0;
-        [cell.contentView addSubview:view];
-        cell.detailTextLabel.text = @"...";
+        cell = [[LauncherPrefGameDirCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"cell"];
+        [cell.nameField addTarget:cell.nameField action:@selector(resignFirstResponder) forControlEvents:UIControlEventEditingDidEndOnExit];
+        cell.nameField.delegate = self;
     }
     PLApplyCompactTableCell(cell);
-    view = cell.contentView.subviews.firstObject;
-    view.placeholder = self.array[indexPath.row];
-    view.text = self.array[indexPath.row];
-    cell.textLabel.hidden = YES;
-    cell.textLabel.text = view.text;
+    NSString *name = self.array[indexPath.row];
+    cell.representedName = name;
+    cell.nameField.placeholder = name;
+    cell.nameField.text = name;
+    cell.nameField.userInteractionEnabled = indexPath.row != 0;
+    cell.nameField.textColor = UIColor.labelColor;
+    cell.sizeLabel.text = @"...";
 
     // Calculate the instance size
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         unsigned long long folderSize = 0;
-        NSString *directory = [NSString stringWithFormat:@"%s/instances/%@", getenv("POJAV_HOME"), self.array[indexPath.row]];
+        NSString *directory = [NSString stringWithFormat:@"%s/instances/%@", getenv("POJAV_HOME"), name];
         [NSFileManager.defaultManager nr_getAllocatedSize:&folderSize ofDirectoryAtURL:[NSURL fileURLWithPath:directory] error:nil];
         dispatch_async(dispatch_get_main_queue(), ^{
-            cell.detailTextLabel.text = [NSByteCountFormatter stringFromByteCount:folderSize countStyle:NSByteCountFormatterCountStyleMemory];
+            if ([cell.representedName isEqualToString:name]) {
+                cell.sizeLabel.text = [NSByteCountFormatter stringFromByteCount:folderSize countStyle:NSByteCountFormatterCountStyleMemory];
+            }
         });
     });
 
-    if ([getPrefObject(@"general.game_directory") isEqualToString:self.array[indexPath.row]]) {
+    if ([getPrefObject(@"general.game_directory") isEqualToString:name]) {
         cell.accessoryType = UITableViewCellAccessoryCheckmark;
     } else {
         cell.accessoryType = UITableViewCellAccessoryNone;
@@ -102,6 +150,7 @@
 - (UIView *)tableView:(UITableView *)tableView 
 viewForFooterInSection:(NSInteger)section
 {
+    UIView *container = [[UIView alloc] init];
     UITextField *view = [[UITextField alloc] init];
     [view addTarget:view action:@selector(resignFirstResponder) forControlEvents:UIControlEventEditingDidEndOnExit];
     view.autocorrectionType = UITextAutocorrectionTypeNo;
@@ -109,7 +158,24 @@ viewForFooterInSection:(NSInteger)section
     view.delegate = self;
     view.placeholder = localize(@"preference.multidir.add_directory", nil);
     view.returnKeyType = UIReturnKeyDone;
-    return view;
+    view.backgroundColor = UIColor.secondarySystemGroupedBackgroundColor;
+    view.layer.cornerRadius = 12;
+    view.translatesAutoresizingMaskIntoConstraints = NO;
+    view.leftView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 12, 1)];
+    view.leftViewMode = UITextFieldViewModeAlways;
+    view.rightView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 12, 1)];
+    view.rightViewMode = UITextFieldViewModeAlways;
+    view.font = [UIFont systemFontOfSize:13];
+    [container addSubview:view];
+    [NSLayoutConstraint activateConstraints:@[
+        [view.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+        [view.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+        [view.topAnchor constraintEqualToAnchor:container.topAnchor constant:4],
+        [view.bottomAnchor constraintEqualToAnchor:container.bottomAnchor constant:-4],
+        [view.heightAnchor constraintEqualToConstant:36]
+    ]];
+    self.footerTextField = view;
+    return container;
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -170,8 +236,8 @@ viewForFooterInSection:(NSInteger)section
             image:[UIImage systemImageNamed:@"pencil"]
             identifier:nil
             handler:^(UIAction *action) {
-                UITableViewCell *view = [self.tableView cellForRowAtIndexPath:indexPath];
-                [view.contentView.subviews.firstObject becomeFirstResponder];
+                LauncherPrefGameDirCell *view = (id)[self.tableView cellForRowAtIndexPath:indexPath];
+                [view.nameField becomeFirstResponder];
             }
         ];
 
@@ -249,7 +315,7 @@ viewForFooterInSection:(NSInteger)section
 #pragma mark UITextField
 
 - (void)textFieldDidEndEditing:(UITextField *)sender {
-    BOOL isFooterView = sender.superview == self.tableView;
+    BOOL isFooterView = sender == self.footerTextField;
     if (!sender.hasText || [sender.text isEqualToString:sender.placeholder]) {
         if (isFooterView) {
             return;
@@ -295,10 +361,6 @@ viewForFooterInSection:(NSInteger)section
 }
 
 - (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string {
-    [textField invalidateIntrinsicContentSize];
-    CGRect frame = textField.frame;
-    frame.size.width = MAX(50, textField.intrinsicContentSize.width + 10);
-    textField.frame = frame;
     return YES;
 }
 

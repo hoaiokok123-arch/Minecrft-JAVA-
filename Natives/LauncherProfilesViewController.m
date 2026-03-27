@@ -79,7 +79,7 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
 
     self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
-    PLApplyCompactTableLayout(self.tableView, 44);
+    PLApplyCompactTableLayout(self.tableView, 42);
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -124,7 +124,20 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
 
 - (void)presentNavigatedViewController:(UIViewController *)vc {
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
-    //nav.navigationBar.prefersLargeTitles = YES;
+    nav.modalPresentationStyle = UIModalPresentationFormSheet;
+    if ([vc isKindOfClass:LauncherProfileEditorViewController.class]) {
+        nav.preferredContentSize = PLCompactSheetSize(620, 360);
+    } else if ([vc isKindOfClass:ModpackInstallViewController.class]) {
+        nav.preferredContentSize = PLCompactSheetSize(700, 420);
+    } else {
+        nav.preferredContentSize = PLCompactSheetSize(620, 400);
+    }
+    if (@available(iOS 15.0, *)) {
+        UISheetPresentationController *sheet = nav.sheetPresentationController;
+        sheet.prefersEdgeAttachedInCompactHeight = YES;
+        sheet.preferredCornerRadius = 18;
+        sheet.widthFollowsPreferredContentSizeWhenEdgeAttached = YES;
+    }
     [self presentViewController:nav animated:YES completion:nil];
 }
 
@@ -169,6 +182,7 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
         UISwitch *view = [UISwitch new];
         [view setOn:getPrefBool(@"internal.isolated") animated:NO];
         [view addTarget:self action:@selector(actionTogglePrefIsolation:) forControlEvents:UIControlEventValueChanged];
+        PLApplyCompactSwitch(view);
         cell.accessoryView = view;
     }
 }

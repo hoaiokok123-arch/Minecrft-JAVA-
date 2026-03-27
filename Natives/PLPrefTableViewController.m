@@ -31,7 +31,7 @@
 
     self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
-    PLApplyCompactTableLayout(self.tableView, 42);
+    PLApplyCompactTableLayout(self.tableView, 40);
     if (self.prefSections) {
         self.prefSectionsVisibility = [[NSMutableArray<NSNumber *> alloc] initWithCapacity:self.prefSections.count];
         for (int i = 0; i < self.prefSections.count; i++) {
@@ -95,31 +95,40 @@
 - (UITableViewCell *)tableView:(nonnull UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     NSDictionary *item = self.prefContents[indexPath.section][indexPath.row];
 
+    BOOL showsDetailText = [item[@"hasDetail"] boolValue] && self.prefDetailVisible;
     NSString *cellID;
     UITableViewCellStyle cellStyle;
     if (item[@"type"] == self.typeChildPane || item[@"type"] == self.typePickField) {
         cellID = @"cellValue1";
         cellStyle = UITableViewCellStyleValue1;
-    } else {
+    } else if (showsDetailText) {
         cellID = @"cellSubtitle";
         cellStyle = UITableViewCellStyleSubtitle;
+    } else {
+        cellID = @"cellDefault";
+        cellStyle = UITableViewCellStyleDefault;
     }
 
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellID];
     if (cell == nil) {
         cell = [[UITableViewCell alloc] initWithStyle:cellStyle reuseIdentifier:cellID];
         cell.textLabel.adjustsFontSizeToFitWidth = YES;
+        cell.textLabel.minimumScaleFactor = 0.75;
         cell.textLabel.numberOfLines = 0;
         cell.textLabel.lineBreakMode = NSLineBreakByWordWrapping;
-        cell.detailTextLabel.numberOfLines = 0;
-        cell.detailTextLabel.lineBreakMode = NSLineBreakByWordWrapping;
+        if (cell.detailTextLabel) {
+            cell.detailTextLabel.numberOfLines = 0;
+            cell.detailTextLabel.lineBreakMode = NSLineBreakByWordWrapping;
+        }
     }
     // Reset cell properties, as it could be reused
     cell.accessoryType = UITableViewCellAccessoryNone;
     cell.accessoryView = nil;
     cell.selectionStyle = UITableViewCellSelectionStyleNone;
     cell.textLabel.textColor = nil;
-    cell.detailTextLabel.text = nil;
+    if (cell.detailTextLabel) {
+        cell.detailTextLabel.text = nil;
+    }
     PLApplyCompactTableCell(cell);
 
     NSString *key = item[@"key"];
@@ -154,7 +163,8 @@
     // Check if one has enable condition and call if it does
     BOOL(^checkEnable)(void) = item[@"enableCondition"];
     cell.userInteractionEnabled = !checkEnable || checkEnable();
-    cell.textLabel.enabled = cell.detailTextLabel.enabled = cell.userInteractionEnabled;
+    cell.textLabel.enabled = cell.userInteractionEnabled;
+    cell.detailTextLabel.enabled = cell.userInteractionEnabled;
     [(id)cell.accessoryView setEnabled:cell.userInteractionEnabled];
 
     return cell;
@@ -180,7 +190,8 @@
     self.typeTextField = ^void(UITableViewCell *cell, NSString *section, NSString *key, NSDictionary *item) {
         Class cls = item[@"customClass"];
         if (!cls) cls = UITextField.class;
-        UITextField *view = [[cls alloc] initWithFrame:CGRectMake(0, 0, cell.bounds.size.width / 2.5, cell.bounds.size.height)];
+        CGFloat width = cell.bounds.size.width / 2.9;
+        UITextField *view = [[cls alloc] initWithFrame:CGRectMake(0, 0, width, cell.bounds.size.height - 10)];
         [view addTarget:view action:@selector(resignFirstResponder) forControlEvents:UIControlEventEditingDidEndOnExit];
         view.adjustsFontSizeToFitWidth = YES;
         view.autocorrectionType = UITextAutocorrectionTypeNo;
@@ -194,6 +205,7 @@
         view.placeholder = localize((item[@"placeholder"] ? item[@"placeholder"] :
             [NSString stringWithFormat:@"preference.placeholder.%@", key]), nil);
         view.text = weakSelf.getPreference(section, key);
+        PLApplyCompactTextField(view, width, cell.bounds.size.height - 10);
         cell.accessoryView = view;
     };
 
@@ -204,13 +216,15 @@
     };
 
     self.typeSlider = ^void(UITableViewCell *cell, NSString *section, NSString *key, NSDictionary *item) {
-        DBNumberedSlider *view = [[DBNumberedSlider alloc] initWithFrame:CGRectMake(0, 0, cell.bounds.size.width / 2.5, cell.bounds.size.height)];
+        CGFloat width = cell.bounds.size.width / 2.9;
+        DBNumberedSlider *view = [[DBNumberedSlider alloc] initWithFrame:CGRectMake(0, 0, width, cell.bounds.size.height - 10)];
         [view addTarget:weakSelf action:@selector(sliderMoved:) forControlEvents:UIControlEventValueChanged];
         view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleLeftMargin;
         view.minimumValue = [item[@"min"] intValue];
         view.maximumValue = [item[@"max"] intValue];
         view.continuous = YES;
         view.value = [weakSelf.getPreference(section, key) intValue];
+        PLApplyCompactSlider(view, width, cell.bounds.size.height - 10);
         cell.accessoryView = view;
     };
 
@@ -223,6 +237,7 @@
             [view setOn:[weakSelf.getPreference(section, key) isEqualToString:customSwitchValue[1]] animated:NO];
         }
         [view addTarget:weakSelf action:@selector(switchChanged:) forControlEvents:UIControlEventValueChanged];
+        PLApplyCompactSwitch(view);
         cell.accessoryView = view;
     };
 }
@@ -331,7 +346,14 @@
         [self.navigationController pushViewController:vc animated:YES];
     } else {
         UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
-        nav.navigationBar.prefersLargeTitles = YES;
+        nav.modalPresentationStyle = UIModalPresentationFormSheet;
+        nav.preferredContentSize = PLCompactSheetSize(620, 400);
+        if (@available(iOS 15.0, *)) {
+            UISheetPresentationController *sheet = nav.sheetPresentationController;
+            sheet.prefersEdgeAttachedInCompactHeight = YES;
+            sheet.widthFollowsPreferredContentSizeWhenEdgeAttached = YES;
+            sheet.preferredCornerRadius = 18;
+        }
         nav.modalInPresentation = YES;
         [self.navigationController presentViewController:nav animated:YES completion:nil];
     }

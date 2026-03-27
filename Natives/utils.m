@@ -76,17 +76,46 @@ void PLApplyCompactTableLayout(UITableView *tableView, CGFloat rowHeight) {
 }
 
 void PLApplyCompactTableCell(UITableViewCell *cell) {
-    cell.layoutMargins = UIEdgeInsetsMake(0, 8, 0, 8);
-    cell.separatorInset = UIEdgeInsetsMake(0, 12, 0, 12);
-    cell.textLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightMedium];
+    cell.layoutMargins = UIEdgeInsetsMake(0, 6, 0, 6);
+    cell.separatorInset = UIEdgeInsetsMake(0, 10, 0, 10);
+    cell.textLabel.font = [UIFont systemFontOfSize:13.5 weight:UIFontWeightMedium];
+    cell.textLabel.minimumScaleFactor = 0.75;
     if (cell.detailTextLabel) {
-        cell.detailTextLabel.font = [UIFont systemFontOfSize:11.5];
+        cell.detailTextLabel.font = [UIFont systemFontOfSize:10.5];
         cell.detailTextLabel.textColor = UIColor.secondaryLabelColor;
+        cell.detailTextLabel.adjustsFontSizeToFitWidth = YES;
+        cell.detailTextLabel.minimumScaleFactor = 0.7;
     }
+}
+
+void PLApplyCompactTextField(UITextField *textField, CGFloat width, CGFloat height) {
+    CGRect frame = textField.frame;
+    frame.size.width = clamp(width, 104, 210);
+    frame.size.height = clamp(height, 28, 32);
+    textField.frame = frame;
+    textField.font = [UIFont systemFontOfSize:13];
+    textField.minimumFontSize = 10.5;
+    textField.clearButtonMode = UITextFieldViewModeWhileEditing;
+}
+
+void PLApplyCompactSlider(UIView *view, CGFloat width, CGFloat height) {
+    CGRect frame = view.frame;
+    frame.size.width = clamp(width, 118, 208);
+    frame.size.height = clamp(height, 28, 32);
+    view.frame = frame;
+    view.transform = CGAffineTransformMakeScale(0.92, 0.86);
+}
+
+void PLApplyCompactSwitch(UISwitch *toggle) {
+    toggle.transform = CGAffineTransformMakeScale(0.82, 0.82);
 }
 
 CGSize PLCompactPopoverSize(CGFloat width, CGFloat height) {
     return CGSizeMake(clamp(width, 280, 330), clamp(height, 200, 240));
+}
+
+CGSize PLCompactSheetSize(CGFloat width, CGFloat height) {
+    return CGSizeMake(clamp(width, 540, 700), clamp(height, 320, 520));
 }
 
 NSMutableDictionary* parseJSONFromFile(NSString *path) {

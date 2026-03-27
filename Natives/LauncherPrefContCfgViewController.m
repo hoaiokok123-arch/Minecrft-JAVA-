@@ -46,7 +46,7 @@ typedef void(^CreateView)(UITableViewCell *, NSString *, NSDictionary *);
     self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
     self.tableView.sectionFooterHeight = 36;
-    PLApplyCompactTableLayout(self.tableView, 42);
+    PLApplyCompactTableLayout(self.tableView, 40);
     
     [self loadGamepadConfigurationFile];
     self.prefControllerTypes = @[@{@"name": @"xbox"}, @{@"name": @"playstation"}];
@@ -121,7 +121,8 @@ typedef void(^CreateView)(UITableViewCell *, NSString *, NSDictionary *);
         cell.textLabel.text = localize(([NSString stringWithFormat:@"controller_configurator.%@.title.%@", getPrefObject(@"control.controller_type"), item[@"name"]]), nil);
         UITextField *view = (id)cell.accessoryView;
         if (view == nil) {
-            view = [[PickTextField alloc] initWithFrame:CGRectMake(0, 0, cell.bounds.size.width / 2.5, cell.bounds.size.height)];
+            CGFloat width = cell.bounds.size.width / 2.9;
+            view = [[PickTextField alloc] initWithFrame:CGRectMake(0, 0, width, cell.bounds.size.height - 10)];
             [view addTarget:view action:@selector(resignFirstResponder) forControlEvents:UIControlEventEditingDidEndOnExit];
             view.autocorrectionType = UITextAutocorrectionTypeNo;
             view.autocapitalizationType = UITextAutocapitalizationTypeNone;
@@ -132,6 +133,7 @@ typedef void(^CreateView)(UITableViewCell *, NSString *, NSDictionary *);
             view.textAlignment = NSTextAlignmentRight;
             view.tintColor = UIColor.clearColor;
             view.adjustsFontSizeToFitWidth = YES;
+            PLApplyCompactTextField(view, width, cell.bounds.size.height - 10);
             view.inputView = self.editPickMapping;
             cell.accessoryView = view;
         }

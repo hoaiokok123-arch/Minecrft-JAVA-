@@ -80,7 +80,11 @@ UIViewController* currentVC();
 void openLink(UIViewController* sender, NSURL* link);
 void PLApplyCompactTableLayout(UITableView *tableView, CGFloat rowHeight);
 void PLApplyCompactTableCell(UITableViewCell *cell);
+void PLApplyCompactTextField(UITextField *textField, CGFloat width, CGFloat height);
+void PLApplyCompactSlider(UIView *view, CGFloat width, CGFloat height);
+void PLApplyCompactSwitch(UISwitch *toggle);
 CGSize PLCompactPopoverSize(CGFloat width, CGFloat height);
+CGSize PLCompactSheetSize(CGFloat width, CGFloat height);
 
 NSString* localize(NSString* key, NSString* comment);
 NSMutableDictionary* parseJSONFromFile(NSString *path);
