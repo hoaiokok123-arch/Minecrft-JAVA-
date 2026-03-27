@@ -214,11 +214,11 @@ void PLApplyLauncherToolbarChrome(UIToolbar *toolbar) {
 
 void PLApplyLauncherCardChrome(UITableViewCell *cell, BOOL selected, NSDirectionalEdgeInsets insets, CGFloat cornerRadius) {
     UIColor *fillColor = selected ?
-        [PLLauncherAccentColor() colorWithAlphaComponent:(getLauncherOutlineControlsEnabled() ? 0.18 : 0.22)] :
-        [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.24];
+        [PLLauncherAccentColor() colorWithAlphaComponent:(getLauncherOutlineControlsEnabled() ? 0.22 : 0.26)] :
+        [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.3];
     UIColor *strokeColor = selected ?
         [PLLauncherAccentColor() colorWithAlphaComponent:(getLauncherOutlineControlsEnabled() ? 0.9 : 0.6)] :
-        [UIColor colorWithWhite:1 alpha:(getLauncherOutlineControlsEnabled() ? 0.18 : 0.12)];
+        [UIColor colorWithWhite:1 alpha:(getLauncherOutlineControlsEnabled() ? 0.2 : 0.14)];
 
     cell.backgroundColor = UIColor.clearColor;
     cell.contentView.backgroundColor = UIColor.clearColor;
