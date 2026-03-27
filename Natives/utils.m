@@ -121,8 +121,148 @@ UIColor *PLLauncherAccentColor(void) {
     return [UIColor colorWithRed:121/255.0 green:56/255.0 blue:162/255.0 alpha:1.0];
 }
 
+static const NSInteger kPLLauncherPreservedEffectTag = 0x504C4753;
+
+@interface PLLauncherLensCardBackgroundView : UIView
+
+@property(nonatomic) NSDirectionalEdgeInsets insets;
+@property(nonatomic) CGFloat cornerRadius;
+@property(nonatomic) BOOL emphasized;
+@property(nonatomic) UIView *glassView;
+@property(nonatomic) UIVisualEffectView *blurView;
+@property(nonatomic) UIView *tintView;
+@property(nonatomic) UIView *rimView;
+@property(nonatomic) UIView *innerRimView;
+@property(nonatomic) CAGradientLayer *sheenLayer;
+@property(nonatomic) CAGradientLayer *causticLayer;
+@property(nonatomic) CAGradientLayer *bottomShadeLayer;
+
+- (instancetype)initWithInsets:(NSDirectionalEdgeInsets)insets cornerRadius:(CGFloat)cornerRadius emphasized:(BOOL)emphasized;
+
+@end
+
+@implementation PLLauncherLensCardBackgroundView
+
+- (instancetype)initWithInsets:(NSDirectionalEdgeInsets)insets cornerRadius:(CGFloat)cornerRadius emphasized:(BOOL)emphasized {
+    self = [super initWithFrame:CGRectZero];
+    if (self) {
+        self.tag = kPLLauncherPreservedEffectTag;
+        self.insets = insets;
+        self.cornerRadius = cornerRadius;
+        self.emphasized = emphasized;
+        self.backgroundColor = UIColor.clearColor;
+        self.userInteractionEnabled = NO;
+        self.clipsToBounds = NO;
+
+        self.glassView = [UIView new];
+        self.glassView.backgroundColor = UIColor.clearColor;
+        self.glassView.userInteractionEnabled = NO;
+        self.glassView.clipsToBounds = YES;
+        [self addSubview:self.glassView];
+
+        UIBlurEffect *effect;
+        if (@available(iOS 13.0, *)) {
+            effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemChromeMaterialLight];
+        } else {
+            effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleExtraLight];
+        }
+        self.blurView = [[UIVisualEffectView alloc] initWithEffect:effect];
+        self.blurView.userInteractionEnabled = NO;
+        [self.glassView addSubview:self.blurView];
+
+        self.tintView = [UIView new];
+        self.tintView.userInteractionEnabled = NO;
+        [self.glassView addSubview:self.tintView];
+
+        self.rimView = [UIView new];
+        self.rimView.backgroundColor = UIColor.clearColor;
+        self.rimView.userInteractionEnabled = NO;
+        [self.glassView addSubview:self.rimView];
+
+        self.innerRimView = [UIView new];
+        self.innerRimView.backgroundColor = UIColor.clearColor;
+        self.innerRimView.userInteractionEnabled = NO;
+        [self.glassView addSubview:self.innerRimView];
+
+        self.sheenLayer = [CAGradientLayer layer];
+        self.sheenLayer.startPoint = CGPointMake(0.2, 0.0);
+        self.sheenLayer.endPoint = CGPointMake(0.8, 0.62);
+        [self.glassView.layer addSublayer:self.sheenLayer];
+
+        self.causticLayer = [CAGradientLayer layer];
+        self.causticLayer.startPoint = CGPointMake(0.0, 0.0);
+        self.causticLayer.endPoint = CGPointMake(1.0, 1.0);
+        [self.glassView.layer addSublayer:self.causticLayer];
+
+        self.bottomShadeLayer = [CAGradientLayer layer];
+        self.bottomShadeLayer.startPoint = CGPointMake(0.5, 0.58);
+        self.bottomShadeLayer.endPoint = CGPointMake(0.5, 1.0);
+        [self.glassView.layer addSublayer:self.bottomShadeLayer];
+    }
+    return self;
+}
+
+- (void)layoutSubviews {
+    [super layoutSubviews];
+
+    CGRect glassFrame = UIEdgeInsetsInsetRect(self.bounds, UIEdgeInsetsMake(
+        self.insets.top, self.insets.leading, self.insets.bottom, self.insets.trailing));
+    self.glassView.frame = glassFrame;
+    self.glassView.layer.cornerRadius = self.cornerRadius;
+
+    self.layer.shadowColor = UIColor.blackColor.CGColor;
+    self.layer.shadowOpacity = self.emphasized ? 0.2 : 0.15;
+    self.layer.shadowRadius = self.emphasized ? 24 : 20;
+    self.layer.shadowOffset = CGSizeMake(0, self.emphasized ? 13 : 11);
+    self.layer.shadowPath = [UIBezierPath bezierPathWithRoundedRect:glassFrame cornerRadius:self.cornerRadius].CGPath;
+
+    self.blurView.frame = self.glassView.bounds;
+    self.tintView.frame = self.glassView.bounds;
+    self.tintView.backgroundColor = [UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.28 : 0.21)];
+
+    self.rimView.frame = self.glassView.bounds;
+    self.rimView.layer.cornerRadius = self.cornerRadius;
+    self.rimView.layer.borderWidth = 1.0 / UIScreen.mainScreen.scale;
+    self.rimView.layer.borderColor = [UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.55 : 0.42)].CGColor;
+
+    CGRect innerFrame = CGRectInset(self.glassView.bounds, 1.25, 1.25);
+    self.innerRimView.frame = innerFrame;
+    self.innerRimView.layer.cornerRadius = MAX(self.cornerRadius - 1.25, 0);
+    self.innerRimView.layer.borderWidth = 1.0 / UIScreen.mainScreen.scale;
+    self.innerRimView.layer.borderColor = [UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.18 : 0.12)].CGColor;
+
+    self.sheenLayer.frame = self.glassView.bounds;
+    self.sheenLayer.colors = @[
+        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.42 : 0.34)].CGColor,
+        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.14 : 0.1)].CGColor,
+        (__bridge id)UIColor.clearColor.CGColor
+    ];
+    self.sheenLayer.locations = @[@0.0, @0.26, @0.72];
+
+    self.causticLayer.frame = self.glassView.bounds;
+    self.causticLayer.colors = @[
+        (__bridge id)[UIColor colorWithRed:1 green:1 blue:1 alpha:(self.emphasized ? 0.26 : 0.2)].CGColor,
+        (__bridge id)[UIColor colorWithRed:1 green:1 blue:1 alpha:0.08].CGColor,
+        (__bridge id)[UIColor colorWithRed:0 green:0 blue:0 alpha:0.06].CGColor
+    ];
+    self.causticLayer.locations = @[@0.0, @0.42, @1.0];
+
+    self.bottomShadeLayer.frame = self.glassView.bounds;
+    self.bottomShadeLayer.colors = @[
+        (__bridge id)UIColor.clearColor.CGColor,
+        (__bridge id)[UIColor colorWithWhite:0 alpha:(self.emphasized ? 0.14 : 0.1)].CGColor
+    ];
+    self.bottomShadeLayer.locations = @[@0.0, @1.0];
+}
+
+@end
+
 static void PLClearLauncherBackdropRecursive(UIView *view) {
     if (!view) {
+        return;
+    }
+
+    if (view.tag == kPLLauncherPreservedEffectTag) {
         return;
     }
 
@@ -150,6 +290,10 @@ static void PLClearLauncherBackdropRecursive(UIView *view) {
     for (UIView *subview in view.subviews) {
         PLClearLauncherBackdropRecursive(subview);
     }
+}
+
+UIView *PLCreateLauncherLensChromeBackground(NSDirectionalEdgeInsets insets, CGFloat cornerRadius, BOOL emphasized) {
+    return [[PLLauncherLensCardBackgroundView alloc] initWithInsets:insets cornerRadius:cornerRadius emphasized:emphasized];
 }
 
 void PLApplyLauncherViewChrome(UIView *view) {

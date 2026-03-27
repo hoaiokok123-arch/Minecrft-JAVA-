@@ -88,6 +88,7 @@ void PLApplyLauncherNavigationBarChrome(UINavigationBar *navigationBar);
 void PLApplyLauncherToolbarChrome(UIToolbar *toolbar);
 void PLApplyLauncherViewChrome(UIView *view);
 void PLApplyLauncherCardChrome(UITableViewCell *cell, BOOL selected, NSDirectionalEdgeInsets insets, CGFloat cornerRadius);
+UIView *PLCreateLauncherLensChromeBackground(NSDirectionalEdgeInsets insets, CGFloat cornerRadius, BOOL emphasized);
 void PLApplyLauncherActionButtonChrome(UIButton *button);
 void PLApplyLauncherInputChrome(UITextField *textField);
 CGSize PLCompactPopoverSize(CGFloat width, CGFloat height);

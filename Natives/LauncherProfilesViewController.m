@@ -81,7 +81,7 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
     self.view.backgroundColor = UIColor.clearColor;
     self.tableView.backgroundColor = UIColor.clearColor;
-    PLApplyCompactTableLayout(self.tableView, 42);
+    PLApplyCompactTableLayout(self.tableView, 54);
     [self applyLauncherAppearance];
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleLauncherAppearanceDidChange:)
         name:PLLauncherAppearanceDidChangeNotification object:nil];
@@ -108,9 +108,7 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
 }
 
 - (void)applyLauncherAppearance {
-    self.tableView.separatorStyle = getLauncherOutlineControlsEnabled() ?
-        UITableViewCellSeparatorStyleNone :
-        UITableViewCellSeparatorStyleSingleLine;
+    self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
 }
 
 - (void)handleLauncherAppearanceDidChange:(NSNotification *)notification {
@@ -179,7 +177,7 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
-    return 4;
+    return 10;
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
@@ -246,7 +244,16 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
         cell.accessoryView = nil;
     }
     PLApplyCompactTableCell(cell);
-    PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 12);
+    cell.backgroundConfiguration = nil;
+    cell.backgroundView = PLCreateLauncherLensChromeBackground(NSDirectionalEdgeInsetsMake(4, 0, 4, 0), 18, NO);
+    cell.selectedBackgroundView = PLCreateLauncherLensChromeBackground(NSDirectionalEdgeInsetsMake(4, 0, 4, 0), 18, YES);
+    cell.backgroundColor = UIColor.clearColor;
+    cell.contentView.backgroundColor = UIColor.clearColor;
+    cell.tintColor = [UIColor colorWithWhite:0.1 alpha:0.78];
+    cell.textLabel.textColor = [UIColor colorWithWhite:0.08 alpha:0.96];
+    if (cell.detailTextLabel) {
+        cell.detailTextLabel.textColor = [UIColor colorWithWhite:0.24 alpha:0.72];
+    }
 
     if (indexPath.section == kInstances) {
         [self setupInstanceCell:cell atRow:indexPath.row];
@@ -254,6 +261,7 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
         [self setupProfileCell:cell atRow:indexPath.row];
     }
 
+    cell.textLabel.textColor = [UIColor colorWithWhite:0.08 alpha:0.96];
     cell.textLabel.enabled = cell.detailTextLabel.enabled = cell.userInteractionEnabled;
     return cell;
 }
