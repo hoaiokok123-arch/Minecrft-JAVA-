@@ -131,6 +131,8 @@
 	<string>Angel Aura Amethyst uses the local network to find and communicate with AltServer and LAN servers.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Angel Aura Amethyst uses the microphone to enable support for voice chat mods.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Angel Aura Amethyst uses your photo library so you can choose a video for the launcher background.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
