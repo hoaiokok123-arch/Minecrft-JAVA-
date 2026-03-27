@@ -213,9 +213,13 @@ static void *ProgressObserverContext = &ProgressObserverContext;
 }
 
 - (void)navigationController:(UINavigationController *)navigationController willShowViewController:(UIViewController *)viewController animated:(BOOL)animated {
-    if (viewController.isViewLoaded) {
-        viewController.view.hidden = NO;
-        viewController.view.userInteractionEnabled = YES;
+    [self updateVisibleStackController:viewController];
+
+    id<UIViewControllerTransitionCoordinator> coordinator = viewController.transitionCoordinator;
+    if (coordinator) {
+        [coordinator animateAlongsideTransition:nil completion:^(__unused id<UIViewControllerTransitionCoordinatorContext> context) {
+            [self updateVisibleStackController:navigationController.topViewController];
+        }];
     }
 }
 
