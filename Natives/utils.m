@@ -213,18 +213,31 @@ void PLApplyLauncherToolbarChrome(UIToolbar *toolbar) {
 }
 
 void PLApplyLauncherCardChrome(UITableViewCell *cell, BOOL selected, NSDirectionalEdgeInsets insets, CGFloat cornerRadius) {
+    NSDirectionalEdgeInsets glassInsets = NSDirectionalEdgeInsetsMake(
+        insets.top + 1.5,
+        insets.leading + 1.5,
+        insets.bottom + 1.5,
+        insets.trailing + 1.5
+    );
     UIColor *fillColor = selected ?
-        [PLLauncherAccentColor() colorWithAlphaComponent:(getLauncherOutlineControlsEnabled() ? 0.22 : 0.26)] :
-        [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.3];
+        [PLLauncherAccentColor() colorWithAlphaComponent:(getLauncherOutlineControlsEnabled() ? 0.2 : 0.24)] :
+        [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.26];
     UIColor *strokeColor = selected ?
-        [PLLauncherAccentColor() colorWithAlphaComponent:(getLauncherOutlineControlsEnabled() ? 0.9 : 0.6)] :
-        [UIColor colorWithWhite:1 alpha:(getLauncherOutlineControlsEnabled() ? 0.2 : 0.14)];
+        [PLLauncherAccentColor() colorWithAlphaComponent:(getLauncherOutlineControlsEnabled() ? 0.88 : 0.58)] :
+        [UIColor colorWithWhite:1 alpha:(getLauncherOutlineControlsEnabled() ? 0.18 : 0.12)];
 
     cell.backgroundColor = UIColor.clearColor;
     cell.contentView.backgroundColor = UIColor.clearColor;
+    cell.clipsToBounds = NO;
+    cell.layer.masksToBounds = NO;
+    cell.layer.cornerRadius = cornerRadius;
+    cell.layer.shadowColor = UIColor.blackColor.CGColor;
+    cell.layer.shadowOpacity = selected ? 0.18 : 0.12;
+    cell.layer.shadowRadius = selected ? 16 : 12;
+    cell.layer.shadowOffset = CGSizeMake(0, 6);
     if (@available(iOS 14.0, *)) {
         UIBackgroundConfiguration *backgroundConfig = [UIBackgroundConfiguration clearConfiguration];
-        backgroundConfig.backgroundInsets = insets;
+        backgroundConfig.backgroundInsets = glassInsets;
         backgroundConfig.cornerRadius = cornerRadius;
         backgroundConfig.strokeWidth = 1.0 / UIScreen.mainScreen.scale;
         backgroundConfig.strokeColor = strokeColor;
@@ -245,9 +258,16 @@ void PLApplyLauncherActionButtonChrome(UIButton *button) {
     BOOL outline = getLauncherOutlineControlsEnabled();
     UIColor *accentColor = PLLauncherAccentColor();
     button.layer.cornerRadius = MAX(button.layer.cornerRadius, 5);
+    button.layer.masksToBounds = NO;
     button.layer.borderWidth = outline ? 1.0 : 0.0;
     button.layer.borderColor = (outline ? accentColor : UIColor.clearColor).CGColor;
-    button.backgroundColor = outline ? UIColor.clearColor : accentColor;
+    button.layer.shadowColor = UIColor.blackColor.CGColor;
+    button.layer.shadowOpacity = 0.12;
+    button.layer.shadowRadius = 12;
+    button.layer.shadowOffset = CGSizeMake(0, 6);
+    button.backgroundColor = outline ?
+        [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.24] :
+        [accentColor colorWithAlphaComponent:0.84];
     button.tintColor = outline ? accentColor : UIColor.whiteColor;
 }
 
@@ -255,10 +275,14 @@ void PLApplyLauncherInputChrome(UITextField *textField) {
     BOOL outline = getLauncherOutlineControlsEnabled();
     textField.borderStyle = UITextBorderStyleNone;
     textField.background = nil;
-    textField.backgroundColor = UIColor.clearColor;
+    textField.backgroundColor = [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.2];
     textField.layer.cornerRadius = 6;
     textField.layer.borderWidth = outline ? 1.0 : 0.0;
     textField.layer.borderColor = (outline ? [UIColor colorWithWhite:1 alpha:0.22] : UIColor.clearColor).CGColor;
+    textField.layer.shadowColor = UIColor.blackColor.CGColor;
+    textField.layer.shadowOpacity = 0.08;
+    textField.layer.shadowRadius = 10;
+    textField.layer.shadowOffset = CGSizeMake(0, 5);
 }
 
 CGSize PLCompactPopoverSize(CGFloat width, CGFloat height) {

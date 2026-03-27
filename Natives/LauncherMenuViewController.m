@@ -339,9 +339,10 @@
 
     UIPopoverPresentationController *popoverController = vc.popoverPresentationController;
     popoverController.sourceView = sender;
-    popoverController.sourceRect = sender.bounds;
+    popoverController.sourceRect = CGRectMake(CGRectGetMidX(sender.bounds), CGRectGetMaxY(sender.bounds) - 1, 1, 1);
     popoverController.backgroundColor = UIColor.clearColor;
-    popoverController.permittedArrowDirections = UIPopoverArrowDirectionAny;
+    popoverController.permittedArrowDirections = 0;
+    popoverController.canOverlapSourceViewRect = YES;
     popoverController.delegate = vc;
     [self presentViewController:vc animated:YES completion:nil];
 }
