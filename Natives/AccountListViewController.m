@@ -17,40 +17,65 @@
 
 @implementation AccountListViewController
 
-- (void)viewDidLoad {
-    [super viewDidLoad];
-    self.view.backgroundColor = UIColor.clearColor;
-    self.tableView.backgroundColor = UIColor.clearColor;
+- (instancetype)init {
+    self = [super initWithStyle:UITableViewStylePlain];
+    if (self) {
+        [self reloadAccountList];
+        [self updatePopoverSize];
+    }
+    return self;
+}
 
+- (void)reloadAccountList {
     if (self.accountList == nil) {
         self.accountList = [NSMutableArray array];
     } else {
         [self.accountList removeAllObjects];
     }
 
-    // List accounts
     NSString *listPath = [NSString stringWithFormat:@"%s/accounts", getenv("POJAV_HOME")];
     NSFileManager *fm = [NSFileManager defaultManager];
     NSArray *files = [fm contentsOfDirectoryAtPath:listPath error:nil];
-    for(NSString *file in files) {
+    for (NSString *file in files) {
         NSString *path = [listPath stringByAppendingPathComponent:file];
         BOOL isDir = NO;
-        [fm fileExistsAtPath:path isDirectory:(&isDir)];
-        if(!isDir && [file hasSuffix:@".json"]) {
+        [fm fileExistsAtPath:path isDirectory:&isDir];
+        if (!isDir && [file hasSuffix:@".json"]) {
             [self.accountList addObject:parseJSONFromFile(path)];
         }
     }
+}
+
+- (void)updatePopoverSize {
+    NSInteger rowCount = self.accountList.count + 1;
+    NSInteger visibleRowCount = MIN(MAX(rowCount, 1), 5);
+    CGFloat targetHeight = visibleRowCount * 42.0 + 2.0;
+    self.preferredContentSize = PLCompactPopoverSize(320, targetHeight);
+    if (self.isViewLoaded) {
+        self.tableView.scrollEnabled = rowCount > visibleRowCount;
+    }
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    self.view.backgroundColor = UIColor.clearColor;
+    self.tableView.backgroundColor = UIColor.clearColor;
 
     PLApplyCompactTableLayout(self.tableView, 42);
-    self.preferredContentSize = PLCompactPopoverSize(320, 220);
+    self.tableView.tableHeaderView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 1, 1)];
+    self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 1, 1)];
+    self.tableView.contentInset = UIEdgeInsetsZero;
+    self.tableView.alwaysBounceVertical = NO;
     [self.tableView setSeparatorStyle:getLauncherOutlineControlsEnabled() ?
         UITableViewCellSeparatorStyleNone :
         UITableViewCellSeparatorStyleSingleLine];
+    [self updatePopoverSize];
 }
 
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
     PLApplyLauncherViewChrome(self.view);
+    PLApplyLauncherViewChrome(self.tableView);
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
@@ -136,6 +161,7 @@
         [fm removeItemAtPath:path error:nil];
         [self.accountList removeObjectAtIndex:indexPath.row];
         [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
+        [self updatePopoverSize];
     }
 }
 
