@@ -75,7 +75,8 @@
         NSDictionary *general = @{
             @"game_directory": @"default",
             @"hidden_sidebar": @(realUIIdiom == UIUserInterfaceIdiomPhone),
-            @"appicon": @"AppIcon-Light"
+            @"appicon": @"AppIcon-Light",
+            @"launcher_background_video": @""
         };
         [defaults[@"general"] addEntriesFromDictionary:general];
 

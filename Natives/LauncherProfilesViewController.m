@@ -79,6 +79,8 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
 
     self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
+    self.view.backgroundColor = UIColor.clearColor;
+    self.tableView.backgroundColor = UIColor.clearColor;
     PLApplyCompactTableLayout(self.tableView, 42);
 }
 

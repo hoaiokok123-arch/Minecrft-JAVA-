@@ -1,5 +1,7 @@
 #import <UIKit/UIKit.h>
 
+FOUNDATION_EXPORT NSString * const PLLauncherBackgroundDidChangeNotification;
+
 void loadPreferences(BOOL reset);
 void toggleIsolatedPref(BOOL forceEnable);
 
@@ -25,3 +27,8 @@ NSString* getSelectedJavaHome(NSString* defaultJRETag, int minVersion);
 
 NSArray* getRendererKeys(BOOL containsDefault);
 NSArray* getRendererNames(BOOL containsDefault);
+
+NSString *getLauncherBackgroundVideoPath(void);
+NSString *getLauncherBackgroundVideoDisplayName(void);
+NSError *setLauncherBackgroundVideoFromURL(NSURL *url);
+void clearLauncherBackgroundVideo(void);

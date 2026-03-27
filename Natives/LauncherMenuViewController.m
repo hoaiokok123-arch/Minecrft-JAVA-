@@ -119,7 +119,8 @@
     }
     
     self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
-    self.tableView.backgroundColor = UIColor.systemBackgroundColor;
+    self.view.backgroundColor = UIColor.clearColor;
+    self.tableView.backgroundColor = UIColor.clearColor;
     self.tableView.rowHeight = 34;
     self.tableView.cellLayoutMarginsFollowReadableWidth = NO;
     self.tableView.estimatedRowHeight = 34;

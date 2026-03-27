@@ -284,3 +284,8 @@
 "controller_configurator.section.footer.menu_mappings" = "Các ràng buộc khi chuột không bị khóa, chẳng hạn như trên màn hình tiêu đề hoặc trong menu tạm dừng.";
 "controller_configurator.section.controller_style" = "Loại Bộ điều khiển";
 "controller_configurator.section.footer.controller_style" = "Hiển thị các tên nút điều khiển khác nhau trong bộ cấu hình này.";
+"preference.title.launcher_background_video" = "Video n\U1EC1n launcher";
+"preference.title.launcher_background_current" = "Video hi\U1EC7n t\U1EA1i";
+"preference.title.launcher_background_choose" = "Ch\U1ECDn video";
+"preference.title.launcher_background_clear" = "X\U00F3a video";
+"preference.title.launcher_background_none" = "T\U1EAFt";
