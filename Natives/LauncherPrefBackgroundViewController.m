@@ -1,4 +1,3 @@
-#import <PhotosUI/PhotosUI.h>
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
 #import "LauncherPrefBackgroundViewController.h"
@@ -16,7 +15,7 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
     LauncherBackgroundRowReset,
 };
 
-@interface LauncherPrefBackgroundViewController ()<PHPickerViewControllerDelegate>
+@interface LauncherPrefBackgroundViewController ()<UIImagePickerControllerDelegate, UINavigationControllerDelegate>
 @end
 
 @implementation LauncherPrefBackgroundViewController
@@ -225,11 +224,15 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
 }
 
 - (void)presentVideoPicker {
-    PHPickerConfiguration *configuration = [[PHPickerConfiguration alloc] init];
-    configuration.filter = [PHPickerFilter videosFilter];
-    configuration.selectionLimit = 1;
-
-    PHPickerViewController *picker = [[PHPickerViewController alloc] initWithConfiguration:configuration];
+    UIImagePickerController *picker = [UIImagePickerController new];
+    picker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
+    picker.mediaTypes = @[
+        UTTypeMovie.identifier,
+        UTTypeVideo.identifier,
+        UTTypeMPEG4Movie.identifier,
+        UTTypeQuickTimeMovie.identifier
+    ];
+    picker.videoQuality = UIImagePickerControllerQualityTypeHigh;
     picker.delegate = self;
     picker.modalPresentationStyle = UIModalPresentationFormSheet;
     [self presentViewController:picker animated:YES completion:nil];
@@ -249,51 +252,25 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
     }
 }
 
-- (void)picker:(PHPickerViewController *)picker didFinishPicking:(NSArray<PHPickerResult *> *)results {
+- (void)imagePickerControllerDidCancel:(UIImagePickerController *)picker {
     [picker dismissViewControllerAnimated:YES completion:nil];
-    PHPickerResult *result = results.firstObject;
-    if (!result) {
-        return;
-    }
+}
 
-    NSItemProvider *provider = result.itemProvider;
-    NSArray<NSString *> *candidateTypes = @[
-        UTTypeMPEG4Movie.identifier,
-        UTTypeQuickTimeMovie.identifier,
-        UTTypeMovie.identifier,
-        UTTypeVideo.identifier
-    ];
-
-    NSString *typeIdentifier = nil;
-    for (NSString *candidate in candidateTypes) {
-        if ([provider hasItemConformingToTypeIdentifier:candidate]) {
-            typeIdentifier = candidate;
-            break;
-        }
-    }
-
-    if (!typeIdentifier) {
+- (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary<UIImagePickerControllerInfoKey, id> *)info {
+    [picker dismissViewControllerAnimated:YES completion:nil];
+    NSURL *url = info[UIImagePickerControllerMediaURL];
+    if (!url) {
         showDialog(localize(@"Error", nil), @"Unable to load the selected video.");
         return;
     }
 
-    [provider loadFileRepresentationForTypeIdentifier:typeIdentifier completionHandler:^(NSURL * _Nullable url, NSError * _Nullable error) {
-        if (error || !url) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                showDialog(localize(@"Error", nil), error.localizedDescription ?: @"Unable to load the selected video.");
-            });
-            return;
-        }
+    NSError *error = setLauncherBackgroundVideoFromURL(url);
+    if (error) {
+        showDialog(localize(@"Error", nil), error.localizedDescription);
+        return;
+    }
 
-        NSError *copyError = setLauncherBackgroundVideoFromURL(url);
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (copyError) {
-                showDialog(localize(@"Error", nil), copyError.localizedDescription);
-                return;
-            }
-            [self.tableView reloadData];
-        });
-    }];
+    [self.tableView reloadData];
 }
 
 @end
