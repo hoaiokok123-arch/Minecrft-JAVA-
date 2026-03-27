@@ -17,6 +17,17 @@
 
 @implementation AccountListViewController
 
+- (void)applyPopoverChrome {
+    PLApplyLauncherViewChrome(self.view);
+    PLApplyLauncherViewChrome(self.tableView);
+    if (self.presentationController.presentedView) {
+        PLApplyLauncherViewChrome(self.presentationController.presentedView);
+    }
+    if (self.presentationController.containerView) {
+        PLApplyLauncherViewChrome(self.presentationController.containerView);
+    }
+}
+
 - (instancetype)init {
     self = [super initWithStyle:UITableViewStylePlain];
     if (self) {
@@ -74,8 +85,12 @@
 
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
-    PLApplyLauncherViewChrome(self.view);
-    PLApplyLauncherViewChrome(self.tableView);
+    [self applyPopoverChrome];
+}
+
+- (void)viewDidAppear:(BOOL)animated {
+    [super viewDidAppear:animated];
+    [self applyPopoverChrome];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
