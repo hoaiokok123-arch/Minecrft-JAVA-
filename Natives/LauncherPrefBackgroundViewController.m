@@ -26,8 +26,9 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.view.backgroundColor = UIColor.clearColor;
-    self.tableView.backgroundColor = UIColor.clearColor;
+    self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
+    self.view.backgroundColor = UIColor.systemBackgroundColor;
+    self.tableView.backgroundColor = UIColor.systemBackgroundColor;
     PLApplyCompactTableLayout(self.tableView, 40);
 }
 
