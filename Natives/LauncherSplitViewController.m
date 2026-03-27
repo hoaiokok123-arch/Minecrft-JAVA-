@@ -20,6 +20,15 @@ extern NSMutableDictionary *prefDict;
 
 @implementation LauncherSplitViewController
 
+- (void)sendBackgroundViewsToBack {
+    if (self.backgroundDimView.superview == self.view) {
+        [self.view sendSubviewToBack:self.backgroundDimView];
+    }
+    if (self.backgroundVideoView.superview == self.view) {
+        [self.view sendSubviewToBack:self.backgroundVideoView];
+    }
+}
+
 - (void)updatePrimaryColumnWidthForSize:(CGSize)size {
     CGFloat compactWidth = MIN(300, MAX(260, size.width * 0.74));
     self.minimumPrimaryColumnWidth = compactWidth;
@@ -56,6 +65,7 @@ extern NSMutableDictionary *prefDict;
     [self changeDisplayModeForSize:self.view.frame.size];
     [self updatePrimaryColumnWidthForSize:self.view.bounds.size];
     [self reloadBackgroundVideo];
+    [self sendBackgroundViewsToBack];
 
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleLauncherBackgroundDidChange:)
         name:PLLauncherBackgroundDidChangeNotification object:nil];
@@ -82,6 +92,7 @@ extern NSMutableDictionary *prefDict;
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
     self.backgroundLayer.frame = self.backgroundVideoView.bounds;
+    [self sendBackgroundViewsToBack];
 }
 
 - (void)changeDisplayModeForSize:(CGSize)size {
@@ -136,12 +147,15 @@ extern NSMutableDictionary *prefDict;
     self.backgroundLooper = [AVPlayerLooper playerLooperWithPlayer:player templateItem:item];
     self.backgroundPlayer = player;
     self.backgroundLayer = [AVPlayerLayer playerLayerWithPlayer:player];
-    self.backgroundLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+    self.backgroundLayer.videoGravity = AVLayerVideoGravityResizeAspect;
+    self.backgroundLayer.backgroundColor = UIColor.blackColor.CGColor;
     self.backgroundLayer.frame = self.backgroundVideoView.bounds;
     [self.backgroundVideoView.layer addSublayer:self.backgroundLayer];
 
     self.backgroundVideoView.hidden = NO;
     self.backgroundDimView.hidden = NO;
+    self.backgroundDimView.backgroundColor = [UIColor colorWithWhite:0 alpha:0.65];
+    [self sendBackgroundViewsToBack];
     [player play];
 }
 
