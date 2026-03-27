@@ -1,4 +1,6 @@
 #import <AVFoundation/AVFoundation.h>
+#import <Photos/Photos.h>
+#import <PhotosUI/PhotosUI.h>
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
 #import "LauncherPrefBackgroundViewController.h"
@@ -15,7 +17,7 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
     LauncherBackgroundRowReset,
 };
 
-@interface LauncherPrefBackgroundViewController ()<UIImagePickerControllerDelegate, UINavigationControllerDelegate>
+@interface LauncherPrefBackgroundViewController ()<PHPickerViewControllerDelegate>
 @property(nonatomic) BOOL importingVideo;
 @property(nonatomic) UIActivityIndicatorView *importIndicator;
 @property(nonatomic) AVAssetExportSession *importSession;
@@ -151,12 +153,17 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
 
 - (void)beginImportVideoFromURL:(NSURL *)url {
     NSURL *selectedURL = [url copy];
+    NSString *temporaryImportPrefix = [NSTemporaryDirectory() stringByAppendingPathComponent:@"launcher-video-source-"];
+    BOOL shouldDeleteSourceAfterImport = [selectedURL.path hasPrefix:temporaryImportPrefix];
     self.importingVideo = YES;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         @autoreleasepool {
             AVURLAsset *asset = [AVURLAsset URLAssetWithURL:selectedURL options:nil];
             BOOL shouldRotatePortraitVideo = [self selectedVideoLooksPortrait:asset];
             if ([asset tracksWithMediaType:AVMediaTypeVideo].count == 0) {
+                if (shouldDeleteSourceAfterImport) {
+                    [NSFileManager.defaultManager removeItemAtURL:selectedURL error:nil];
+                }
                 [self finishImportWithError:[self backgroundImportError:@"Unable to load the selected video."]];
                 return;
             }
@@ -167,6 +174,9 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
                 AVAssetExportPresetHighestQuality;
             AVAssetExportSession *session = [[AVAssetExportSession alloc] initWithAsset:asset presetName:presetName];
             if (!session) {
+                if (shouldDeleteSourceAfterImport) {
+                    [NSFileManager.defaultManager removeItemAtURL:selectedURL error:nil];
+                }
                 [self finishImportWithError:[self backgroundImportError:@"Unable to prepare the selected video."]];
                 return;
             }
@@ -185,6 +195,9 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
                 }
             }
             if (outputFileType.length == 0) {
+                if (shouldDeleteSourceAfterImport) {
+                    [NSFileManager.defaultManager removeItemAtURL:selectedURL error:nil];
+                }
                 [self finishImportWithError:[self backgroundImportError:@"This video format is not supported for launcher background."]];
                 return;
             }
@@ -207,12 +220,18 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
                         if (!error) {
                             setLauncherBackgroundVideoRotateEnabled(shouldRotatePortraitVideo);
                         }
+                        if (shouldDeleteSourceAfterImport) {
+                            [NSFileManager.defaultManager removeItemAtURL:selectedURL error:nil];
+                        }
                         [NSFileManager.defaultManager removeItemAtURL:stagedURL error:nil];
                         [self finishImportWithError:error];
                     });
                     return;
                 }
 
+                if (shouldDeleteSourceAfterImport) {
+                    [NSFileManager.defaultManager removeItemAtURL:selectedURL error:nil];
+                }
                 [NSFileManager.defaultManager removeItemAtURL:stagedURL error:nil];
                 NSError *error = session.error;
                 if (!error) {
@@ -375,15 +394,12 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
 }
 
 - (void)presentVideoPicker {
-    UIImagePickerController *picker = [UIImagePickerController new];
-    picker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
-    picker.mediaTypes = @[
-        UTTypeMovie.identifier,
-        UTTypeVideo.identifier,
-        UTTypeMPEG4Movie.identifier,
-        UTTypeQuickTimeMovie.identifier
-    ];
-    picker.videoQuality = UIImagePickerControllerQualityTypeHigh;
+    PHPickerConfiguration *configuration = [[PHPickerConfiguration alloc] initWithPhotoLibrary:[PHPhotoLibrary sharedPhotoLibrary]];
+    configuration.selectionLimit = 1;
+    configuration.filter = [PHPickerFilter videosFilter];
+    configuration.preferredAssetRepresentationMode = PHPickerConfigurationAssetRepresentationModeCurrent;
+
+    PHPickerViewController *picker = [[PHPickerViewController alloc] initWithConfiguration:configuration];
     picker.delegate = self;
     picker.modalPresentationStyle = UIModalPresentationFormSheet;
     [self presentViewController:picker animated:YES completion:nil];
@@ -411,20 +427,62 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
     }
 }
 
-- (void)imagePickerControllerDidCancel:(UIImagePickerController *)picker {
-    [picker dismissViewControllerAnimated:YES completion:nil];
+- (NSString *)preferredVideoTypeIdentifierForItemProvider:(NSItemProvider *)itemProvider {
+    NSArray<NSString *> *preferredTypes = @[
+        UTTypeMPEG4Movie.identifier,
+        UTTypeQuickTimeMovie.identifier,
+        UTTypeMovie.identifier,
+        UTTypeVideo.identifier
+    ];
+
+    for (NSString *typeIdentifier in preferredTypes) {
+        if ([itemProvider hasItemConformingToTypeIdentifier:typeIdentifier]) {
+            return typeIdentifier;
+        }
+    }
+    return nil;
 }
 
-- (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary<UIImagePickerControllerInfoKey, id> *)info {
-    NSURL *url = info[UIImagePickerControllerMediaURL];
-    if (!url) {
-        [picker dismissViewControllerAnimated:YES completion:nil];
-        showDialog(localize(@"Error", nil), @"Unable to load the selected video.");
-        return;
-    }
-
+- (void)picker:(PHPickerViewController *)picker didFinishPicking:(NSArray<PHPickerResult *> *)results {
+    PHPickerResult *result = results.firstObject;
     [picker dismissViewControllerAnimated:YES completion:^{
-        [self beginImportVideoFromURL:url];
+        if (!result) {
+            return;
+        }
+
+        NSString *typeIdentifier = [self preferredVideoTypeIdentifierForItemProvider:result.itemProvider];
+        if (!typeIdentifier) {
+            showDialog(localize(@"Error", nil), @"Unable to load the selected video.");
+            return;
+        }
+
+        self.importingVideo = YES;
+        [result.itemProvider loadFileRepresentationForTypeIdentifier:typeIdentifier completionHandler:^(NSURL * _Nullable url, NSError * _Nullable error) {
+            if (error || !url) {
+                [self finishImportWithError:error ?: [self backgroundImportError:@"Unable to load the selected video."]];
+                return;
+            }
+
+            NSString *extension = url.pathExtension.lowercaseString;
+            if (extension.length == 0) {
+                UTType *type = [UTType typeWithIdentifier:typeIdentifier];
+                extension = type.preferredFilenameExtension ?: @"mov";
+            }
+
+            NSURL *copiedURL = [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:
+                [NSString stringWithFormat:@"launcher-video-source-%@.%@", NSUUID.UUID.UUIDString.lowercaseString, extension]]];
+            [NSFileManager.defaultManager removeItemAtURL:copiedURL error:nil];
+
+            NSError *copyError = nil;
+            if (![NSFileManager.defaultManager copyItemAtURL:url toURL:copiedURL error:&copyError]) {
+                [self finishImportWithError:copyError];
+                return;
+            }
+
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self beginImportVideoFromURL:copiedURL];
+            });
+        }];
     }];
 }
 
