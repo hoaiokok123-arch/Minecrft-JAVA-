@@ -81,7 +81,7 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
     self.view.backgroundColor = UIColor.clearColor;
     self.tableView.backgroundColor = UIColor.clearColor;
-    PLApplyCompactTableLayout(self.tableView, 54);
+    PLApplyCompactTableLayout(self.tableView, 52);
     [self applyLauncherAppearance];
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleLauncherAppearanceDidChange:)
         name:PLLauncherAppearanceDidChangeNotification object:nil];
@@ -177,7 +177,7 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
-    return 10;
+    return 12;
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
@@ -245,14 +245,14 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
     }
     PLApplyCompactTableCell(cell);
     cell.backgroundConfiguration = nil;
-    cell.backgroundView = PLCreateLauncherLensChromeBackground(NSDirectionalEdgeInsetsMake(4, 0, 4, 0), 18, NO);
-    cell.selectedBackgroundView = PLCreateLauncherLensChromeBackground(NSDirectionalEdgeInsetsMake(4, 0, 4, 0), 18, YES);
+    cell.backgroundView = PLCreateLauncherLensChromeBackground(NSDirectionalEdgeInsetsMake(6, 10, 6, 10), 20, NO);
+    cell.selectedBackgroundView = PLCreateLauncherLensChromeBackground(NSDirectionalEdgeInsetsMake(6, 10, 6, 10), 20, YES);
     cell.backgroundColor = UIColor.clearColor;
     cell.contentView.backgroundColor = UIColor.clearColor;
-    cell.tintColor = [UIColor colorWithWhite:0.1 alpha:0.78];
-    cell.textLabel.textColor = [UIColor colorWithWhite:0.08 alpha:0.96];
+    cell.tintColor = [UIColor colorWithWhite:0.08 alpha:0.68];
+    cell.textLabel.textColor = [UIColor colorWithWhite:0.08 alpha:0.9];
     if (cell.detailTextLabel) {
-        cell.detailTextLabel.textColor = [UIColor colorWithWhite:0.24 alpha:0.72];
+        cell.detailTextLabel.textColor = [UIColor colorWithWhite:0.24 alpha:0.62];
     }
 
     if (indexPath.section == kInstances) {
@@ -261,7 +261,7 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
         [self setupProfileCell:cell atRow:indexPath.row];
     }
 
-    cell.textLabel.textColor = [UIColor colorWithWhite:0.08 alpha:0.96];
+    cell.textLabel.textColor = [UIColor colorWithWhite:0.08 alpha:0.9];
     cell.textLabel.enabled = cell.detailTextLabel.enabled = cell.userInteractionEnabled;
     return cell;
 }

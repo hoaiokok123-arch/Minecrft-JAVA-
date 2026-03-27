@@ -162,7 +162,7 @@ static const NSInteger kPLLauncherPreservedEffectTag = 0x504C4753;
 
         UIBlurEffect *effect;
         if (@available(iOS 13.0, *)) {
-            effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemChromeMaterialLight];
+            effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemThinMaterialLight];
         } else {
             effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleExtraLight];
         }
@@ -211,46 +211,46 @@ static const NSInteger kPLLauncherPreservedEffectTag = 0x504C4753;
     self.glassView.layer.cornerRadius = self.cornerRadius;
 
     self.layer.shadowColor = UIColor.blackColor.CGColor;
-    self.layer.shadowOpacity = self.emphasized ? 0.2 : 0.15;
-    self.layer.shadowRadius = self.emphasized ? 24 : 20;
-    self.layer.shadowOffset = CGSizeMake(0, self.emphasized ? 13 : 11);
+    self.layer.shadowOpacity = self.emphasized ? 0.16 : 0.11;
+    self.layer.shadowRadius = self.emphasized ? 22 : 18;
+    self.layer.shadowOffset = CGSizeMake(0, self.emphasized ? 11 : 9);
     self.layer.shadowPath = [UIBezierPath bezierPathWithRoundedRect:glassFrame cornerRadius:self.cornerRadius].CGPath;
 
     self.blurView.frame = self.glassView.bounds;
     self.tintView.frame = self.glassView.bounds;
-    self.tintView.backgroundColor = [UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.28 : 0.21)];
+    self.tintView.backgroundColor = [UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.16 : 0.1)];
 
     self.rimView.frame = self.glassView.bounds;
     self.rimView.layer.cornerRadius = self.cornerRadius;
     self.rimView.layer.borderWidth = 1.0 / UIScreen.mainScreen.scale;
-    self.rimView.layer.borderColor = [UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.55 : 0.42)].CGColor;
+    self.rimView.layer.borderColor = [UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.4 : 0.28)].CGColor;
 
     CGRect innerFrame = CGRectInset(self.glassView.bounds, 1.25, 1.25);
     self.innerRimView.frame = innerFrame;
     self.innerRimView.layer.cornerRadius = MAX(self.cornerRadius - 1.25, 0);
     self.innerRimView.layer.borderWidth = 1.0 / UIScreen.mainScreen.scale;
-    self.innerRimView.layer.borderColor = [UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.18 : 0.12)].CGColor;
+    self.innerRimView.layer.borderColor = [UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.16 : 0.08)].CGColor;
 
     self.sheenLayer.frame = self.glassView.bounds;
     self.sheenLayer.colors = @[
-        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.42 : 0.34)].CGColor,
-        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.14 : 0.1)].CGColor,
+        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.28 : 0.22)].CGColor,
+        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.1 : 0.06)].CGColor,
         (__bridge id)UIColor.clearColor.CGColor
     ];
-    self.sheenLayer.locations = @[@0.0, @0.26, @0.72];
+    self.sheenLayer.locations = @[@0.0, @0.22, @0.68];
 
     self.causticLayer.frame = self.glassView.bounds;
     self.causticLayer.colors = @[
-        (__bridge id)[UIColor colorWithRed:1 green:1 blue:1 alpha:(self.emphasized ? 0.26 : 0.2)].CGColor,
-        (__bridge id)[UIColor colorWithRed:1 green:1 blue:1 alpha:0.08].CGColor,
-        (__bridge id)[UIColor colorWithRed:0 green:0 blue:0 alpha:0.06].CGColor
+        (__bridge id)[UIColor colorWithRed:1 green:1 blue:1 alpha:(self.emphasized ? 0.14 : 0.1)].CGColor,
+        (__bridge id)[UIColor colorWithRed:0.88 green:0.95 blue:1 alpha:0.06].CGColor,
+        (__bridge id)[UIColor colorWithRed:0 green:0 blue:0 alpha:0.03].CGColor
     ];
     self.causticLayer.locations = @[@0.0, @0.42, @1.0];
 
     self.bottomShadeLayer.frame = self.glassView.bounds;
     self.bottomShadeLayer.colors = @[
         (__bridge id)UIColor.clearColor.CGColor,
-        (__bridge id)[UIColor colorWithWhite:0 alpha:(self.emphasized ? 0.14 : 0.1)].CGColor
+        (__bridge id)[UIColor colorWithWhite:0 alpha:(self.emphasized ? 0.09 : 0.06)].CGColor
     ];
     self.bottomShadeLayer.locations = @[@0.0, @1.0];
 }
