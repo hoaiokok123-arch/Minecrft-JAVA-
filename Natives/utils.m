@@ -220,11 +220,11 @@ void PLApplyLauncherCardChrome(UITableViewCell *cell, BOOL selected, NSDirection
         insets.trailing + 1.5
     );
     UIColor *fillColor = selected ?
-        [PLLauncherAccentColor() colorWithAlphaComponent:(getLauncherOutlineControlsEnabled() ? 0.2 : 0.24)] :
-        [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.26];
+        [PLLauncherAccentColor() colorWithAlphaComponent:(getLauncherOutlineControlsEnabled() ? 0.28 : 0.32)] :
+        [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.38];
     UIColor *strokeColor = selected ?
-        [PLLauncherAccentColor() colorWithAlphaComponent:(getLauncherOutlineControlsEnabled() ? 0.88 : 0.58)] :
-        [UIColor colorWithWhite:1 alpha:(getLauncherOutlineControlsEnabled() ? 0.18 : 0.12)];
+        [PLLauncherAccentColor() colorWithAlphaComponent:(getLauncherOutlineControlsEnabled() ? 0.92 : 0.66)] :
+        [UIColor colorWithWhite:1 alpha:(getLauncherOutlineControlsEnabled() ? 0.28 : 0.18)];
 
     cell.backgroundColor = UIColor.clearColor;
     cell.contentView.backgroundColor = UIColor.clearColor;
@@ -266,8 +266,8 @@ void PLApplyLauncherActionButtonChrome(UIButton *button) {
     button.layer.shadowRadius = 12;
     button.layer.shadowOffset = CGSizeMake(0, 6);
     button.backgroundColor = outline ?
-        [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.24] :
-        [accentColor colorWithAlphaComponent:0.84];
+        [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.34] :
+        [accentColor colorWithAlphaComponent:0.9];
     button.tintColor = outline ? accentColor : UIColor.whiteColor;
 }
 
@@ -275,10 +275,10 @@ void PLApplyLauncherInputChrome(UITextField *textField) {
     BOOL outline = getLauncherOutlineControlsEnabled();
     textField.borderStyle = UITextBorderStyleNone;
     textField.background = nil;
-    textField.backgroundColor = [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.2];
+    textField.backgroundColor = [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.3];
     textField.layer.cornerRadius = 6;
     textField.layer.borderWidth = outline ? 1.0 : 0.0;
-    textField.layer.borderColor = (outline ? [UIColor colorWithWhite:1 alpha:0.22] : UIColor.clearColor).CGColor;
+    textField.layer.borderColor = (outline ? [UIColor colorWithWhite:1 alpha:0.3] : UIColor.clearColor).CGColor;
     textField.layer.shadowColor = UIColor.blackColor.CGColor;
     textField.layer.shadowOpacity = 0.08;
     textField.layer.shadowRadius = 10;
