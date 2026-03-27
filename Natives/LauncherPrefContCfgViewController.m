@@ -36,6 +36,7 @@ typedef void(^CreateView)(UITableViewCell *, NSString *, NSDictionary *);
 {
     [super viewDidLoad];
     [self setTitle:localize(@"preference.title.default_gamepad_ctrl", nil)];
+    self.view.backgroundColor = UIColor.clearColor;
     
     self.keycodePlist = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"glfw_keycodes" ofType:@"plist"]];
     
@@ -46,6 +47,10 @@ typedef void(^CreateView)(UITableViewCell *, NSString *, NSDictionary *);
     self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
     self.tableView.sectionFooterHeight = 36;
+    self.tableView.backgroundColor = UIColor.clearColor;
+    self.tableView.separatorStyle = getLauncherOutlineControlsEnabled() ?
+        UITableViewCellSeparatorStyleNone :
+        UITableViewCellSeparatorStyleSingleLine;
     PLApplyCompactTableLayout(self.tableView, 40);
     
     [self loadGamepadConfigurationFile];
@@ -149,6 +154,14 @@ typedef void(^CreateView)(UITableViewCell *, NSString *, NSDictionary *);
         }
     }
     PLApplyCompactTableCell(cell);
+    if (getLauncherOutlineControlsEnabled()) {
+        PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
+    } else if (@available(iOS 14.0, *)) {
+        cell.backgroundConfiguration = nil;
+    }
+    if (cell.accessoryView && [cell.accessoryView isKindOfClass:UITextField.class]) {
+        PLApplyLauncherInputChrome((UITextField *)cell.accessoryView);
+    }
     return cell;
 }
 

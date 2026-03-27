@@ -68,6 +68,7 @@
 {
     [super viewDidLoad];
     [self setTitle:localize(@"preference.title.game_directory", nil)];
+    self.view.backgroundColor = UIColor.clearColor;
 
     self.array = [[NSMutableArray alloc] init];
     [self.array addObject:@"default"];
@@ -75,6 +76,10 @@
     self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
     self.tableView.sectionFooterHeight = 44;
+    self.tableView.backgroundColor = UIColor.clearColor;
+    self.tableView.separatorStyle = getLauncherOutlineControlsEnabled() ?
+        UITableViewCellSeparatorStyleNone :
+        UITableViewCellSeparatorStyleSingleLine;
     PLApplyCompactTableLayout(self.tableView, 44);
 
     NSString *path = [NSString stringWithFormat:@"%s/instances", getenv("POJAV_HOME")];
@@ -118,6 +123,11 @@
         cell.nameField.delegate = self;
     }
     PLApplyCompactTableCell(cell);
+    if (getLauncherOutlineControlsEnabled()) {
+        PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
+    } else if (@available(iOS 14.0, *)) {
+        cell.backgroundConfiguration = nil;
+    }
     NSString *name = self.array[indexPath.row];
     cell.representedName = name;
     cell.nameField.placeholder = name;
@@ -158,7 +168,10 @@ viewForFooterInSection:(NSInteger)section
     view.delegate = self;
     view.placeholder = localize(@"preference.multidir.add_directory", nil);
     view.returnKeyType = UIReturnKeyDone;
-    view.backgroundColor = UIColor.secondarySystemGroupedBackgroundColor;
+    view.backgroundColor = getLauncherOutlineControlsEnabled() ?
+        UIColor.clearColor :
+        UIColor.secondarySystemGroupedBackgroundColor;
+    PLApplyLauncherInputChrome(view);
     view.layer.cornerRadius = 12;
     view.translatesAutoresizingMaskIntoConstraints = NO;
     view.leftView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 12, 1)];

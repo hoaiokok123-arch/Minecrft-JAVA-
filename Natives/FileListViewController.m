@@ -12,6 +12,8 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    self.view.backgroundColor = UIColor.clearColor;
+    self.tableView.backgroundColor = UIColor.clearColor;
 
     if (self.fileList == nil) {
         self.fileList = [NSMutableArray array];
@@ -33,7 +35,9 @@
 
     PLApplyCompactTableLayout(self.tableView, 40);
     self.preferredContentSize = PLCompactPopoverSize(300, 220);
-    [self.tableView setSeparatorStyle:UITableViewCellSeparatorStyleSingleLine];
+    [self.tableView setSeparatorStyle:getLauncherOutlineControlsEnabled() ?
+        UITableViewCellSeparatorStyleNone :
+        UITableViewCellSeparatorStyleSingleLine];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
@@ -49,6 +53,11 @@
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"cell"];
     }
     PLApplyCompactTableCell(cell);
+    if (getLauncherOutlineControlsEnabled()) {
+        PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
+    } else if (@available(iOS 14.0, *)) {
+        cell.backgroundConfiguration = nil;
+    }
 
     cell.textLabel.text = [self.fileList objectAtIndex:indexPath.row];
     return cell;

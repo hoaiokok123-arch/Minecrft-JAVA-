@@ -55,11 +55,16 @@ static WFWorkflowProgressView* currentProgressView;
 {
     [super viewDidLoad];
     [self setTitle:localize(@"preference.title.manage_runtime", nil)];
+    self.view.backgroundColor = UIColor.clearColor;
 
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithImage:[UIImage systemImageNamed:@"plus"] style:UIBarButtonItemStylePlain target:self action:@selector(actionImportRuntime)];
 
     self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
+    self.tableView.backgroundColor = UIColor.clearColor;
+    self.tableView.separatorStyle = getLauncherOutlineControlsEnabled() ?
+        UITableViewCellSeparatorStyleNone :
+        UITableViewCellSeparatorStyleSingleLine;
     PLApplyCompactTableLayout(self.tableView, 40);
 
     self.javaRuntimes = @{
@@ -189,6 +194,11 @@ static WFWorkflowProgressView* currentProgressView;
         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
     }
     PLApplyCompactTableCell(cell);
+    if (getLauncherOutlineControlsEnabled()) {
+        PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
+    } else if (@available(iOS 14.0, *)) {
+        cell.backgroundConfiguration = nil;
+    }
     cell.textLabel.text = localize(self.javaRuntimes[@DEFAULT_JRE][indexPath.row], nil);
     cell.detailTextLabel.text = [NSString stringWithFormat:@"Java %@",
         ((NSDictionary *)self.selectedRuntimes[@"0"])[self.selectedRTTags[indexPath.row]]];
@@ -201,6 +211,11 @@ static WFWorkflowProgressView* currentProgressView;
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"RTCell"];
     }
     PLApplyCompactTableCell(cell);
+    if (getLauncherOutlineControlsEnabled()) {
+        PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
+    } else if (@available(iOS 14.0, *)) {
+        cell.backgroundConfiguration = nil;
+    }
     NSNumber *version = self.sortedJavaVersions[indexPath.section];
     NSString *name = self.javaRuntimes[version][indexPath.row];
     BOOL isInternal = [objc_getAssociatedObject(name, @"internalJRE") boolValue];

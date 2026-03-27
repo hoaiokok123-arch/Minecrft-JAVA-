@@ -16,6 +16,8 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
 };
 
 @interface LauncherPrefBackgroundViewController ()<UIImagePickerControllerDelegate, UINavigationControllerDelegate>
+@property(nonatomic) BOOL importingVideo;
+@property(nonatomic) UIActivityIndicatorView *importIndicator;
 @end
 
 @implementation LauncherPrefBackgroundViewController
@@ -31,8 +33,8 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
-    self.view.backgroundColor = UIColor.systemBackgroundColor;
-    self.tableView.backgroundColor = UIColor.systemBackgroundColor;
+    self.view.backgroundColor = UIColor.clearColor;
+    self.tableView.backgroundColor = UIColor.clearColor;
     PLApplyCompactTableLayout(self.tableView, 40);
     [self applyTableAppearance];
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleLauncherAppearanceDidChange:)
@@ -101,6 +103,42 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
 - (void)handleLauncherAppearanceDidChange:(NSNotification *)notification {
     [self applyTableAppearance];
     [self.tableView reloadData];
+}
+
+- (void)setImportingVideo:(BOOL)importingVideo {
+    _importingVideo = importingVideo;
+    self.tableView.userInteractionEnabled = !importingVideo;
+    self.navigationItem.hidesBackButton = importingVideo;
+    if (!self.importIndicator) {
+        self.importIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleLarge];
+        self.importIndicator.hidesWhenStopped = YES;
+        self.importIndicator.translatesAutoresizingMaskIntoConstraints = NO;
+        [self.view addSubview:self.importIndicator];
+        [NSLayoutConstraint activateConstraints:@[
+            [self.importIndicator.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+            [self.importIndicator.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor]
+        ]];
+    }
+    if (importingVideo) {
+        [self.importIndicator startAnimating];
+    } else {
+        [self.importIndicator stopAnimating];
+    }
+}
+
+- (void)beginImportVideoFromURL:(NSURL *)url {
+    NSURL *selectedURL = [url copy];
+    self.importingVideo = YES;
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        NSError *error = setLauncherBackgroundVideoFromURL(selectedURL);
+        dispatch_async(dispatch_get_main_queue(), ^{
+            self.importingVideo = NO;
+            if (error) {
+                showDialog(localize(@"Error", nil), error.localizedDescription);
+            }
+            [self.tableView reloadData];
+        });
+    });
 }
 
 - (void)backgroundSliderChanged:(UISlider *)sender {
@@ -240,6 +278,9 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:NO];
+    if (self.importingVideo) {
+        return;
+    }
 
     if (indexPath.row == LauncherBackgroundRowChoose) {
         [self presentVideoPicker];
@@ -257,20 +298,16 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
 }
 
 - (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary<UIImagePickerControllerInfoKey, id> *)info {
-    [picker dismissViewControllerAnimated:YES completion:nil];
     NSURL *url = info[UIImagePickerControllerMediaURL];
     if (!url) {
+        [picker dismissViewControllerAnimated:YES completion:nil];
         showDialog(localize(@"Error", nil), @"Unable to load the selected video.");
         return;
     }
 
-    NSError *error = setLauncherBackgroundVideoFromURL(url);
-    if (error) {
-        showDialog(localize(@"Error", nil), error.localizedDescription);
-        return;
-    }
-
-    [self.tableView reloadData];
+    [picker dismissViewControllerAnimated:YES completion:^{
+        [self beginImportVideoFromURL:url];
+    }];
 }
 
 @end

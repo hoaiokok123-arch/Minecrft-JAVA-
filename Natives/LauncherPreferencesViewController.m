@@ -441,9 +441,6 @@
     [super viewDidLoad];
     self.tableView.sectionHeaderHeight = 6;
     self.tableView.sectionFooterHeight = 0.01;
-    if (self.navigationController == nil) {
-        self.tableView.alpha = 0.9;
-    }
     if (NSProcessInfo.processInfo.isMacCatalystApp) {
         UIButton *closeButton = [UIButton buttonWithType:UIButtonTypeClose];
         closeButton.frame = CGRectOffset(closeButton.frame, 10, 10);

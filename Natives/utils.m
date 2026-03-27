@@ -115,6 +115,59 @@ UIColor *PLLauncherAccentColor(void) {
     return [UIColor colorWithRed:121/255.0 green:56/255.0 blue:162/255.0 alpha:1.0];
 }
 
+void PLApplyLauncherNavigationBarChrome(UINavigationBar *navigationBar) {
+    if (!navigationBar) {
+        return;
+    }
+
+    navigationBar.translucent = YES;
+    navigationBar.backgroundColor = UIColor.clearColor;
+    navigationBar.barTintColor = UIColor.clearColor;
+
+    if (@available(iOS 13.0, *)) {
+        UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
+        [appearance configureWithTransparentBackground];
+        appearance.backgroundColor = UIColor.clearColor;
+        appearance.backgroundEffect = nil;
+        appearance.shadowColor = UIColor.clearColor;
+        navigationBar.standardAppearance = appearance;
+        navigationBar.compactAppearance = appearance;
+        navigationBar.scrollEdgeAppearance = appearance;
+        if (@available(iOS 15.0, *)) {
+            navigationBar.compactScrollEdgeAppearance = appearance;
+        }
+    } else {
+        [navigationBar setBackgroundImage:[UIImage new] forBarMetrics:UIBarMetricsDefault];
+        navigationBar.shadowImage = [UIImage new];
+    }
+}
+
+void PLApplyLauncherToolbarChrome(UIToolbar *toolbar) {
+    if (!toolbar) {
+        return;
+    }
+
+    toolbar.translucent = YES;
+    toolbar.backgroundColor = UIColor.clearColor;
+    toolbar.barTintColor = UIColor.clearColor;
+
+    if (@available(iOS 13.0, *)) {
+        UIToolbarAppearance *appearance = [[UIToolbarAppearance alloc] init];
+        [appearance configureWithTransparentBackground];
+        appearance.backgroundColor = UIColor.clearColor;
+        appearance.backgroundEffect = nil;
+        appearance.shadowColor = UIColor.clearColor;
+        toolbar.standardAppearance = appearance;
+        toolbar.compactAppearance = appearance;
+        if (@available(iOS 15.0, *)) {
+            toolbar.scrollEdgeAppearance = appearance;
+        }
+    } else {
+        [toolbar setBackgroundImage:[UIImage new] forToolbarPosition:UIBarPositionAny barMetrics:UIBarMetricsDefault];
+        [toolbar setShadowImage:[UIImage new] forToolbarPosition:UIBarPositionAny];
+    }
+}
+
 void PLApplyLauncherCardChrome(UITableViewCell *cell, BOOL selected, NSDirectionalEdgeInsets insets, CGFloat cornerRadius) {
     cell.backgroundColor = UIColor.clearColor;
     cell.contentView.backgroundColor = UIColor.clearColor;
@@ -151,6 +204,8 @@ void PLApplyLauncherActionButtonChrome(UIButton *button) {
 
 void PLApplyLauncherInputChrome(UITextField *textField) {
     BOOL outline = getLauncherOutlineControlsEnabled();
+    textField.borderStyle = UITextBorderStyleNone;
+    textField.background = nil;
     textField.layer.cornerRadius = 6;
     textField.layer.borderWidth = outline ? 1.0 : 0.0;
     textField.layer.borderColor = (outline ? [UIColor colorWithWhite:1 alpha:0.22] : UIColor.clearColor).CGColor;

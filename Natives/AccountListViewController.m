@@ -19,6 +19,8 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    self.view.backgroundColor = UIColor.clearColor;
+    self.tableView.backgroundColor = UIColor.clearColor;
 
     if (self.accountList == nil) {
         self.accountList = [NSMutableArray array];
@@ -41,7 +43,9 @@
 
     PLApplyCompactTableLayout(self.tableView, 42);
     self.preferredContentSize = PLCompactPopoverSize(320, 220);
-    [self.tableView setSeparatorStyle:UITableViewCellSeparatorStyleSingleLine];
+    [self.tableView setSeparatorStyle:getLauncherOutlineControlsEnabled() ?
+        UITableViewCellSeparatorStyleNone :
+        UITableViewCellSeparatorStyleSingleLine];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
@@ -57,6 +61,11 @@
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"cell"];
     }
     PLApplyCompactTableCell(cell);
+    if (getLauncherOutlineControlsEnabled()) {
+        PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
+    } else if (@available(iOS 14.0, *)) {
+        cell.backgroundConfiguration = nil;
+    }
 
     if (indexPath.row == self.accountList.count) {
         cell.imageView.image = [UIImage imageNamed:@"IconAdd"];

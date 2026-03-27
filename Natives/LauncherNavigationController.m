@@ -80,15 +80,16 @@ static void *ProgressObserverContext = &ProgressObserverContext;
     UIView *textFieldContainer = nil;
     if(hasLiquidGlass) {
         textFieldContainer = [[UIView alloc] initWithFrame:self.versionTextField.frame];
+        textFieldContainer.backgroundColor = UIColor.clearColor;
         [textFieldContainer addSubview:self.progressViewMain];
-        self.buttonInstallItem = [[UIBarButtonItem alloc] initWithTitle:localize(@"Play", nil)
-                                                                  style:UIBarButtonItemStylePlain
-                                                                 target:self
-                                                                 action:@selector(performInstallOrShowDetails:)];
-        self.buttonInstallItem.enabled = NO;
-        dispatch_async(dispatch_get_main_queue(), ^{
-            self.buttonInstallItem.buttonGlassView.backgroundColor = [UIColor colorWithRed:121/255.0 green:56/255.0 blue:162/255.0 alpha:0.5];
-        });
+        self.buttonInstall = [UIButton buttonWithType:UIButtonTypeSystem];
+        setButtonPointerInteraction(self.buttonInstall);
+        [self.buttonInstall setTitle:localize(@"Play", nil) forState:UIControlStateNormal];
+        self.buttonInstall.frame = CGRectMake(0, 0, 112, 36);
+        self.buttonInstall.layer.cornerRadius = 12;
+        self.buttonInstall.enabled = NO;
+        [self.buttonInstall addTarget:self action:@selector(performInstallOrShowDetails:) forControlEvents:UIControlEventPrimaryActionTriggered];
+        self.buttonInstallItem = [[UIBarButtonItem alloc] initWithCustomView:self.buttonInstall];
         [textFieldContainer addSubview:self.versionTextField];
         UIBarButtonItem *textFieldItem = [[UIBarButtonItem alloc] initWithCustomView:textFieldContainer];
         self.globalToolbarItems = @[
@@ -152,11 +153,14 @@ static void *ProgressObserverContext = &ProgressObserverContext;
 }
 
 - (void)applyLauncherAppearance {
+    PLApplyLauncherNavigationBarChrome(self.navigationBar);
+    PLApplyLauncherToolbarChrome(self.toolbar);
     PLApplyLauncherInputChrome(self.versionTextField);
+    self.versionTextField.superview.backgroundColor = UIColor.clearColor;
     if (self.buttonInstall) {
         PLApplyLauncherActionButtonChrome(self.buttonInstall);
     }
-    if (self.buttonInstallItem) {
+    if (self.buttonInstallItem && !self.buttonInstallItem.customView) {
         self.buttonInstallItem.tintColor = getLauncherOutlineControlsEnabled() ?
             PLLauncherAccentColor() :
             UIColor.whiteColor;
@@ -302,13 +306,15 @@ static void *ProgressObserverContext = &ProgressObserverContext;
         if(self.buttonInstall) {
             [self.buttonInstall setTitle:localize(enabled ? @"Play" : @"Details", nil) forState:UIControlStateNormal];
             self.buttonInstall.enabled = YES;
-        } else {
+        } else if (self.buttonInstallItem) {
             self.buttonInstallItem.title = localize(enabled ? @"Play" : @"Details", nil);
             self.buttonInstallItem.enabled = YES;
         }
     } else {
         self.buttonInstall.enabled = enabled;
-        self.buttonInstallItem.enabled = enabled;
+        if (self.buttonInstallItem) {
+            self.buttonInstallItem.enabled = enabled;
+        }
     }
     UIApplication.sharedApplication.idleTimerDisabled = !enabled;
 }

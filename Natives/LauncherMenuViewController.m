@@ -208,6 +208,7 @@
     self.accountButton.layer.cornerRadius = 10;
     self.accountButton.layer.borderWidth = getLauncherOutlineControlsEnabled() ? 1.0 : 0.0;
     self.accountButton.layer.borderColor = [UIColor colorWithWhite:1 alpha:0.18].CGColor;
+    self.accountButton.backgroundColor = UIColor.clearColor;
     self.accountButton.contentEdgeInsets = UIEdgeInsetsMake(4, 4, 4, 6);
 }
 

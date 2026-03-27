@@ -370,6 +370,8 @@
         [self.navigationController pushViewController:vc animated:YES];
     } else {
         UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
+        PLApplyLauncherNavigationBarChrome(nav.navigationBar);
+        PLApplyLauncherToolbarChrome(nav.toolbar);
         nav.modalPresentationStyle = UIModalPresentationFormSheet;
         nav.preferredContentSize = PLCompactSheetSize(620, 400);
         if (@available(iOS 15.0, *)) {

@@ -14,6 +14,14 @@ static NSString * const PLLauncherBackgroundVideoOffsetXKey = @"general.launcher
 static NSString * const PLLauncherBackgroundVideoOffsetYKey = @"general.launcher_background_video_offset_y";
 static NSString * const PLLauncherOutlineControlsKey = @"general.launcher_outline_controls";
 
+static void PLRunLauncherBlockOnMainThread(dispatch_block_t block) {
+    if (NSThread.isMainThread) {
+        block();
+    } else {
+        dispatch_sync(dispatch_get_main_queue(), block);
+    }
+}
+
 static NSString *PLLauncherBackgroundDirectory(void) {
     NSString *directory = [@(getenv("POJAV_HOME")) stringByAppendingPathComponent:@"launcher_background"];
     [NSFileManager.defaultManager createDirectoryAtPath:directory withIntermediateDirectories:YES attributes:nil error:nil];
@@ -247,7 +255,10 @@ void resetLauncherBackgroundVideoAdjustments(void) {
 
 NSError *setLauncherBackgroundVideoFromURL(NSURL *url) {
     NSString *directory = PLLauncherBackgroundDirectory();
-    NSString *currentPath = getLauncherBackgroundVideoPath();
+    __block NSString *currentPath = nil;
+    PLRunLauncherBlockOnMainThread(^{
+        currentPath = [getLauncherBackgroundVideoPath() copy];
+    });
 
     NSString *extension = url.pathExtension.lowercaseString;
     if (extension.length == 0) {
@@ -263,8 +274,10 @@ NSError *setLauncherBackgroundVideoFromURL(NSURL *url) {
         return error;
     }
 
-    setPrefObject(PLLauncherBackgroundVideoKey, destination);
-    PLPostLauncherBackgroundDidChange();
+    PLRunLauncherBlockOnMainThread(^{
+        setPrefObject(PLLauncherBackgroundVideoKey, destination);
+        PLPostLauncherBackgroundDidChange();
+    });
     if (currentPath.length > 0 && PLLauncherBackgroundPathIsManaged(currentPath)) {
         [NSFileManager.defaultManager removeItemAtPath:currentPath error:nil];
     }

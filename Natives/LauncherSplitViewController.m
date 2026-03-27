@@ -95,6 +95,9 @@ extern NSMutableDictionary *prefDict;
     masterVc.view.backgroundColor = UIColor.clearColor;
     detailVc.view.backgroundColor = UIColor.clearColor;
     detailVc.toolbarHidden = NO;
+    PLApplyLauncherNavigationBarChrome(masterVc.navigationBar);
+    PLApplyLauncherNavigationBarChrome(detailVc.navigationBar);
+    PLApplyLauncherToolbarChrome(detailVc.toolbar);
 
     self.viewControllers = @[masterVc, detailVc];
     [self changeDisplayModeForSize:self.view.frame.size];
@@ -210,6 +213,11 @@ extern NSMutableDictionary *prefDict;
 }
 
 - (void)handleLauncherAppearanceDidChange:(NSNotification *)notification {
+    UINavigationController *masterVc = (UINavigationController *)self.viewControllers.firstObject;
+    LauncherNavigationController *detailVc = (LauncherNavigationController *)self.viewControllers.lastObject;
+    PLApplyLauncherNavigationBarChrome(masterVc.navigationBar);
+    PLApplyLauncherNavigationBarChrome(detailVc.navigationBar);
+    PLApplyLauncherToolbarChrome(detailVc.toolbar);
     [self applyBackgroundVideoLayout];
     [self resumeBackgroundPlaybackIfNeeded];
 }

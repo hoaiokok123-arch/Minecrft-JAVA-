@@ -141,6 +141,8 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
 
 - (void)presentNavigatedViewController:(UIViewController *)vc {
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
+    PLApplyLauncherNavigationBarChrome(nav.navigationBar);
+    PLApplyLauncherToolbarChrome(nav.toolbar);
     nav.modalPresentationStyle = UIModalPresentationFormSheet;
     if ([vc isKindOfClass:LauncherProfileEditorViewController.class]) {
         nav.preferredContentSize = PLCompactSheetSize(620, 360);
