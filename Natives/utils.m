@@ -71,6 +71,12 @@ void PLApplyCompactTableLayout(UITableView *tableView, CGFloat rowHeight) {
     tableView.estimatedSectionFooterHeight = 0;
     tableView.cellLayoutMarginsFollowReadableWidth = NO;
     tableView.contentInset = UIEdgeInsetsZero;
+    tableView.opaque = NO;
+    tableView.backgroundColor = UIColor.clearColor;
+    if (!tableView.backgroundView) {
+        tableView.backgroundView = [UIView new];
+    }
+    tableView.backgroundView.backgroundColor = UIColor.clearColor;
     if (@available(iOS 15.0, *)) {
         tableView.sectionHeaderTopPadding = 0;
     }
@@ -115,6 +121,55 @@ UIColor *PLLauncherAccentColor(void) {
     return [UIColor colorWithRed:121/255.0 green:56/255.0 blue:162/255.0 alpha:1.0];
 }
 
+static void PLClearLauncherBackdropRecursive(UIView *view) {
+    if (!view) {
+        return;
+    }
+
+    NSString *className = NSStringFromClass(view.class);
+    BOOL isBackdropView =
+        [className containsString:@"BarBackground"] ||
+        [className containsString:@"Backdrop"] ||
+        [className containsString:@"DropShadow"] ||
+        [className containsString:@"VisualEffect"] ||
+        [className containsString:@"PopoverBackground"];
+
+    if ([view isKindOfClass:UIVisualEffectView.class]) {
+        ((UIVisualEffectView *)view).effect = nil;
+        isBackdropView = YES;
+    }
+
+    if (isBackdropView) {
+        view.opaque = NO;
+        view.backgroundColor = UIColor.clearColor;
+        if ([className containsString:@"Shadow"]) {
+            view.hidden = YES;
+        }
+    }
+
+    for (UIView *subview in view.subviews) {
+        PLClearLauncherBackdropRecursive(subview);
+    }
+}
+
+void PLApplyLauncherViewChrome(UIView *view) {
+    if (!view) {
+        return;
+    }
+
+    UIView *cursor = view;
+    while (cursor && ![cursor isKindOfClass:UIWindow.class]) {
+        cursor.opaque = NO;
+        cursor.backgroundColor = UIColor.clearColor;
+        if ([cursor isKindOfClass:UIVisualEffectView.class]) {
+            ((UIVisualEffectView *)cursor).effect = nil;
+        }
+        cursor = cursor.superview;
+    }
+
+    PLClearLauncherBackdropRecursive(view);
+}
+
 void PLApplyLauncherNavigationBarChrome(UINavigationBar *navigationBar) {
     if (!navigationBar) {
         return;
@@ -140,6 +195,7 @@ void PLApplyLauncherNavigationBarChrome(UINavigationBar *navigationBar) {
         [navigationBar setBackgroundImage:[UIImage new] forBarMetrics:UIBarMetricsDefault];
         navigationBar.shadowImage = [UIImage new];
     }
+    PLApplyLauncherViewChrome(navigationBar);
 }
 
 void PLApplyLauncherToolbarChrome(UIToolbar *toolbar) {
@@ -150,22 +206,10 @@ void PLApplyLauncherToolbarChrome(UIToolbar *toolbar) {
     toolbar.translucent = YES;
     toolbar.backgroundColor = UIColor.clearColor;
     toolbar.barTintColor = UIColor.clearColor;
-
-    if (@available(iOS 13.0, *)) {
-        UIToolbarAppearance *appearance = [[UIToolbarAppearance alloc] init];
-        [appearance configureWithTransparentBackground];
-        appearance.backgroundColor = UIColor.clearColor;
-        appearance.backgroundEffect = nil;
-        appearance.shadowColor = UIColor.clearColor;
-        toolbar.standardAppearance = appearance;
-        toolbar.compactAppearance = appearance;
-        if (@available(iOS 15.0, *)) {
-            toolbar.scrollEdgeAppearance = appearance;
-        }
-    } else {
-        [toolbar setBackgroundImage:[UIImage new] forToolbarPosition:UIBarPositionAny barMetrics:UIBarMetricsDefault];
-        [toolbar setShadowImage:[UIImage new] forToolbarPosition:UIBarPositionAny];
-    }
+    [toolbar setBackgroundImage:[UIImage new] forToolbarPosition:UIBarPositionAny barMetrics:UIBarMetricsDefault];
+    [toolbar setBackgroundImage:[UIImage new] forToolbarPosition:UIBarPositionAny barMetrics:UIBarMetricsCompact];
+    [toolbar setShadowImage:[UIImage new] forToolbarPosition:UIBarPositionAny];
+    PLApplyLauncherViewChrome(toolbar);
 }
 
 void PLApplyLauncherCardChrome(UITableViewCell *cell, BOOL selected, NSDirectionalEdgeInsets insets, CGFloat cornerRadius) {
@@ -180,7 +224,7 @@ void PLApplyLauncherCardChrome(UITableViewCell *cell, BOOL selected, NSDirection
             backgroundConfig.strokeColor = selected ? PLLauncherAccentColor() : [UIColor colorWithWhite:1 alpha:0.18];
             backgroundConfig.backgroundColor = selected ? [PLLauncherAccentColor() colorWithAlphaComponent:0.14] : UIColor.clearColor;
         } else {
-            backgroundConfig.backgroundColor = selected ? UIColor.tertiarySystemFillColor : UIColor.secondarySystemGroupedBackgroundColor;
+            backgroundConfig.backgroundColor = selected ? [PLLauncherAccentColor() colorWithAlphaComponent:0.16] : UIColor.clearColor;
         }
         cell.backgroundConfiguration = backgroundConfig;
     } else if (getLauncherOutlineControlsEnabled()) {
@@ -189,6 +233,7 @@ void PLApplyLauncherCardChrome(UITableViewCell *cell, BOOL selected, NSDirection
         cell.layer.borderColor = (selected ? PLLauncherAccentColor() : [UIColor colorWithWhite:1 alpha:0.18]).CGColor;
     } else {
         cell.layer.borderWidth = 0;
+        cell.contentView.backgroundColor = selected ? [PLLauncherAccentColor() colorWithAlphaComponent:0.16] : UIColor.clearColor;
     }
 }
 
@@ -206,12 +251,10 @@ void PLApplyLauncherInputChrome(UITextField *textField) {
     BOOL outline = getLauncherOutlineControlsEnabled();
     textField.borderStyle = UITextBorderStyleNone;
     textField.background = nil;
+    textField.backgroundColor = UIColor.clearColor;
     textField.layer.cornerRadius = 6;
     textField.layer.borderWidth = outline ? 1.0 : 0.0;
     textField.layer.borderColor = (outline ? [UIColor colorWithWhite:1 alpha:0.22] : UIColor.clearColor).CGColor;
-    if (outline) {
-        textField.backgroundColor = UIColor.clearColor;
-    }
 }
 
 CGSize PLCompactPopoverSize(CGFloat width, CGFloat height) {

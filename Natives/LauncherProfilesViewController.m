@@ -77,7 +77,7 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
     ]];
     self.createButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAdd menu:createMenu];
 
-    self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
+    self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStylePlain];
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
     self.view.backgroundColor = UIColor.clearColor;
     self.tableView.backgroundColor = UIColor.clearColor;
@@ -89,6 +89,8 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
 
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
+    PLApplyLauncherNavigationBarChrome(self.navigationController.navigationBar);
+    PLApplyLauncherToolbarChrome(self.navigationController.toolbar);
     [self applyLauncherAppearance];
 
     // Put navigation buttons back in place
@@ -98,6 +100,11 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
     [PLProfiles updateCurrent];
     [self.tableView reloadData];
     [self.navigationController performSelector:@selector(reloadProfileList)];
+}
+
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    PLApplyLauncherViewChrome(self.view);
 }
 
 - (void)applyLauncherAppearance {
@@ -141,6 +148,7 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
 
 - (void)presentNavigatedViewController:(UIViewController *)vc {
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
+    nav.view.backgroundColor = UIColor.clearColor;
     PLApplyLauncherNavigationBarChrome(nav.navigationBar);
     PLApplyLauncherToolbarChrome(nav.toolbar);
     nav.modalPresentationStyle = UIModalPresentationFormSheet;

@@ -86,6 +86,7 @@ void PLApplyCompactSwitch(UISwitch *toggle);
 UIColor *PLLauncherAccentColor(void);
 void PLApplyLauncherNavigationBarChrome(UINavigationBar *navigationBar);
 void PLApplyLauncherToolbarChrome(UIToolbar *toolbar);
+void PLApplyLauncherViewChrome(UIView *view);
 void PLApplyLauncherCardChrome(UITableViewCell *cell, BOOL selected, NSDirectionalEdgeInsets insets, CGFloat cornerRadius);
 void PLApplyLauncherActionButtonChrome(UIButton *button);
 void PLApplyLauncherInputChrome(UITextField *textField);

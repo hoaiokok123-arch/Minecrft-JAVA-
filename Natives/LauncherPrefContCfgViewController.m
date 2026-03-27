@@ -44,7 +44,7 @@ typedef void(^CreateView)(UITableViewCell *, NSString *, NSDictionary *);
     self.keyValueMap = [[NSMutableArray alloc] init];
     initKeycodeTable(self.keyCodeMap, self.keyValueMap);
     
-    self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
+    self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStylePlain];
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
     self.tableView.sectionFooterHeight = 36;
     self.tableView.backgroundColor = UIColor.clearColor;
@@ -64,6 +64,13 @@ typedef void(^CreateView)(UITableViewCell *, NSString *, NSDictionary *);
     self.editPickMapping = [[UIPickerView alloc] init];
     self.editPickMapping.delegate = self;
     self.editPickMapping.dataSource = self;
+}
+
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    PLApplyLauncherViewChrome(self.view);
+    PLApplyLauncherNavigationBarChrome(self.navigationController.navigationBar);
+    PLApplyLauncherToolbarChrome(self.navigationController.toolbar);
 }
 
 - (void)loadGamepadConfigurationFile {
@@ -260,6 +267,7 @@ typedef void(^CreateView)(UITableViewCell *, NSString *, NSDictionary *);
     UIPopoverPresentationController *popoverController = [vc popoverPresentationController];
     popoverController.sourceView = self.tableView;
     popoverController.sourceRect = [self.tableView rectForRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0]];
+    popoverController.backgroundColor = UIColor.clearColor;
     popoverController.delegate = self;
     [self presentViewController:vc animated:YES completion:nil];
 }

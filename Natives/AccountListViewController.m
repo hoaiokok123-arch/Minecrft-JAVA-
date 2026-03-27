@@ -48,6 +48,11 @@
         UITableViewCellSeparatorStyleSingleLine];
 }
 
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    PLApplyLauncherViewChrome(self.view);
+}
+
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
     return self.accountList.count + 1;

@@ -314,6 +314,7 @@
     UIPopoverPresentationController *popoverController = [vc popoverPresentationController];
     popoverController.sourceView = self.view;
     popoverController.sourceRect = self.selectedPoint;
+    popoverController.backgroundColor = UIColor.clearColor;
     popoverController.permittedArrowDirections = UIPopoverArrowDirectionAny;
     popoverController.delegate = self;
     [self presentViewController:vc animated:YES completion:nil];

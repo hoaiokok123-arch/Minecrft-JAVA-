@@ -185,6 +185,13 @@
     [self restoreHighlightedSelection];
 }
 
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    PLApplyLauncherViewChrome(self.view);
+    PLApplyLauncherNavigationBarChrome(self.navigationController.navigationBar);
+    PLApplyLauncherToolbarChrome(self.navigationController.toolbar);
+}
+
 - (UIBarButtonItem *)drawAccountButton {
     if (!self.accountBtnItem) {
         self.accountButton = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -333,6 +340,7 @@
     UIPopoverPresentationController *popoverController = vc.popoverPresentationController;
     popoverController.sourceView = sender;
     popoverController.sourceRect = sender.bounds;
+    popoverController.backgroundColor = UIColor.clearColor;
     popoverController.permittedArrowDirections = UIPopoverArrowDirectionAny;
     popoverController.delegate = vc;
     [self presentViewController:vc animated:YES completion:nil];

@@ -29,7 +29,7 @@
 {
     [super viewDidLoad];
 
-    self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
+    self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStylePlain];
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
     self.view.backgroundColor = UIColor.clearColor;
     self.tableView.backgroundColor = UIColor.clearColor;
@@ -48,6 +48,13 @@
         name:PLLauncherAppearanceDidChangeNotification object:nil];
 }
 
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    PLApplyLauncherViewChrome(self.view);
+    PLApplyLauncherNavigationBarChrome(self.navigationController.navigationBar);
+    PLApplyLauncherToolbarChrome(self.navigationController.toolbar);
+}
+
 - (UIBarButtonItem *)drawHelpButton {
     if (!self.helpBtn) {
         self.helpBtn = [[UIBarButtonItem alloc] initWithImage:[UIImage systemImageNamed:@"questionmark.circle"] style:UIBarButtonItemStyleDone target:self action:@selector(toggleDetailVisibility)];
@@ -57,6 +64,8 @@
 
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
+    PLApplyLauncherNavigationBarChrome(self.navigationController.navigationBar);
+    PLApplyLauncherToolbarChrome(self.navigationController.toolbar);
 
     // Put navigation buttons back in place if we're first of the navigation controller
     if (self.hasDetail && self.navigationController) {
@@ -370,6 +379,7 @@
         [self.navigationController pushViewController:vc animated:YES];
     } else {
         UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
+        nav.view.backgroundColor = UIColor.clearColor;
         PLApplyLauncherNavigationBarChrome(nav.navigationBar);
         PLApplyLauncherToolbarChrome(nav.toolbar);
         nav.modalPresentationStyle = UIModalPresentationFormSheet;

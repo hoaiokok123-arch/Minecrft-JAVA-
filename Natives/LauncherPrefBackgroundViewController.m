@@ -1,3 +1,4 @@
+#import <AVFoundation/AVFoundation.h>
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
 #import "LauncherPrefBackgroundViewController.h"
@@ -18,12 +19,13 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
 @interface LauncherPrefBackgroundViewController ()<UIImagePickerControllerDelegate, UINavigationControllerDelegate>
 @property(nonatomic) BOOL importingVideo;
 @property(nonatomic) UIActivityIndicatorView *importIndicator;
+@property(nonatomic) AVAssetExportSession *importSession;
 @end
 
 @implementation LauncherPrefBackgroundViewController
 
 - (instancetype)init {
-    self = [super initWithStyle:UITableViewStyleInsetGrouped];
+    self = [super initWithStyle:UITableViewStylePlain];
     if (self) {
         self.title = localize(@"preference.title.launcher_background_video", nil);
     }
@@ -39,6 +41,13 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
     [self applyTableAppearance];
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleLauncherAppearanceDidChange:)
         name:PLLauncherAppearanceDidChangeNotification object:nil];
+}
+
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    PLApplyLauncherViewChrome(self.view);
+    PLApplyLauncherNavigationBarChrome(self.navigationController.navigationBar);
+    PLApplyLauncherToolbarChrome(self.navigationController.toolbar);
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -126,18 +135,94 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
     }
 }
 
+- (NSError *)backgroundImportError:(NSString *)description {
+    return [NSError errorWithDomain:@"LauncherBackgroundVideo"
+        code:1
+        userInfo:@{NSLocalizedDescriptionKey: description}];
+}
+
+- (void)finishImportWithError:(NSError *)error {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        self.importSession = nil;
+        self.importingVideo = NO;
+        if (error) {
+            showDialog(localize(@"Error", nil), error.localizedDescription);
+        }
+        [self.tableView reloadData];
+    });
+}
+
 - (void)beginImportVideoFromURL:(NSURL *)url {
     NSURL *selectedURL = [url copy];
     self.importingVideo = YES;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        NSError *error = setLauncherBackgroundVideoFromURL(selectedURL);
-        dispatch_async(dispatch_get_main_queue(), ^{
-            self.importingVideo = NO;
-            if (error) {
-                showDialog(localize(@"Error", nil), error.localizedDescription);
+        @autoreleasepool {
+            AVURLAsset *asset = [AVURLAsset URLAssetWithURL:selectedURL options:nil];
+            if ([asset tracksWithMediaType:AVMediaTypeVideo].count == 0) {
+                [self finishImportWithError:[self backgroundImportError:@"Unable to load the selected video."]];
+                return;
             }
-            [self.tableView reloadData];
-        });
+
+            NSArray<NSString *> *compatiblePresets = [AVAssetExportSession exportPresetsCompatibleWithAsset:asset];
+            NSString *presetName = [compatiblePresets containsObject:AVAssetExportPresetPassthrough] ?
+                AVAssetExportPresetPassthrough :
+                AVAssetExportPresetHighestQuality;
+            AVAssetExportSession *session = [[AVAssetExportSession alloc] initWithAsset:asset presetName:presetName];
+            if (!session) {
+                [self finishImportWithError:[self backgroundImportError:@"Unable to prepare the selected video."]];
+                return;
+            }
+
+            NSString *outputFileType = nil;
+            NSString *extension = @"mp4";
+            if ([session.supportedFileTypes containsObject:AVFileTypeMPEG4]) {
+                outputFileType = AVFileTypeMPEG4;
+            } else if ([session.supportedFileTypes containsObject:AVFileTypeQuickTimeMovie]) {
+                outputFileType = AVFileTypeQuickTimeMovie;
+                extension = @"mov";
+            } else {
+                outputFileType = session.supportedFileTypes.firstObject;
+                if ([outputFileType isEqualToString:AVFileTypeQuickTimeMovie]) {
+                    extension = @"mov";
+                }
+            }
+            if (outputFileType.length == 0) {
+                [self finishImportWithError:[self backgroundImportError:@"This video format is not supported for launcher background."]];
+                return;
+            }
+
+            NSURL *stagedURL = [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:
+                [NSString stringWithFormat:@"launcher-video-import-%@.%@", NSUUID.UUID.UUIDString.lowercaseString, extension]]];
+            [NSFileManager.defaultManager removeItemAtURL:stagedURL error:nil];
+
+            session.outputURL = stagedURL;
+            session.outputFileType = outputFileType;
+            session.shouldOptimizeForNetworkUse = NO;
+            dispatch_async(dispatch_get_main_queue(), ^{
+                self.importSession = session;
+            });
+
+            [session exportAsynchronouslyWithCompletionHandler:^{
+                if (session.status == AVAssetExportSessionStatusCompleted) {
+                    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+                        NSError *error = setLauncherBackgroundVideoFromURL(stagedURL);
+                        [NSFileManager.defaultManager removeItemAtURL:stagedURL error:nil];
+                        [self finishImportWithError:error];
+                    });
+                    return;
+                }
+
+                [NSFileManager.defaultManager removeItemAtURL:stagedURL error:nil];
+                NSError *error = session.error;
+                if (!error) {
+                    NSString *message = session.status == AVAssetExportSessionStatusCancelled ?
+                        @"Video import was cancelled." :
+                        @"Unable to import the selected video.";
+                    error = [self backgroundImportError:message];
+                }
+                [self finishImportWithError:error];
+            }];
+        }
     });
 }
 

@@ -73,7 +73,7 @@
     self.array = [[NSMutableArray alloc] init];
     [self.array addObject:@"default"];
 
-    self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
+    self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStylePlain];
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
     self.tableView.sectionFooterHeight = 44;
     self.tableView.backgroundColor = UIColor.clearColor;
@@ -94,6 +94,13 @@
             [self.array addObject:file];
         }
     }
+}
+
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    PLApplyLauncherViewChrome(self.view);
+    PLApplyLauncherNavigationBarChrome(self.navigationController.navigationBar);
+    PLApplyLauncherToolbarChrome(self.navigationController.toolbar);
 }
 
 - (void)changeSelectionTo:(NSString *)name {
@@ -168,9 +175,7 @@ viewForFooterInSection:(NSInteger)section
     view.delegate = self;
     view.placeholder = localize(@"preference.multidir.add_directory", nil);
     view.returnKeyType = UIReturnKeyDone;
-    view.backgroundColor = getLauncherOutlineControlsEnabled() ?
-        UIColor.clearColor :
-        UIColor.secondarySystemGroupedBackgroundColor;
+    view.backgroundColor = UIColor.clearColor;
     PLApplyLauncherInputChrome(view);
     view.layer.cornerRadius = 12;
     view.translatesAutoresizingMaskIntoConstraints = NO;

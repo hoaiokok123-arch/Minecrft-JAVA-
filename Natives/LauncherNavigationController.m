@@ -373,6 +373,9 @@ static void *ProgressObserverContext = &ProgressObserverContext;
             self.progressVC = [[UINavigationController alloc] initWithRootViewController:vc];
             self.progressVC.modalPresentationStyle = UIModalPresentationPopover;
             self.progressVC.preferredContentSize = PLCompactPopoverSize(320, 220);
+            self.progressVC.view.backgroundColor = UIColor.clearColor;
+            PLApplyLauncherNavigationBarChrome(self.progressVC.navigationBar);
+            PLApplyLauncherToolbarChrome(self.progressVC.toolbar);
         } else if (self.progressVC.popoverPresentationController._isDismissing) {
             // FIXME: stock bug? it crashes when users dismisses and presents this vc too fast
             // "UIPopoverPresentationController () should have a non-nil sourceView or barButtonItem set before the presentation occurs."
@@ -384,6 +387,7 @@ static void *ProgressObserverContext = &ProgressObserverContext;
         } else {
             self.progressVC.popoverPresentationController.sourceView = sender;
         }
+        self.progressVC.popoverPresentationController.backgroundColor = UIColor.clearColor;
         [self presentViewController:self.progressVC animated:YES completion:nil];
     } else {
         if (usesBarButtonItem) {
@@ -566,6 +570,10 @@ static void *ProgressObserverContext = &ProgressObserverContext;
 
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
+    PLApplyLauncherViewChrome(self.view);
+    PLApplyLauncherNavigationBarChrome(self.navigationBar);
+    PLApplyLauncherToolbarChrome(self.toolbar);
+    self.versionTextField.superview.backgroundColor = UIColor.clearColor;
     [sidebarViewController updateAccountInfo];
     if (self.globalToolbarItems) {
         if (!self.viewControllers.firstObject.toolbarItems) {

@@ -9,6 +9,7 @@
 @implementation PickViewController
 - (void)loadView {
     [super loadView];
+    self.view.backgroundColor = UIColor.clearColor;
     if(self.textField.inputAccessoryView) [self.view addSubview:self.textField.inputAccessoryView];
     [self.view addSubview:self.textField.inputView];
 }
@@ -23,6 +24,11 @@
     CGRect accessoryFrame = CGRectMake(frame.origin.x, frame.origin.y, frame.size.width, self.textField.inputAccessoryView.frame.size.height);
     self.textField.inputAccessoryView.frame = accessoryFrame;
     self.textField.inputView.frame = CGRectMake(frame.origin.x, CGRectGetMaxY(accessoryFrame), frame.size.width, frame.size.height - CGRectGetMaxY(self.inputAccessoryView.frame));
+}
+
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    PLApplyLauncherViewChrome(self.view);
 }
 
 - (void)viewDidDisappear:(BOOL)animated {
@@ -66,6 +72,7 @@
     UIPopoverPresentationController *popoverController = [self.vc popoverPresentationController];
     popoverController.sourceView = self;
     popoverController.sourceRect = self.frame;
+    popoverController.backgroundColor = UIColor.clearColor;
 
     UIViewController *showingVC = (id)self.nextResponder;
     while (![showingVC isKindOfClass:UIViewController.class]) {

@@ -21,6 +21,12 @@ extern NSMutableDictionary *prefDict;
 
 @implementation LauncherSplitViewController
 
+- (void)applyBackgroundDimAppearance {
+    CGFloat dimAlpha = getLauncherOutlineControlsEnabled() ? 0.0 : 0.08;
+    self.backgroundDimView.backgroundColor = [UIColor colorWithWhite:0 alpha:dimAlpha];
+    self.backgroundDimView.hidden = self.backgroundVideoView.hidden || dimAlpha <= 0.001;
+}
+
 - (void)sendBackgroundViewsToBack {
     if (self.backgroundDimView.superview == self.view) {
         [self.view sendSubviewToBack:self.backgroundDimView];
@@ -68,7 +74,7 @@ extern NSMutableDictionary *prefDict;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.view.backgroundColor = UIColor.blackColor;
+    self.view.backgroundColor = UIColor.clearColor;
     if ([getPrefObject(@"control.control_safe_area") length] == 0) {
         setPrefObject(@"control.control_safe_area", NSStringFromUIEdgeInsets(getDefaultSafeArea()));
     }
@@ -78,17 +84,19 @@ extern NSMutableDictionary *prefDict;
     self.backgroundVideoView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     self.backgroundVideoView.clipsToBounds = YES;
     self.backgroundVideoView.userInteractionEnabled = NO;
+    self.backgroundVideoView.backgroundColor = UIColor.clearColor;
     [self.view addSubview:self.backgroundVideoView];
 
     self.backgroundVideoContentView = [[UIView alloc] initWithFrame:self.backgroundVideoView.bounds];
     self.backgroundVideoContentView.userInteractionEnabled = NO;
+    self.backgroundVideoContentView.backgroundColor = UIColor.clearColor;
     [self.backgroundVideoView addSubview:self.backgroundVideoContentView];
 
     self.backgroundDimView = [[UIView alloc] initWithFrame:self.view.bounds];
     self.backgroundDimView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    self.backgroundDimView.backgroundColor = [UIColor colorWithWhite:0 alpha:0.5];
     self.backgroundDimView.userInteractionEnabled = NO;
     [self.view addSubview:self.backgroundDimView];
+    [self applyBackgroundDimAppearance];
 
     UINavigationController *masterVc = [[UINavigationController alloc] initWithRootViewController:[[LauncherMenuViewController alloc] init]];
     LauncherNavigationController *detailVc = [[LauncherNavigationController alloc] initWithRootViewController:[[LauncherProfilesViewController alloc] init]];
@@ -137,7 +145,9 @@ extern NSMutableDictionary *prefDict;
 
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
+    PLApplyLauncherViewChrome(self.view);
     [self applyBackgroundVideoLayout];
+    [self applyBackgroundDimAppearance];
     [self sendBackgroundViewsToBack];
 }
 
@@ -197,13 +207,12 @@ extern NSMutableDictionary *prefDict;
     self.backgroundPlayer = player;
     self.backgroundLayer = [AVPlayerLayer playerLayerWithPlayer:player];
     self.backgroundLayer.videoGravity = AVLayerVideoGravityResizeAspect;
-    self.backgroundLayer.backgroundColor = UIColor.blackColor.CGColor;
+    self.backgroundLayer.backgroundColor = UIColor.clearColor.CGColor;
     [self.backgroundVideoContentView.layer addSublayer:self.backgroundLayer];
     [self applyBackgroundVideoLayout];
 
     self.backgroundVideoView.hidden = NO;
-    self.backgroundDimView.hidden = NO;
-    self.backgroundDimView.backgroundColor = [UIColor colorWithWhite:0 alpha:0.65];
+    [self applyBackgroundDimAppearance];
     [self sendBackgroundViewsToBack];
     [self resumeBackgroundPlaybackIfNeeded];
 }
@@ -218,6 +227,8 @@ extern NSMutableDictionary *prefDict;
     PLApplyLauncherNavigationBarChrome(masterVc.navigationBar);
     PLApplyLauncherNavigationBarChrome(detailVc.navigationBar);
     PLApplyLauncherToolbarChrome(detailVc.toolbar);
+    PLApplyLauncherViewChrome(self.view);
+    [self applyBackgroundDimAppearance];
     [self applyBackgroundVideoLayout];
     [self resumeBackgroundPlaybackIfNeeded];
 }

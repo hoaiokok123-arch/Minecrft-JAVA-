@@ -14,7 +14,7 @@ static NSString * const PLLauncherBackgroundVideoOffsetXKey = @"general.launcher
 static NSString * const PLLauncherBackgroundVideoOffsetYKey = @"general.launcher_background_video_offset_y";
 static NSString * const PLLauncherOutlineControlsKey = @"general.launcher_outline_controls";
 
-static void PLRunLauncherBlockOnMainThread(dispatch_block_t block) {
+static void PLRunLauncherBlockOnMainThread(void (^block)(void)) {
     if (NSThread.isMainThread) {
         block();
     } else {
