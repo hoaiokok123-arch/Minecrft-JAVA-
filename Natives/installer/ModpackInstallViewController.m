@@ -42,17 +42,8 @@
     self.view.backgroundColor = UIColor.clearColor;
     self.tableView.backgroundColor = UIColor.clearColor;
     self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
-    self.tableView.tableHeaderView = [UIView new];
-    self.tableView.tableFooterView = [UIView new];
-    self.tableView.estimatedRowHeight = 78;
-    self.tableView.rowHeight = UITableViewAutomaticDimension;
-    self.tableView.estimatedSectionHeaderHeight = 0;
-    self.tableView.estimatedSectionFooterHeight = 0;
-    self.tableView.contentInset = UIEdgeInsetsMake(8, 0, 12, 0);
-    self.tableView.cellLayoutMarginsFollowReadableWidth = NO;
-    if (@available(iOS 15.0, *)) {
-        self.tableView.sectionHeaderTopPadding = 0;
-    }
+    self.tableView.tableHeaderView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 1, 8)];
+    self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 1, 8)];
 
     //NSString *curseforgeAPIKey = CONFIG_CURSEFORGE_API_KEY;
     self.searchController = [[UISearchController alloc] initWithSearchResultsController:nil];
@@ -65,6 +56,7 @@
     self.searchController.searchBar.searchTextField.clipsToBounds = NO;
     PLApplyLauncherInputChrome(self.searchController.searchBar.searchTextField);
     self.navigationItem.searchController = self.searchController;
+    PLApplyCompactTableLayout(self.tableView, 48);
     self.modrinth = [ModrinthAPI new];
     self.filters = @{
         @"isModpack": @(YES),
@@ -163,21 +155,12 @@
         cell.imageView.contentMode = UIViewContentModeScaleToFill;
         cell.imageView.clipsToBounds = YES;
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
-        cell.textLabel.numberOfLines = 1;
-        cell.textLabel.adjustsFontSizeToFitWidth = YES;
-        cell.textLabel.minimumScaleFactor = 0.78;
-        cell.detailTextLabel.numberOfLines = 2;
-        cell.detailTextLabel.adjustsFontSizeToFitWidth = YES;
-        cell.detailTextLabel.minimumScaleFactor = 0.76;
     }
-    cell.layoutMargins = UIEdgeInsetsMake(0, 12, 0, 12);
-    cell.separatorInset = UIEdgeInsetsMake(0, 14, 0, 14);
-    cell.textLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightSemibold];
-    cell.detailTextLabel.font = [UIFont systemFontOfSize:13.5 weight:UIFontWeightRegular];
-    PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(5, 10, 5, 10), 20);
+    PLApplyCompactTableCell(cell);
+    PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(4, 8, 4, 8), 18);
     cell.backgroundColor = UIColor.clearColor;
     cell.contentView.backgroundColor = UIColor.clearColor;
-    cell.imageView.layer.cornerRadius = 10;
+    cell.imageView.layer.cornerRadius = 8;
     if (@available(iOS 13.0, *)) {
         cell.imageView.layer.cornerCurve = kCACornerCurveContinuous;
     }
@@ -185,6 +168,7 @@
     NSDictionary *item = self.list[indexPath.row];
     cell.textLabel.text = item[@"title"];
     cell.detailTextLabel.text = item[@"description"];
+    cell.detailTextLabel.numberOfLines = 2;
     UIImage *fallbackImage = [UIImage imageNamed:@"DefaultProfile"];
     [cell.imageView setImageWithURL:[NSURL URLWithString:item[@"imageUrl"]] placeholderImage:fallbackImage];
 
