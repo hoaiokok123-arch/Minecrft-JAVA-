@@ -153,7 +153,7 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
     if ([vc isKindOfClass:LauncherProfileEditorViewController.class]) {
         nav.preferredContentSize = PLCompactSheetSize(620, 360);
     } else if ([vc isKindOfClass:ModpackInstallViewController.class]) {
-        nav.preferredContentSize = PLCompactSheetSize(700, 420);
+        nav.preferredContentSize = PLCompactSheetSize(700, 500);
     } else {
         nav.preferredContentSize = PLCompactSheetSize(620, 400);
     }

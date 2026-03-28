@@ -56,7 +56,7 @@
     self.searchController.searchBar.searchTextField.clipsToBounds = NO;
     PLApplyLauncherInputChrome(self.searchController.searchBar.searchTextField);
     self.navigationItem.searchController = self.searchController;
-    PLApplyCompactTableLayout(self.tableView, 48);
+    PLApplyCompactTableLayout(self.tableView, 64);
     self.modrinth = [ModrinthAPI new];
     self.filters = @{
         @"isModpack": @(YES),
@@ -160,6 +160,14 @@
     PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(4, 8, 4, 8), 18);
     cell.backgroundColor = UIColor.clearColor;
     cell.contentView.backgroundColor = UIColor.clearColor;
+    cell.layoutMargins = UIEdgeInsetsMake(0, 10, 0, 10);
+    cell.separatorInset = UIEdgeInsetsMake(0, 12, 0, 12);
+    cell.textLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightSemibold];
+    cell.textLabel.adjustsFontSizeToFitWidth = YES;
+    cell.textLabel.minimumScaleFactor = 0.8;
+    cell.detailTextLabel.font = [UIFont systemFontOfSize:12.5 weight:UIFontWeightRegular];
+    cell.detailTextLabel.adjustsFontSizeToFitWidth = YES;
+    cell.detailTextLabel.minimumScaleFactor = 0.78;
     cell.imageView.layer.cornerRadius = 8;
     if (@available(iOS 13.0, *)) {
         cell.imageView.layer.cornerCurve = kCACornerCurveContinuous;
