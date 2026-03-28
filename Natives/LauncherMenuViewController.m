@@ -143,7 +143,7 @@
         [[UIBarButtonItem alloc] initWithCustomView:toolbarIndicator],
         [[UIBarButtonItem alloc] init]
     ];
-    self.toolbarItems[1].tintColor = UIColor.labelColor;
+    self.toolbarItems[1].tintColor = PLLauncherGlassPrimaryTextColor();
     
     // Setup the account button
     self.accountBtnItem = [self drawAccountButton];
@@ -213,10 +213,8 @@
 - (void)applyLauncherAppearance {
     self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
     self.accountButton.layer.cornerRadius = 10;
-    self.accountButton.layer.borderWidth = getLauncherOutlineControlsEnabled() ? 1.0 : 0.0;
-    self.accountButton.layer.borderColor = [UIColor colorWithWhite:1 alpha:0.18].CGColor;
-    self.accountButton.backgroundColor = UIColor.clearColor;
     self.accountButton.contentEdgeInsets = UIEdgeInsetsMake(4, 4, 4, 6);
+    PLApplyLauncherActionButtonChrome(self.accountButton);
 }
 
 - (void)handleLauncherAppearanceDidChange:(NSNotification *)notification {
@@ -262,10 +260,10 @@
     cell.textLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightMedium];
     cell.textLabel.adjustsFontSizeToFitWidth = YES;
     cell.textLabel.minimumScaleFactor = 0.85;
-    cell.textLabel.textColor = UIColor.labelColor;
+    cell.textLabel.textColor = PLLauncherGlassPrimaryTextColor();
     cell.backgroundColor = UIColor.clearColor;
     cell.contentView.backgroundColor = UIColor.clearColor;
-    cell.tintColor = UIColor.labelColor;
+    cell.tintColor = PLLauncherGlassIconTintColor();
     cell.layoutMargins = UIEdgeInsetsMake(0, 8, 0, 8);
     cell.contentView.preservesSuperviewLayoutMargins = NO;
     cell.selectionStyle = UITableViewCellSelectionStyleNone;
@@ -288,7 +286,7 @@
         cell.imageView.image = [UIImage imageNamed:[item performSelector:@selector(imageName)]];
         cell.imageView.image = [cell.imageView.image _imageWithSize:CGSizeMake(17, 17)];
     }
-    cell.imageView.tintColor = UIColor.secondaryLabelColor;
+    cell.imageView.tintColor = PLLauncherGlassIconTintColor();
     return cell;
 }
 

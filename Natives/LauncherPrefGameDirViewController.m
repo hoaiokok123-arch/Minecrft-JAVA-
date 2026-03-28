@@ -32,7 +32,7 @@
         self.sizeLabel = [[UILabel alloc] init];
         self.sizeLabel.translatesAutoresizingMaskIntoConstraints = NO;
         self.sizeLabel.font = [UIFont systemFontOfSize:10.5];
-        self.sizeLabel.textColor = UIColor.secondaryLabelColor;
+        self.sizeLabel.textColor = PLLauncherGlassSecondaryTextColor();
         self.sizeLabel.textAlignment = NSTextAlignmentRight;
         self.sizeLabel.adjustsFontSizeToFitWidth = YES;
         self.sizeLabel.minimumScaleFactor = 0.7;
@@ -136,7 +136,8 @@
     cell.nameField.placeholder = name;
     cell.nameField.text = name;
     cell.nameField.userInteractionEnabled = indexPath.row != 0;
-    cell.nameField.textColor = UIColor.labelColor;
+    cell.nameField.textColor = PLLauncherGlassPrimaryTextColor();
+    cell.sizeLabel.textColor = PLLauncherGlassSecondaryTextColor();
     cell.sizeLabel.text = @"...";
 
     // Calculate the instance size

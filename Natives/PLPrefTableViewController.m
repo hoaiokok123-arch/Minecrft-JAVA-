@@ -175,9 +175,19 @@
 
     // Set general properties
     BOOL destructive = [item[@"destructive"] boolValue];
-    cell.imageView.tintColor = destructive ? UIColor.systemRedColor : nil;
+    BOOL isButtonType = createView == self.typeButton;
+    cell.tintColor = destructive ? UIColor.systemRedColor : PLLauncherGlassIconTintColor();
+    cell.imageView.tintColor = destructive ? UIColor.systemRedColor : PLLauncherGlassIconTintColor();
     cell.imageView.image = [UIImage systemImageNamed:item[@"icon"]];
     PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(0, 0, 0, 0), 10);
+    if (destructive) {
+        cell.textLabel.textColor = UIColor.systemRedColor;
+    } else if (!isButtonType) {
+        cell.textLabel.textColor = PLLauncherGlassPrimaryTextColor();
+    }
+    if (cell.detailTextLabel) {
+        cell.detailTextLabel.textColor = PLLauncherGlassSecondaryTextColor();
+    }
     
     if (cellStyle != UITableViewCellStyleValue1) {
         cell.detailTextLabel.text = nil;

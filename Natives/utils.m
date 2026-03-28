@@ -89,7 +89,7 @@ void PLApplyCompactTableCell(UITableViewCell *cell) {
     cell.textLabel.minimumScaleFactor = 0.75;
     if (cell.detailTextLabel) {
         cell.detailTextLabel.font = [UIFont systemFontOfSize:10.5];
-        cell.detailTextLabel.textColor = UIColor.secondaryLabelColor;
+        cell.detailTextLabel.textColor = PLLauncherGlassSecondaryTextColor();
         cell.detailTextLabel.adjustsFontSizeToFitWidth = YES;
         cell.detailTextLabel.minimumScaleFactor = 0.7;
     }
@@ -119,6 +119,18 @@ void PLApplyCompactSwitch(UISwitch *toggle) {
 
 UIColor *PLLauncherAccentColor(void) {
     return [UIColor colorWithRed:121/255.0 green:56/255.0 blue:162/255.0 alpha:1.0];
+}
+
+UIColor *PLLauncherGlassPrimaryTextColor(void) {
+    return [UIColor colorWithWhite:0.08 alpha:0.92];
+}
+
+UIColor *PLLauncherGlassSecondaryTextColor(void) {
+    return [UIColor colorWithWhite:0.2 alpha:0.62];
+}
+
+UIColor *PLLauncherGlassIconTintColor(void) {
+    return [UIColor colorWithWhite:0.1 alpha:0.68];
 }
 
 static const NSInteger kPLLauncherPreservedEffectTag = 0x504C4753;
@@ -357,6 +369,27 @@ UIView *PLCreateLauncherLensChromeBackground(NSDirectionalEdgeInsets insets, CGF
     return [[PLLauncherLensCardBackgroundView alloc] initWithInsets:insets cornerRadius:cornerRadius emphasized:emphasized];
 }
 
+static void PLInstallLauncherLensSurface(UIView *host, NSDirectionalEdgeInsets insets, CGFloat cornerRadius, BOOL emphasized) {
+    if (!host) {
+        return;
+    }
+
+    for (UIView *subview in host.subviews.copy) {
+        if ([subview isKindOfClass:PLLauncherLensCardBackgroundView.class]) {
+            [subview removeFromSuperview];
+        }
+    }
+
+    UIView *surface = PLCreateLauncherLensChromeBackground(insets, cornerRadius, emphasized);
+    surface.frame = host.bounds;
+    surface.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    host.backgroundColor = UIColor.clearColor;
+    host.opaque = NO;
+    host.clipsToBounds = NO;
+    host.layer.masksToBounds = NO;
+    [host insertSubview:surface atIndex:0];
+}
+
 void PLApplyLauncherViewChrome(UIView *view) {
     if (!view) {
         return;
@@ -419,17 +452,11 @@ void PLApplyLauncherToolbarChrome(UIToolbar *toolbar) {
 
 void PLApplyLauncherCardChrome(UITableViewCell *cell, BOOL selected, NSDirectionalEdgeInsets insets, CGFloat cornerRadius) {
     NSDirectionalEdgeInsets glassInsets = NSDirectionalEdgeInsetsMake(
-        insets.top + 1.5,
-        insets.leading + 1.5,
-        insets.bottom + 1.5,
-        insets.trailing + 1.5
+        MAX(insets.top + 2.0, 2.0),
+        insets.leading + 3.0,
+        MAX(insets.bottom + 2.0, 2.0),
+        insets.trailing + 3.0
     );
-    UIColor *fillColor = selected ?
-        [PLLauncherAccentColor() colorWithAlphaComponent:(getLauncherOutlineControlsEnabled() ? 0.32 : 0.36)] :
-        [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.44];
-    UIColor *strokeColor = selected ?
-        [PLLauncherAccentColor() colorWithAlphaComponent:(getLauncherOutlineControlsEnabled() ? 0.92 : 0.66)] :
-        [UIColor colorWithWhite:1 alpha:(getLauncherOutlineControlsEnabled() ? 0.28 : 0.18)];
 
     cell.backgroundColor = UIColor.clearColor;
     cell.contentView.backgroundColor = UIColor.clearColor;
@@ -437,57 +464,56 @@ void PLApplyLauncherCardChrome(UITableViewCell *cell, BOOL selected, NSDirection
     cell.layer.masksToBounds = NO;
     cell.layer.cornerRadius = cornerRadius;
     cell.layer.shadowColor = UIColor.blackColor.CGColor;
-    cell.layer.shadowOpacity = selected ? 0.18 : 0.12;
-    cell.layer.shadowRadius = selected ? 16 : 12;
-    cell.layer.shadowOffset = CGSizeMake(0, 6);
-    if (@available(iOS 14.0, *)) {
-        UIBackgroundConfiguration *backgroundConfig = [UIBackgroundConfiguration clearConfiguration];
-        backgroundConfig.backgroundInsets = glassInsets;
-        backgroundConfig.cornerRadius = cornerRadius;
-        backgroundConfig.strokeWidth = 1.0 / UIScreen.mainScreen.scale;
-        backgroundConfig.strokeColor = strokeColor;
-        backgroundConfig.backgroundColor = fillColor;
-        cell.backgroundConfiguration = backgroundConfig;
-    } else {
-        cell.layer.cornerRadius = cornerRadius;
-        cell.layer.borderWidth = 1.0 / UIScreen.mainScreen.scale;
-        cell.layer.borderColor = strokeColor.CGColor;
-        cell.layer.masksToBounds = NO;
-        cell.contentView.layer.cornerRadius = cornerRadius;
-        cell.contentView.layer.masksToBounds = YES;
-        cell.contentView.backgroundColor = fillColor;
+    cell.layer.shadowOpacity = selected ? 0.12 : 0.08;
+    cell.layer.shadowRadius = selected ? 18 : 14;
+    cell.layer.shadowOffset = CGSizeMake(0, selected ? 8 : 6);
+    cell.backgroundConfiguration = nil;
+    cell.backgroundView = PLCreateLauncherLensChromeBackground(glassInsets, cornerRadius, selected);
+    cell.selectedBackgroundView = PLCreateLauncherLensChromeBackground(glassInsets, cornerRadius, YES);
+    cell.tintColor = PLLauncherGlassIconTintColor();
+    cell.imageView.tintColor = PLLauncherGlassIconTintColor();
+    if (cell.textLabel) {
+        cell.textLabel.textColor = PLLauncherGlassPrimaryTextColor();
+    }
+    if (cell.detailTextLabel) {
+        cell.detailTextLabel.textColor = PLLauncherGlassSecondaryTextColor();
     }
 }
 
 void PLApplyLauncherActionButtonChrome(UIButton *button) {
-    BOOL outline = getLauncherOutlineControlsEnabled();
     UIColor *accentColor = PLLauncherAccentColor();
-    button.layer.cornerRadius = MAX(button.layer.cornerRadius, 5);
+    UIColor *foregroundColor = button.buttonType == UIButtonTypeSystem ?
+        accentColor : PLLauncherGlassPrimaryTextColor();
+    CGFloat cornerRadius = MAX(button.layer.cornerRadius, 10);
+    button.layer.cornerRadius = cornerRadius;
     button.layer.masksToBounds = NO;
-    button.layer.borderWidth = outline ? 1.0 : 0.0;
-    button.layer.borderColor = (outline ? accentColor : UIColor.clearColor).CGColor;
-    button.layer.shadowColor = UIColor.blackColor.CGColor;
-    button.layer.shadowOpacity = 0.12;
-    button.layer.shadowRadius = 12;
-    button.layer.shadowOffset = CGSizeMake(0, 6);
-    button.backgroundColor = outline ?
-        [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.4] :
-        [accentColor colorWithAlphaComponent:0.94];
-    button.tintColor = outline ? accentColor : UIColor.whiteColor;
+    button.layer.borderWidth = 0.0;
+    button.layer.borderColor = UIColor.clearColor.CGColor;
+    button.layer.shadowOpacity = 0.0;
+    PLInstallLauncherLensSurface(button, NSDirectionalEdgeInsetsZero, cornerRadius, YES);
+    button.backgroundColor = UIColor.clearColor;
+    button.tintColor = foregroundColor;
+    [button setTitleColor:foregroundColor forState:UIControlStateNormal];
+    [button setTitleColor:[foregroundColor colorWithAlphaComponent:0.45] forState:UIControlStateDisabled];
 }
 
 void PLApplyLauncherInputChrome(UITextField *textField) {
-    BOOL outline = getLauncherOutlineControlsEnabled();
+    CGFloat cornerRadius = MAX(textField.layer.cornerRadius, 10);
     textField.borderStyle = UITextBorderStyleNone;
     textField.background = nil;
-    textField.backgroundColor = [UIColor colorWithRed:18/255.0 green:20/255.0 blue:26/255.0 alpha:0.36];
-    textField.layer.cornerRadius = 6;
-    textField.layer.borderWidth = outline ? 1.0 : 0.0;
-    textField.layer.borderColor = (outline ? [UIColor colorWithWhite:1 alpha:0.3] : UIColor.clearColor).CGColor;
-    textField.layer.shadowColor = UIColor.blackColor.CGColor;
-    textField.layer.shadowOpacity = 0.08;
-    textField.layer.shadowRadius = 10;
-    textField.layer.shadowOffset = CGSizeMake(0, 5);
+    textField.backgroundColor = UIColor.clearColor;
+    textField.layer.cornerRadius = cornerRadius;
+    textField.layer.borderWidth = 0.0;
+    textField.layer.borderColor = UIColor.clearColor.CGColor;
+    textField.layer.shadowOpacity = 0.0;
+    textField.textColor = PLLauncherGlassPrimaryTextColor();
+    textField.tintColor = PLLauncherAccentColor();
+    if (textField.placeholder.length > 0) {
+        textField.attributedPlaceholder = [[NSAttributedString alloc] initWithString:textField.placeholder attributes:@{
+            NSForegroundColorAttributeName: [PLLauncherGlassSecondaryTextColor() colorWithAlphaComponent:0.8]
+        }];
+    }
+    PLInstallLauncherLensSurface(textField, NSDirectionalEdgeInsetsZero, cornerRadius, NO);
 }
 
 CGSize PLCompactPopoverSize(CGFloat width, CGFloat height) {
