@@ -33,22 +33,17 @@
     if (self.navigationController.view) {
         PLApplyLauncherViewChrome(self.navigationController.view);
     }
-    if (self.navigationController.presentationController.presentedView) {
-        PLApplyLauncherViewChrome(self.navigationController.presentationController.presentedView);
-    }
-    if (self.navigationController.presentationController.containerView) {
-        PLApplyLauncherViewChrome(self.navigationController.presentationController.containerView);
-    }
 }
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    self.title = @"Modpacks";
+    self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemClose target:self action:@selector(actionClose)];
     self.view.backgroundColor = UIColor.clearColor;
     self.tableView.backgroundColor = UIColor.clearColor;
     self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
     self.tableView.tableHeaderView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 1, 8)];
     self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 1, 8)];
-    self.tableView.backgroundView = PLCreateLauncherLensChromeBackground(NSDirectionalEdgeInsetsMake(4, 4, 4, 4), 24, NO);
 
     //NSString *curseforgeAPIKey = CONFIG_CURSEFORGE_API_KEY;
     self.searchController = [[UISearchController alloc] initWithSearchResultsController:nil];
@@ -74,7 +69,6 @@
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
     [self applyLauncherChrome];
-    self.tableView.backgroundView.frame = self.tableView.bounds;
 }
 
 - (void)loadSearchResultsWithPrevList:(BOOL)prevList {
