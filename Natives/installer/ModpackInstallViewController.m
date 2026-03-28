@@ -24,15 +24,42 @@
 
 @implementation ModpackInstallViewController
 
+- (void)applyLauncherChrome {
+    PLApplyLauncherViewChrome(self.view);
+    PLApplyLauncherViewChrome(self.tableView);
+    PLApplyLauncherNavigationBarChrome(self.navigationController.navigationBar);
+    PLApplyLauncherToolbarChrome(self.navigationController.toolbar);
+
+    if (self.navigationController.view) {
+        PLApplyLauncherViewChrome(self.navigationController.view);
+    }
+    if (self.navigationController.presentationController.presentedView) {
+        PLApplyLauncherViewChrome(self.navigationController.presentationController.presentedView);
+    }
+    if (self.navigationController.presentationController.containerView) {
+        PLApplyLauncherViewChrome(self.navigationController.presentationController.containerView);
+    }
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = UIColor.clearColor;
     self.tableView.backgroundColor = UIColor.clearColor;
+    self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    self.tableView.tableHeaderView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 1, 8)];
+    self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 1, 8)];
+    self.tableView.backgroundView = PLCreateLauncherLensChromeBackground(NSDirectionalEdgeInsetsMake(4, 4, 4, 4), 24, NO);
 
     //NSString *curseforgeAPIKey = CONFIG_CURSEFORGE_API_KEY;
     self.searchController = [[UISearchController alloc] initWithSearchResultsController:nil];
     self.searchController.searchResultsUpdater = self;
     self.searchController.obscuresBackgroundDuringPresentation = NO;
+    self.searchController.searchBar.searchBarStyle = UISearchBarStyleMinimal;
+    self.searchController.searchBar.backgroundColor = UIColor.clearColor;
+    self.searchController.searchBar.barTintColor = UIColor.clearColor;
+    self.searchController.searchBar.searchTextField.backgroundColor = UIColor.clearColor;
+    self.searchController.searchBar.searchTextField.clipsToBounds = NO;
+    PLApplyLauncherInputChrome(self.searchController.searchBar.searchTextField);
     self.navigationItem.searchController = self.searchController;
     PLApplyCompactTableLayout(self.tableView, 48);
     self.modrinth = [ModrinthAPI new];
@@ -46,9 +73,8 @@
 
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
-    PLApplyLauncherViewChrome(self.view);
-    PLApplyLauncherNavigationBarChrome(self.navigationController.navigationBar);
-    PLApplyLauncherToolbarChrome(self.navigationController.toolbar);
+    [self applyLauncherChrome];
+    self.tableView.backgroundView.frame = self.tableView.bounds;
 }
 
 - (void)loadSearchResultsWithPrevList:(BOOL)prevList {
@@ -134,12 +160,21 @@
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"cell"];
         cell.imageView.contentMode = UIViewContentModeScaleToFill;
         cell.imageView.clipsToBounds = YES;
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
     }
     PLApplyCompactTableCell(cell);
+    PLApplyLauncherCardChrome(cell, NO, NSDirectionalEdgeInsetsMake(4, 8, 4, 8), 18);
+    cell.backgroundColor = UIColor.clearColor;
+    cell.contentView.backgroundColor = UIColor.clearColor;
+    cell.imageView.layer.cornerRadius = 8;
+    if (@available(iOS 13.0, *)) {
+        cell.imageView.layer.cornerCurve = kCACornerCurveContinuous;
+    }
 
     NSDictionary *item = self.list[indexPath.row];
     cell.textLabel.text = item[@"title"];
     cell.detailTextLabel.text = item[@"description"];
+    cell.detailTextLabel.numberOfLines = 2;
     UIImage *fallbackImage = [UIImage imageNamed:@"DefaultProfile"];
     [cell.imageView setImageWithURL:[NSURL URLWithString:item[@"imageUrl"]] placeholderImage:fallbackImage];
 
@@ -179,6 +214,7 @@
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    PLPlayLauncherClickFeedback();
     NSDictionary *item = self.list[indexPath.row];
     if ([item[@"versionDetailsLoaded"] boolValue]) {
         [self showDetails:item atIndexPath:indexPath];
@@ -197,6 +233,14 @@ dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
             }
         });
     });
+}
+
+- (void)tableView:(UITableView *)tableView didHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
+    PLApplyLauncherSelectableCellState([tableView cellForRowAtIndexPath:indexPath], YES);
+}
+
+- (void)tableView:(UITableView *)tableView didUnhighlightRowAtIndexPath:(NSIndexPath *)indexPath {
+    PLApplyLauncherSelectableCellState([tableView cellForRowAtIndexPath:indexPath], NO);
 }
 
 @end
