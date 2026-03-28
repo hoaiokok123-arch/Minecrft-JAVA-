@@ -27,11 +27,8 @@ static NSString *const kLauncherIntroHTML =
     "body::after{width:360px;height:360px;right:-120px;top:180px;background:radial-gradient(circle at center,rgba(127,109,255,.16),rgba(127,109,255,0));}"
     ".shell{max-width:1024px;margin:0 auto;display:grid;gap:18px}"
     ".masthead{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}"
-    ".brandplate{display:inline-flex;align-items:center;gap:12px;padding:16px 20px 15px;border-radius:24px;background:linear-gradient(180deg,rgba(248,250,253,.82),rgba(228,233,239,.42));box-shadow:0 12px 22px rgba(6,16,30,.08);backdrop-filter:blur(18px) saturate(118%)}"
-    ".brandtext{display:flex;flex-wrap:wrap;gap:0 12px;align-items:baseline;font-family:'Arial Black','Trebuchet MS','Segoe UI Black',sans-serif;font-weight:900;line-height:.9;letter-spacing:.08em;text-transform:uppercase}"
-    ".brandtext span{font-size:clamp(26px,5.3vw,56px)}"
-    ".brand-chill{color:var(--blue);text-shadow:0 2px 0 rgba(255,255,255,.74),0 8px 18px rgba(22,95,209,.08)}"
-    ".brand-launcher{color:var(--green);text-shadow:0 2px 0 rgba(255,255,255,.74),0 8px 18px rgba(99,184,43,.08)}"
+    ".brandplate{display:inline-flex;align-items:center;gap:12px;padding:10px 14px;border-radius:24px;background:linear-gradient(180deg,rgba(248,250,253,.82),rgba(228,233,239,.42));box-shadow:0 12px 22px rgba(6,16,30,.08);backdrop-filter:blur(18px) saturate(118%)}"
+    ".brandimg{display:block;width:min(100%,430px);height:auto}"
     ".brandhint{padding:12px 16px;border-radius:999px;background:rgba(234,238,243,.26);font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);backdrop-filter:blur(14px) saturate(118%)}"
     ".hero{display:grid;grid-template-columns:1.4fr .9fr;gap:18px;align-items:stretch}"
     ".card{background:linear-gradient(180deg,rgba(235,239,244,.2),rgba(219,225,232,.11));border:none;border-radius:28px;box-shadow:0 12px 24px var(--shadow);padding:24px 24px 22px;backdrop-filter:blur(18px) saturate(126%)}"
@@ -57,14 +54,14 @@ static NSString *const kLauncherIntroHTML =
     ".pill-row{display:flex;flex-wrap:wrap;gap:10px}"
     ".pill{padding:10px 14px;border-radius:999px;background:rgba(236,240,245,.16);border:none;font-size:13px;font-weight:700;color:var(--muted)}"
     ".signature{font-size:13px;color:var(--muted)}"
-    "@media (max-width:860px){.hero,.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.card{border-radius:24px;padding:20px}.lead{font-size:16px}.brandplate{width:100%;justify-content:center}}"
+    "@media (max-width:860px){.hero,.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.card{border-radius:24px;padding:20px}.lead{font-size:16px}.brandplate{width:100%;justify-content:center}.brandimg{width:min(100%,360px)}}"
     "</style>"
     "</head>"
     "<body>"
     "<main class='shell'>"
     "<section class='masthead'>"
     "<div class='brandplate'>"
-    "<div class='brandtext'><span class='brand-chill'>Chill</span><span class='brand-launcher'>Launcher</span></div>"
+    "<img class='brandimg' src='__WORDMARK__' alt='Chill Launcher'>"
     "</div>"
     "<span class='brandhint'>Local intro page</span>"
     "</section>"
@@ -120,9 +117,15 @@ static NSString *const kLauncherIntroHTML =
     NSString *appName = info[@"CFBundleDisplayName"] ?: info[@"CFBundleName"] ?: @"Chill Launcher";
     NSString *version = info[@"CFBundleShortVersionString"] ?: @"1.0";
     NSString *build = info[@"CFBundleVersion"] ?: version;
+    UIImage *wordmarkImage = [UIImage imageNamed:@"BrandWordmark"];
+    NSData *wordmarkData = wordmarkImage ? UIImagePNGRepresentation(wordmarkImage) : nil;
+    NSString *wordmarkDataURI = wordmarkData ?
+        [NSString stringWithFormat:@"data:image/png;base64,%@", [wordmarkData base64EncodedStringWithOptions:0]] :
+        @"";
     NSString *html = [kLauncherIntroHTML stringByReplacingOccurrencesOfString:@"__APP_NAME__" withString:appName];
     html = [html stringByReplacingOccurrencesOfString:@"__VERSION__" withString:version];
     html = [html stringByReplacingOccurrencesOfString:@"__BUILD__" withString:build];
+    html = [html stringByReplacingOccurrencesOfString:@"__WORDMARK__" withString:wordmarkDataURI];
     return html;
 }
 

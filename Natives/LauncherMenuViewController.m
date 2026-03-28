@@ -55,42 +55,29 @@
 }
 
 - (UIView *)buildLauncherBrandView {
-    UIImageView *iconView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"AppLogo"]];
-    iconView.contentMode = UIViewContentModeScaleAspectFit;
-    iconView.frame = CGRectMake(0, 0, 26, 26);
+    UIImage *wordmarkImage = [UIImage imageNamed:@"BrandWordmark"];
+    if (wordmarkImage) {
+        UIImageView *wordmarkView = [[UIImageView alloc] initWithImage:wordmarkImage];
+        wordmarkView.contentMode = UIViewContentModeScaleAspectFit;
+        wordmarkView.frame = CGRectMake(0, 0, 152, 33);
 
-    UILabel *titleLabel = [UILabel new];
-    titleLabel.numberOfLines = 2;
-    titleLabel.textAlignment = NSTextAlignmentLeft;
-    titleLabel.adjustsFontSizeToFitWidth = YES;
-    titleLabel.minimumScaleFactor = 0.7;
-    NSMutableParagraphStyle *paragraphStyle = [NSMutableParagraphStyle new];
-    paragraphStyle.minimumLineHeight = 10;
-    paragraphStyle.maximumLineHeight = 10;
+        UIView *brandView = [[UIView alloc] initWithFrame:wordmarkView.frame];
+        brandView.backgroundColor = UIColor.clearColor;
+        brandView.userInteractionEnabled = NO;
+        [brandView addSubview:wordmarkView];
+        return brandView;
+    }
 
-    NSDictionary *chillAttrs = @{
-        NSFontAttributeName: [UIFont systemFontOfSize:8.5 weight:UIFontWeightBlack],
-        NSForegroundColorAttributeName: [UIColor colorWithRed:24/255.0 green:95/255.0 blue:209/255.0 alpha:0.98],
-        NSKernAttributeName: @1.1,
-        NSParagraphStyleAttributeName: paragraphStyle
-    };
-    NSDictionary *launcherAttrs = @{
-        NSFontAttributeName: [UIFont systemFontOfSize:8.5 weight:UIFontWeightBlack],
-        NSForegroundColorAttributeName: [UIColor colorWithRed:99/255.0 green:184/255.0 blue:43/255.0 alpha:0.98],
-        NSKernAttributeName: @0.9,
-        NSParagraphStyleAttributeName: paragraphStyle
-    };
+    UILabel *fallbackLabel = [UILabel new];
+    fallbackLabel.text = @"CHILL LAUNCHER";
+    fallbackLabel.font = [UIFont systemFontOfSize:11 weight:UIFontWeightBlack];
+    fallbackLabel.textColor = PLLauncherGlassPrimaryTextColor();
+    [fallbackLabel sizeToFit];
 
-    NSMutableAttributedString *brandText = [[NSMutableAttributedString alloc] initWithString:@"CHILL\n" attributes:chillAttrs];
-    [brandText appendAttributedString:[[NSAttributedString alloc] initWithString:@"LAUNCHER" attributes:launcherAttrs]];
-    titleLabel.attributedText = brandText;
-    titleLabel.frame = CGRectMake(34, 1, 108, 24);
-
-    UIView *brandView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 142, 26)];
+    UIView *brandView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, fallbackLabel.bounds.size.width, fallbackLabel.bounds.size.height)];
     brandView.backgroundColor = UIColor.clearColor;
     brandView.userInteractionEnabled = NO;
-    [brandView addSubview:iconView];
-    [brandView addSubview:titleLabel];
+    [brandView addSubview:fallbackLabel];
     return brandView;
 }
 
