@@ -246,6 +246,7 @@ help:
 	echo '    make all                            Builds the entire app'
 	echo '    make native                         Builds the native app'
 	echo '    make java                           Builds the Java app'
+	echo '    make jre25                          Builds the bundled Java 25 iOS runtime'
 	echo '    make jre                            Downloads/unpacks the iOS JREs'
 	echo '    make assets                         Compiles Assets.xcassets'
 	echo '    make payload                        Makes Payload/AngelAuraAmethyst.app'
@@ -288,6 +289,11 @@ java:
 	echo '[Amethyst v$(VERSION)] java - start'
 	$(MAKE) -C JavaApp -j$(JOBS) BOOTJDK=$(BOOTJDK)
 	echo '[Amethyst v$(VERSION)] java - end'
+
+jre25:
+	echo '[Amethyst v$(VERSION)] jre25 - start'
+	bash $(SOURCEDIR)/scripts/build_java25_ios_runtime.sh $(SOURCEDIR)
+	echo '[Amethyst v$(VERSION)] jre25 - end'
 
 jre: native
 	echo '[Amethyst v$(VERSION)] jre - start'
@@ -450,4 +456,4 @@ clean:
 
 		
 
-.PHONY: all clean check native java jre package dsym deploy help
+.PHONY: all clean check native java jre25 jre package dsym deploy help
