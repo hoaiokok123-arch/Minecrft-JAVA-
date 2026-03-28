@@ -201,7 +201,7 @@ static void *kPLLauncherButtonFeedbackKey = &kPLLauncherButtonFeedbackKey;
 
         UIBlurEffect *effect;
         if (@available(iOS 13.0, *)) {
-            effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemUltraThinMaterialLight];
+            effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemThinMaterialLight];
         } else {
             effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleExtraLight];
         }
@@ -216,11 +216,13 @@ static void *kPLLauncherButtonFeedbackKey = &kPLLauncherButtonFeedbackKey;
         self.rimView = [UIView new];
         self.rimView.backgroundColor = UIColor.clearColor;
         self.rimView.userInteractionEnabled = NO;
+        self.rimView.hidden = YES;
         [self.glassView addSubview:self.rimView];
 
         self.innerRimView = [UIView new];
         self.innerRimView.backgroundColor = UIColor.clearColor;
         self.innerRimView.userInteractionEnabled = NO;
+        self.innerRimView.hidden = YES;
         [self.glassView addSubview:self.innerRimView];
 
         self.sheenLayer = [CAGradientLayer layer];
@@ -270,58 +272,58 @@ static void *kPLLauncherButtonFeedbackKey = &kPLLauncherButtonFeedbackKey;
     self.glassView.layer.cornerRadius = self.cornerRadius;
 
     self.layer.shadowColor = UIColor.blackColor.CGColor;
-    self.layer.shadowOpacity = self.emphasized ? 0.12 : 0.075;
-    self.layer.shadowRadius = self.emphasized ? 24 : 20;
-    self.layer.shadowOffset = CGSizeMake(0, self.emphasized ? 12 : 10);
+    self.layer.shadowOpacity = self.emphasized ? 0.085 : 0.05;
+    self.layer.shadowRadius = self.emphasized ? 20 : 14;
+    self.layer.shadowOffset = CGSizeMake(0, self.emphasized ? 10 : 7);
     self.layer.shadowPath = [UIBezierPath bezierPathWithRoundedRect:glassFrame cornerRadius:self.cornerRadius].CGPath;
 
     self.blurView.frame = self.glassView.bounds;
-    self.blurView.alpha = self.emphasized ? 0.92 : 0.86;
+    self.blurView.alpha = self.emphasized ? 0.82 : 0.76;
     self.tintView.frame = self.glassView.bounds;
-    self.tintView.backgroundColor = [UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.056 : 0.028)];
+    self.tintView.backgroundColor = [UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.19 : 0.145)];
 
     self.rimView.frame = self.glassView.bounds;
     self.rimView.layer.cornerRadius = self.cornerRadius;
-    self.rimView.layer.borderWidth = 1.0 / UIScreen.mainScreen.scale;
-    self.rimView.layer.borderColor = [UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.48 : 0.34)].CGColor;
+    self.rimView.layer.borderWidth = 0.0;
+    self.rimView.layer.borderColor = UIColor.clearColor.CGColor;
 
     CGRect innerFrame = CGRectInset(self.glassView.bounds, 1.25, 1.25);
     self.innerRimView.frame = innerFrame;
     self.innerRimView.layer.cornerRadius = MAX(self.cornerRadius - 1.25, 0);
-    self.innerRimView.layer.borderWidth = 1.0 / UIScreen.mainScreen.scale;
-    self.innerRimView.layer.borderColor = [UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.22 : 0.12)].CGColor;
+    self.innerRimView.layer.borderWidth = 0.0;
+    self.innerRimView.layer.borderColor = UIColor.clearColor.CGColor;
 
     self.sheenLayer.frame = self.glassView.bounds;
     self.sheenLayer.colors = @[
-        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.42 : 0.34)].CGColor,
-        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.12 : 0.075)].CGColor,
+        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.1 : 0.075)].CGColor,
+        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.035 : 0.02)].CGColor,
         (__bridge id)UIColor.clearColor.CGColor
     ];
-    self.sheenLayer.locations = @[@0.0, @0.12, @0.44];
+    self.sheenLayer.locations = @[@0.0, @0.18, @0.5];
 
     self.topGlossLayer.frame = self.glassView.bounds;
     self.topGlossLayer.colors = @[
-        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.22 : 0.15)].CGColor,
-        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.07 : 0.04)].CGColor,
+        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.08 : 0.05)].CGColor,
+        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.025 : 0.015)].CGColor,
         (__bridge id)UIColor.clearColor.CGColor
     ];
-    self.topGlossLayer.locations = @[@0.0, @0.12, @0.4];
+    self.topGlossLayer.locations = @[@0.0, @0.16, @0.42];
 
     self.edgeLightLayer.frame = self.glassView.bounds;
     self.edgeLightLayer.colors = @[
-        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.16 : 0.1)].CGColor,
         (__bridge id)UIColor.clearColor.CGColor,
-        (__bridge id)[UIColor colorWithRed:0.9 green:0.96 blue:1 alpha:(self.emphasized ? 0.04 : 0.02)].CGColor,
         (__bridge id)UIColor.clearColor.CGColor,
-        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.14 : 0.085)].CGColor
+        (__bridge id)UIColor.clearColor.CGColor,
+        (__bridge id)UIColor.clearColor.CGColor,
+        (__bridge id)UIColor.clearColor.CGColor
     ];
     self.edgeLightLayer.locations = @[@0.0, @0.12, @0.5, @0.88, @1.0];
 
     self.ambientGlowLayer.frame = self.glassView.bounds;
     self.ambientGlowLayer.colors = @[
-        (__bridge id)[UIColor colorWithRed:0.9 green:0.97 blue:1 alpha:(self.emphasized ? 0.12 : 0.08)].CGColor,
-        (__bridge id)[UIColor colorWithRed:1 green:1 blue:1 alpha:(self.emphasized ? 0.045 : 0.022)].CGColor,
-        (__bridge id)[UIColor colorWithRed:0.9 green:0.88 blue:1 alpha:(self.emphasized ? 0.045 : 0.022)].CGColor,
+        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.05 : 0.03)].CGColor,
+        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.02 : 0.01)].CGColor,
+        (__bridge id)UIColor.clearColor.CGColor,
         (__bridge id)UIColor.clearColor.CGColor
     ];
     self.ambientGlowLayer.locations = @[@0.0, @0.28, @0.72, @1.0];
@@ -329,24 +331,24 @@ static void *kPLLauncherButtonFeedbackKey = &kPLLauncherButtonFeedbackKey;
     self.specularLayer.frame = self.glassView.bounds;
     self.specularLayer.colors = @[
         (__bridge id)UIColor.clearColor.CGColor,
-        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.16 : 0.1)].CGColor,
-        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.055 : 0.03)].CGColor,
+        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.04 : 0.02)].CGColor,
+        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.015 : 0.008)].CGColor,
         (__bridge id)UIColor.clearColor.CGColor
     ];
-    self.specularLayer.locations = @[@0.06, @0.22, @0.34, @0.52];
+    self.specularLayer.locations = @[@0.08, @0.24, @0.34, @0.5];
 
     self.causticLayer.frame = self.glassView.bounds;
     self.causticLayer.colors = @[
-        (__bridge id)[UIColor colorWithRed:0.82 green:0.93 blue:1 alpha:(self.emphasized ? 0.14 : 0.09)].CGColor,
-        (__bridge id)[UIColor colorWithRed:1 green:1 blue:1 alpha:(self.emphasized ? 0.06 : 0.035)].CGColor,
-        (__bridge id)[UIColor colorWithRed:0.76 green:0.84 blue:1 alpha:(self.emphasized ? 0.025 : 0.012)].CGColor
+        (__bridge id)UIColor.clearColor.CGColor,
+        (__bridge id)UIColor.clearColor.CGColor,
+        (__bridge id)UIColor.clearColor.CGColor
     ];
     self.causticLayer.locations = @[@0.0, @0.42, @1.0];
 
     self.bottomShadeLayer.frame = self.glassView.bounds;
     self.bottomShadeLayer.colors = @[
         (__bridge id)UIColor.clearColor.CGColor,
-        (__bridge id)[UIColor colorWithWhite:0 alpha:(self.emphasized ? 0.045 : 0.024)].CGColor
+        (__bridge id)[UIColor colorWithWhite:0 alpha:(self.emphasized ? 0.018 : 0.01)].CGColor
     ];
     self.bottomShadeLayer.locations = @[@0.0, @1.0];
 }
@@ -487,9 +489,9 @@ void PLApplyLauncherCardChrome(UITableViewCell *cell, BOOL selected, NSDirection
     cell.layer.masksToBounds = NO;
     cell.layer.cornerRadius = cornerRadius;
     cell.layer.shadowColor = UIColor.blackColor.CGColor;
-    cell.layer.shadowOpacity = selected ? 0.12 : 0.08;
-    cell.layer.shadowRadius = selected ? 18 : 14;
-    cell.layer.shadowOffset = CGSizeMake(0, selected ? 8 : 6);
+    cell.layer.shadowOpacity = selected ? 0.08 : 0.045;
+    cell.layer.shadowRadius = selected ? 14 : 10;
+    cell.layer.shadowOffset = CGSizeMake(0, selected ? 6 : 4);
     cell.backgroundConfiguration = nil;
     cell.backgroundView = PLCreateLauncherLensChromeBackground(glassInsets, cornerRadius, selected);
     cell.selectedBackgroundView = PLCreateLauncherLensChromeBackground(glassInsets, cornerRadius, YES);
@@ -546,7 +548,7 @@ void PLApplyLauncherSelectableCellState(UITableViewCell *cell, BOOL pressed) {
                           delay:0
                         options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionAllowUserInteraction
                      animations:^{
-        cell.layer.shadowOpacity = pressed ? 0.15 : (cell.isSelected ? 0.12 : 0.08);
+        cell.layer.shadowOpacity = pressed ? 0.09 : (cell.isSelected ? 0.08 : 0.045);
     } completion:nil];
 }
 
