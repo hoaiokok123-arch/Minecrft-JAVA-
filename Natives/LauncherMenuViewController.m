@@ -54,15 +54,54 @@
     return self;
 }
 
+- (UIView *)buildLauncherBrandView {
+    UIImageView *iconView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"AppLogo"]];
+    iconView.contentMode = UIViewContentModeScaleAspectFit;
+    iconView.frame = CGRectMake(0, 0, 26, 26);
+
+    UILabel *titleLabel = [UILabel new];
+    titleLabel.numberOfLines = 2;
+    titleLabel.textAlignment = NSTextAlignmentLeft;
+    titleLabel.adjustsFontSizeToFitWidth = YES;
+    titleLabel.minimumScaleFactor = 0.7;
+    NSMutableParagraphStyle *paragraphStyle = [NSMutableParagraphStyle new];
+    paragraphStyle.minimumLineHeight = 10;
+    paragraphStyle.maximumLineHeight = 10;
+
+    NSDictionary *chillAttrs = @{
+        NSFontAttributeName: [UIFont systemFontOfSize:8.5 weight:UIFontWeightBlack],
+        NSForegroundColorAttributeName: [UIColor colorWithRed:24/255.0 green:95/255.0 blue:209/255.0 alpha:0.98],
+        NSKernAttributeName: @1.1,
+        NSParagraphStyleAttributeName: paragraphStyle
+    };
+    NSDictionary *launcherAttrs = @{
+        NSFontAttributeName: [UIFont systemFontOfSize:8.5 weight:UIFontWeightBlack],
+        NSForegroundColorAttributeName: [UIColor colorWithRed:99/255.0 green:184/255.0 blue:43/255.0 alpha:0.98],
+        NSKernAttributeName: @0.9,
+        NSParagraphStyleAttributeName: paragraphStyle
+    };
+
+    NSMutableAttributedString *brandText = [[NSMutableAttributedString alloc] initWithString:@"CHILL\n" attributes:chillAttrs];
+    [brandText appendAttributedString:[[NSAttributedString alloc] initWithString:@"LAUNCHER" attributes:launcherAttrs]];
+    titleLabel.attributedText = brandText;
+    titleLabel.frame = CGRectMake(34, 1, 108, 24);
+
+    UIView *brandView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 142, 26)];
+    brandView.backgroundColor = UIColor.clearColor;
+    brandView.userInteractionEnabled = NO;
+    [brandView addSubview:iconView];
+    [brandView addSubview:titleLabel];
+    return brandView;
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     
     self.isInitialVc = YES;
     
-    UIImageView *titleView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"AppLogo"]];
-    [titleView setContentMode:UIViewContentModeScaleAspectFit];
-    self.navigationItem.titleView = titleView;
-    [titleView sizeToFit];
+    UIView *brandView = [self buildLauncherBrandView];
+    self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:brandView];
+    self.navigationItem.titleView = nil;
     
     self.options = @[
         [LauncherMenuCustomItem vcClass:LauncherNewsViewController.class],
@@ -102,8 +141,8 @@
              performSelector:@selector(initWithSharingItems:)
              withObject:@[[NSURL URLWithString:latestlogPath]]];
         }
-        activityVC.popoverPresentationController.sourceView = titleView;
-        activityVC.popoverPresentationController.sourceRect = titleView.bounds;
+        activityVC.popoverPresentationController.sourceView = brandView;
+        activityVC.popoverPresentationController.sourceRect = brandView.bounds;
         [self presentViewController:activityVC animated:YES completion:nil];
     }]];
     
