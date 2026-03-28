@@ -11,43 +11,107 @@
 WKWebView *webView;
 UIEdgeInsets insets;
 
-static NSString *const kLauncherNewsGlassCSS =
-    @"(function(){"
-    "var style=document.getElementById('pl-launcher-glass-style');"
-    "if(!style){style=document.createElement('style');style.id='pl-launcher-glass-style';document.head.appendChild(style);}"
-    "style.textContent=`"
-    "html,body,#app,.theme-container,.page,.theme-succinct-content,.content__default{background:transparent!important;}"
-    "body{background:transparent!important;color:#16181d!important;}"
-    ".navbar,.sidebar,.search-box input,.search-box,.theme-succinct-content>.page-edit,.theme-succinct-content>.last-updated,.theme-succinct-content>.page-nav,footer.page-edit,.page-nav{"
-    "background:rgba(255,255,255,.13)!important;"
-    "border:1px solid rgba(255,255,255,.34)!important;"
-    "box-shadow:0 14px 34px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.3)!important;"
-    "backdrop-filter:blur(18px) saturate(130%);-webkit-backdrop-filter:blur(18px) saturate(130%);"
-    "border-radius:18px!important;"
-    "overflow:hidden!important;}"
-    ".navbar{margin:10px 12px 0 12px!important;padding-inline:12px!important;}"
-    ".sidebar{margin:10px 0 14px 12px!important;padding-top:10px!important;}"
-    ".theme-succinct-content>.content__default>*{"
-    "background:rgba(255,255,255,.12)!important;"
-    "border:1px solid rgba(255,255,255,.32)!important;"
-    "border-radius:18px!important;"
-    "box-shadow:0 16px 36px rgba(0,0,0,.1),inset 0 1px 0 rgba(255,255,255,.28)!important;"
-    "backdrop-filter:blur(18px) saturate(130%);-webkit-backdrop-filter:blur(18px) saturate(130%);"
-    "padding:16px 18px!important;"
-    "margin:0 4px 16px 4px!important;}"
-    ".theme-succinct-content>.content__default>ul,.theme-succinct-content>.content__default>ol{padding-left:34px!important;}"
-    ".theme-succinct-content>.content__default>h1,.theme-succinct-content>.content__default>h2,.theme-succinct-content>.content__default>h3{color:#101216!important;}"
-    ".theme-succinct-content>.content__default p,.theme-succinct-content>.content__default li,.theme-succinct-content>.content__default a,.theme-succinct-content>.content__default strong,.theme-succinct-content>.content__default code,.theme-succinct-content>.content__default span{color:#1a1d23!important;}"
-    ".sidebar-links,.sidebar-sub-headers,.nav-links{background:transparent!important;}"
-    ".sidebar-link,.nav-link,.repo-link{border-radius:14px!important;}"
-    ".search-box input{color:#101216!important;}"
-    ".search-box input::placeholder{color:rgba(16,18,22,.5)!important;}"
-    ".theme-succinct-content>.content__default .header-anchor{background:transparent!important;border:none!important;padding:0!important;margin-right:8px!important;}"
-    ".theme-succinct-content>.content__default .icon.outbound,.navbar .icon,.sidebar .icon{color:inherit!important;}"
-    "`;"
-    "document.documentElement.style.background='transparent';"
-    "document.body.style.background='transparent';"
-    "})();";
+static NSString *const kLauncherIntroHTML =
+    @"<!doctype html>"
+    "<html lang='vi'>"
+    "<head>"
+    "<meta charset='utf-8'>"
+    "<meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover'>"
+    "<title>__APP_NAME__</title>"
+    "<style>"
+    ":root{color-scheme:light only;--bg:rgba(255,255,255,.16);--line:rgba(255,255,255,.28);--soft:rgba(9,18,36,.72);--muted:rgba(20,33,56,.62);--accent:#58c0ff;--accent2:#7f6dff;--success:#4ad18b;}"
+    "*{box-sizing:border-box}html,body{margin:0;padding:0;background:transparent;color:var(--soft);font-family:'Avenir Next','Trebuchet MS','Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}"
+    "body{min-height:100vh;padding:24px 18px 88px;position:relative;overflow-x:hidden}"
+    "body::before,body::after{content:'';position:fixed;inset:auto;pointer-events:none;filter:blur(8px);opacity:.9}"
+    "body::before{width:320px;height:320px;left:-80px;top:20px;background:radial-gradient(circle at center,rgba(88,192,255,.28),rgba(88,192,255,0));}"
+    "body::after{width:360px;height:360px;right:-120px;top:180px;background:radial-gradient(circle at center,rgba(127,109,255,.24),rgba(127,109,255,0));}"
+    ".shell{max-width:1024px;margin:0 auto;display:grid;gap:18px}"
+    ".hero{display:grid;grid-template-columns:1.4fr .9fr;gap:18px;align-items:stretch}"
+    ".card{background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.09));border:1px solid var(--line);border-radius:28px;box-shadow:0 18px 36px rgba(3,12,30,.14),inset 0 1px 0 rgba(255,255,255,.26);padding:24px 24px 22px;backdrop-filter:saturate(130%)}"
+    ".badge{display:inline-flex;align-items:center;gap:10px;padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.3);font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}"
+    ".dot{width:10px;height:10px;border-radius:999px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 0 0 6px rgba(88,192,255,.12)}"
+    "h1{margin:18px 0 10px;font-size:clamp(38px,6vw,64px);line-height:.95;letter-spacing:-.04em}"
+    ".lead{margin:0;max-width:720px;font-size:18px;line-height:1.6;color:var(--muted)}"
+    ".stack{display:grid;gap:14px}"
+    ".stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:22px}"
+    ".stat{padding:16px 18px;border-radius:22px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.22)}"
+    ".stat strong{display:block;font-size:22px;letter-spacing:-.03em}"
+    ".stat span{display:block;margin-top:6px;font-size:13px;color:var(--muted)}"
+    ".sidepanel{display:grid;gap:12px}"
+    ".chip{padding:16px 18px;border-radius:22px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.26)}"
+    ".chip strong{display:block;font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}"
+    ".chip span{display:block;margin-top:8px;font-size:19px;font-weight:700;letter-spacing:-.02em}"
+    ".grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}"
+    ".feature h2,.steps h2{margin:0 0 14px;font-size:24px;letter-spacing:-.03em}"
+    ".feature-list,.step-list{display:grid;gap:12px}"
+    ".feature-item,.step-item{padding:16px 18px;border-radius:22px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22)}"
+    ".feature-item strong,.step-item strong{display:block;font-size:17px}"
+    ".feature-item p,.step-item p{margin:8px 0 0;font-size:14px;line-height:1.55;color:var(--muted)}"
+    ".foot{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;justify-content:space-between}"
+    ".pill-row{display:flex;flex-wrap:wrap;gap:10px}"
+    ".pill{padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.22);font-size:13px;font-weight:700;color:var(--muted)}"
+    ".signature{font-size:13px;color:var(--muted)}"
+    "@media (max-width:860px){.hero,.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.card{border-radius:24px;padding:20px}.lead{font-size:16px}}"
+    "</style>"
+    "</head>"
+    "<body>"
+    "<main class='shell'>"
+    "<section class='hero'>"
+    "<article class='card'>"
+    "<span class='badge'><span class='dot'></span> Chill Build</span>"
+    "<h1>__APP_NAME__</h1>"
+    "<p class='lead'>A compact launcher build for iPhone and iPad with faster startup, cleaner profile management, launcher video backgrounds and the custom tweaks you have been applying across the UI.</p>"
+    "<div class='stats'>"
+    "<div class='stat'><strong>__VERSION__</strong><span>Current version</span></div>"
+    "<div class='stat'><strong>Landscape</strong><span>Launcher tuned for wide layout</span></div>"
+    "<div class='stat'><strong>Glass UI</strong><span>Menu and cards share one visual system</span></div>"
+    "</div>"
+    "</article>"
+    "<aside class='sidepanel'>"
+    "<div class='card chip'><strong>Status</strong><span>Ready to play</span></div>"
+    "<div class='card chip'><strong>Build</strong><span>__BUILD__</span></div>"
+    "<div class='card chip'><strong>Custom</strong><span>Video background, Profiles, Controls</span></div>"
+    "</aside>"
+    "</section>"
+    "<section class='grid'>"
+    "<article class='card feature'>"
+    "<h2>Highlights</h2>"
+    "<div class='feature-list'>"
+    "<div class='feature-item'><strong>Separate profiles</strong><p>Split Minecraft versions, memory, renderer and game directory per profile for faster switching.</p></div>"
+    "<div class='feature-item'><strong>Launcher background video</strong><p>Pick a video from Photos, store it in the app and keep it synced with the launcher UI.</p></div>"
+    "<div class='feature-item'><strong>Custom controls</strong><p>Edit touch controls and gamepad config directly from the launcher without leaving the app.</p></div>"
+    "</div>"
+    "</article>"
+    "<article class='card steps'>"
+    "<h2>Quick start</h2>"
+    "<div class='step-list'>"
+    "<div class='step-item'><strong>1. Pick a profile</strong><p>Create or edit a profile with the right version, runtime and control preset.</p></div>"
+    "<div class='step-item'><strong>2. Tune the launcher</strong><p>Open Settings to adjust renderer, interface, audio and background video for your device.</p></div>"
+    "<div class='step-item'><strong>3. Press Play</strong><p>The launcher uses the current setup to start the game with a cleaner and more consistent UI.</p></div>"
+    "</div>"
+    "</article>"
+    "</section>"
+    "<footer class='card foot'>"
+    "<div class='pill-row'>"
+    "<span class='pill'>Local intro page</span>"
+    "<span class='pill'>No external website dependency</span>"
+    "<span class='pill'>Loads fast inside the app</span>"
+    "</div>"
+    "<span class='signature'>__APP_NAME__ - build __BUILD__</span>"
+    "</footer>"
+    "</main>"
+    "</body>"
+    "</html>";
+
+- (NSString *)launcherIntroHTML {
+    NSDictionary *info = NSBundle.mainBundle.infoDictionary;
+    NSString *appName = info[@"CFBundleDisplayName"] ?: info[@"CFBundleName"] ?: @"Chill Launcher";
+    NSString *version = info[@"CFBundleShortVersionString"] ?: @"1.0";
+    NSString *build = info[@"CFBundleVersion"] ?: version;
+    return [[[[kLauncherIntroHTML stringByReplacingOccurrencesOfString:@"__APP_NAME__" withString:appName]
+        stringByReplacingOccurrencesOfString:@"__VERSION__" withString:version]
+        stringByReplacingOccurrencesOfString:@"__BUILD__" withString:build];
+}
 
 - (id)init {
     self = [super init];
@@ -65,8 +129,6 @@ static NSString *const kLauncherNewsGlassCSS =
     
     CGSize size = CGSizeMake(self.view.frame.size.width, self.view.frame.size.height);
     insets = UIApplication.sharedApplication.windows.firstObject.safeAreaInsets;
-    
-    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:@"https://wiki.angelauramc.dev/patchnotes/changelogs/IOS.html"]];
 
     WKWebViewConfiguration *webConfig = [[WKWebViewConfiguration alloc] init];
     webView = [[WKWebView alloc] initWithFrame:self.view.frame configuration:webConfig];
@@ -78,13 +140,8 @@ static NSString *const kLauncherNewsGlassCSS =
     webView.scrollView.backgroundColor = UIColor.clearColor;
     [self adjustWebViewForSize:size];
     webView.scrollView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
-    NSString *javascript = @"var meta = document.createElement('meta');meta.setAttribute('name', 'viewport');meta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');document.getElementsByTagName('head')[0].appendChild(meta);";
-    WKUserScript *nozoom = [[WKUserScript alloc] initWithSource:javascript injectionTime:WKUserScriptInjectionTimeAtDocumentEnd forMainFrameOnly:YES];
-    [webView.configuration.userContentController addUserScript:nozoom];
-    WKUserScript *glassTheme = [[WKUserScript alloc] initWithSource:kLauncherNewsGlassCSS injectionTime:WKUserScriptInjectionTimeAtDocumentEnd forMainFrameOnly:YES];
-    [webView.configuration.userContentController addUserScript:glassTheme];
     [webView.scrollView setShowsHorizontalScrollIndicator:NO];
-    [webView loadRequest:request];
+    [webView loadHTMLString:[self launcherIntroHTML] baseURL:nil];
     [self.view addSubview:webView];
 
     if(!isJailbroken && getPrefBool(@"warnings.limited_ram_warn") && (roundf(NSProcessInfo.processInfo.physicalMemory / 0x1000000) < 3900)) {
@@ -147,16 +204,13 @@ static NSString *const kLauncherNewsGlassCSS =
 - (void)webView:(WKWebView *)webView 
 decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction 
 decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
-     if (navigationAction.navigationType == WKNavigationTypeLinkActivated) {
+     if (navigationAction.navigationType == WKNavigationTypeLinkActivated &&
+         !navigationAction.request.URL.isFileURL) {
         openLink(self, navigationAction.request.URL);
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
     }
     decisionHandler(WKNavigationActionPolicyAllow);
-}
-
-- (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
-    [webView evaluateJavaScript:kLauncherNewsGlassCSS completionHandler:nil];
 }
 
 @end
