@@ -212,7 +212,7 @@ extern NSMutableDictionary *prefDict;
     self.backgroundLooper = [AVPlayerLooper playerLooperWithPlayer:player templateItem:item];
     self.backgroundPlayer = player;
     self.backgroundLayer = [AVPlayerLayer playerLayerWithPlayer:player];
-    self.backgroundLayer.videoGravity = AVLayerVideoGravityResizeAspect;
+    self.backgroundLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
     self.backgroundLayer.backgroundColor = UIColor.clearColor.CGColor;
     [self.backgroundVideoContentView.layer addSublayer:self.backgroundLayer];
     [self applyBackgroundVideoLayout];

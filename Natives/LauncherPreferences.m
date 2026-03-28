@@ -8,50 +8,30 @@
 static PLPreferences* pref;
 NSString * const PLLauncherBackgroundDidChangeNotification = @"PLLauncherBackgroundDidChangeNotification";
 NSString * const PLLauncherAppearanceDidChangeNotification = @"PLLauncherAppearanceDidChangeNotification";
-static NSString * const PLLauncherBackgroundVideoKey = @"general.launcher_background_video";
-static NSString * const PLLauncherBackgroundVideoScaleKey = @"general.launcher_background_video_scale";
-static NSString * const PLLauncherBackgroundVideoOffsetXKey = @"general.launcher_background_video_offset_x";
-static NSString * const PLLauncherBackgroundVideoOffsetYKey = @"general.launcher_background_video_offset_y";
-static NSString * const PLLauncherBackgroundVideoRotateKey = @"general.launcher_background_video_rotate";
-
-static void PLRunLauncherBlockOnMainThread(void (^block)(void)) {
-    if (NSThread.isMainThread) {
-        block();
-    } else {
-        dispatch_sync(dispatch_get_main_queue(), block);
-    }
-}
-
-static NSString *PLLauncherBackgroundDirectory(void) {
-    NSString *directory = [@(getenv("POJAV_HOME")) stringByAppendingPathComponent:@"launcher_background"];
-    [NSFileManager.defaultManager createDirectoryAtPath:directory withIntermediateDirectories:YES attributes:nil error:nil];
-    return directory;
-}
-
-static BOOL PLLauncherBackgroundPathIsManaged(NSString *path) {
-    return [path hasPrefix:PLLauncherBackgroundDirectory()];
-}
-
-static void PLCleanupManagedLauncherBackgrounds(NSString *keepPath) {
-    NSString *directory = PLLauncherBackgroundDirectory();
-    NSArray<NSString *> *files = [NSFileManager.defaultManager contentsOfDirectoryAtPath:directory error:nil];
-    for (NSString *file in files) {
-        NSString *path = [directory stringByAppendingPathComponent:file];
-        if (keepPath.length > 0 && [path isEqualToString:keepPath]) {
-            continue;
-        }
-        [NSFileManager.defaultManager removeItemAtPath:path error:nil];
-    }
-}
+static NSString * const PLBundledLauncherBackgroundVideoName = @"ChillLauncherBackground";
+static NSString * const PLBundledLauncherBackgroundVideoType = @"mp4";
+static NSString * const PLBundledLauncherBackgroundDisplayName = @"Chill Launcher Loop";
 
 static void PLPostLauncherBackgroundDidChange(void) {
     [NSNotificationCenter.defaultCenter postNotificationName:PLLauncherBackgroundDidChangeNotification object:nil];
     [NSNotificationCenter.defaultCenter postNotificationName:PLLauncherAppearanceDidChangeNotification object:nil];
 }
 
-static void PLClearLegacyLauncherBackgroundOffsets(void) {
-    setPrefInt(PLLauncherBackgroundVideoOffsetXKey, 0);
-    setPrefInt(PLLauncherBackgroundVideoOffsetYKey, 0);
+static NSString *PLBundledLauncherBackgroundVideoPath(void) {
+    static NSString *cachedPath;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        cachedPath = [NSBundle.mainBundle pathForResource:PLBundledLauncherBackgroundVideoName
+                                                   ofType:PLBundledLauncherBackgroundVideoType];
+        if (cachedPath.length == 0) {
+            NSString *fallbackPath = [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:
+                [NSString stringWithFormat:@"%@.%@", PLBundledLauncherBackgroundVideoName, PLBundledLauncherBackgroundVideoType]];
+            if ([NSFileManager.defaultManager fileExistsAtPath:fallbackPath]) {
+                cachedPath = fallbackPath;
+            }
+        }
+    });
+    return cachedPath;
 }
 
 void postLauncherAppearanceDidChange(void) {
@@ -219,83 +199,35 @@ NSArray* getRendererNames(BOOL containsDefault) {
 }
 
 NSString *getLauncherBackgroundVideoPath(void) {
-    NSString *path = getPrefObject(PLLauncherBackgroundVideoKey);
-    if (![path isKindOfClass:NSString.class] || path.length == 0) {
-        return nil;
-    }
-    if (![NSFileManager.defaultManager fileExistsAtPath:path]) {
-        setPrefObject(PLLauncherBackgroundVideoKey, @"");
-        return nil;
-    }
-    return path;
+    return PLBundledLauncherBackgroundVideoPath();
 }
 
 NSString *getLauncherBackgroundVideoDisplayName(void) {
-    NSString *path = getLauncherBackgroundVideoPath();
-    return path ? path.lastPathComponent : localize(@"preference.title.launcher_background_none", nil);
+    return getLauncherBackgroundVideoPath().length > 0 ? PLBundledLauncherBackgroundDisplayName : localize(@"preference.title.launcher_background_none", nil);
 }
 
 CGFloat getLauncherBackgroundVideoScale(void) {
-    return clamp(getPrefInt(PLLauncherBackgroundVideoScaleKey), 50, 250) / 100.0;
+    return 1.0;
 }
 
 BOOL getLauncherBackgroundVideoRotateEnabled(void) {
-    return getPrefBool(PLLauncherBackgroundVideoRotateKey);
+    return NO;
 }
 
 void setLauncherBackgroundVideoRotateEnabled(BOOL enabled) {
-    PLClearLegacyLauncherBackgroundOffsets();
-    setPrefBool(PLLauncherBackgroundVideoRotateKey, enabled);
     postLauncherAppearanceDidChange();
 }
 
 void resetLauncherBackgroundVideoAdjustments(void) {
-    setPrefInt(PLLauncherBackgroundVideoScaleKey, 100);
-    PLClearLegacyLauncherBackgroundOffsets();
-    setPrefBool(PLLauncherBackgroundVideoRotateKey, NO);
     postLauncherAppearanceDidChange();
 }
 
 NSError *setLauncherBackgroundVideoFromURL(NSURL *url) {
-    NSString *directory = PLLauncherBackgroundDirectory();
-    __block NSString *currentPath = nil;
-    PLRunLauncherBlockOnMainThread(^{
-        currentPath = [getLauncherBackgroundVideoPath() copy];
-    });
-
-    NSString *extension = url.pathExtension.lowercaseString;
-    if (extension.length == 0) {
-        extension = @"mp4";
-    }
-
-    NSString *destination = [directory stringByAppendingPathComponent:
-        [NSString stringWithFormat:@"launcher-background-%@.%@",
-            NSUUID.UUID.UUIDString.lowercaseString, extension]];
-
-    NSError *error;
-    if (![NSFileManager.defaultManager copyItemAtURL:url toURL:[NSURL fileURLWithPath:destination] error:&error]) {
-        return error;
-    }
-
-    PLRunLauncherBlockOnMainThread(^{
-        PLClearLegacyLauncherBackgroundOffsets();
-        setPrefObject(PLLauncherBackgroundVideoKey, destination);
-        PLPostLauncherBackgroundDidChange();
-    });
-    if (currentPath.length > 0 && PLLauncherBackgroundPathIsManaged(currentPath)) {
-        [NSFileManager.defaultManager removeItemAtPath:currentPath error:nil];
-    }
-    PLCleanupManagedLauncherBackgrounds(destination);
-    return nil;
+    return [NSError errorWithDomain:@"LauncherBackgroundVideo"
+        code:2
+        userInfo:@{NSLocalizedDescriptionKey: @"Chill Launcher uses a built-in background loop."}];
 }
 
 void clearLauncherBackgroundVideo(void) {
-    NSString *path = getLauncherBackgroundVideoPath();
-    PLClearLegacyLauncherBackgroundOffsets();
-    setPrefObject(PLLauncherBackgroundVideoKey, @"");
     PLPostLauncherBackgroundDidChange();
-    if (path.length > 0 && PLLauncherBackgroundPathIsManaged(path)) {
-        [NSFileManager.defaultManager removeItemAtPath:path error:nil];
-    }
-    PLCleanupManagedLauncherBackgrounds(nil);
 }

@@ -149,7 +149,6 @@ add_executable(AngelAuraAmethyst
   LauncherNewsViewController.m
   LauncherPreferences.m
   LauncherPreferencesViewController.m
-  LauncherPrefBackgroundViewController.m
   LauncherPrefContCfgViewController.m
   LauncherPrefGameDirViewController.m
   LauncherPrefManageJREViewController.m
@@ -197,9 +196,7 @@ target_link_libraries(AngelAuraAmethyst
   "-framework CoreMotion"
   "-framework GameController"
   "-framework IOKit"
-  "-framework Photos"
   "-framework QuartzCore"
-  "-framework PhotosUI"
   "-framework UIKit"
   "-framework UniformTypeIdentifiers"
   "-framework UnzipKit"

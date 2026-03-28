@@ -5,7 +5,6 @@
 #import "LauncherNavigationController.h"
 #import "LauncherMenuViewController.h"
 #import "LauncherPreferences.h"
-#import "LauncherPrefBackgroundViewController.h"
 #import "LauncherPreferencesViewController.h"
 #import "LauncherPrefContCfgViewController.h"
 #import "LauncherPrefManageJREViewController.h"
@@ -35,9 +34,6 @@
 - (void)viewDidLoad
 {
     self.getPreference = ^id(NSString *section, NSString *key){
-        if ([key isEqualToString:@"launcher_background_video"]) {
-            return getLauncherBackgroundVideoDisplayName();
-        }
         NSString *keyFull = [NSString stringWithFormat:@"%@.%@", section, key];
         return getPrefObject(keyFull);
     };
@@ -110,14 +106,6 @@
               @"pickList": @[
                   localize(@"preference.title.appicon-default", nil)
               ]
-            },
-            @{@"key": @"launcher_background_video",
-              @"icon": @"play.rectangle",
-              @"title": @"preference.title.launcher_background_video",
-              @"type": self.typeChildPane,
-              @"class": LauncherPrefBackgroundViewController.class,
-              @"canDismissWithSwipe": @YES,
-              @"enableCondition": whenNotInGame
             },
             @{@"key": @"hidden_sidebar",
               @"hasDetail": @YES,
