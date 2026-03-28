@@ -195,9 +195,9 @@ static void *kPLLauncherButtonFeedbackKey = &kPLLauncherButtonFeedbackKey;
 
         UIBlurEffect *effect;
         if (@available(iOS 13.0, *)) {
-            effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemChromeMaterial];
+            effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterialLight];
         } else {
-            effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleRegular];
+            effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleExtraLight];
         }
         self.blurView = [[UIVisualEffectView alloc] initWithEffect:effect];
         self.blurView.userInteractionEnabled = NO;
@@ -237,38 +237,38 @@ static void *kPLLauncherButtonFeedbackKey = &kPLLauncherButtonFeedbackKey;
     }
 
     self.layer.shadowColor = UIColor.blackColor.CGColor;
-    self.layer.shadowOpacity = self.emphasized ? 0.04 : 0.02;
-    self.layer.shadowRadius = self.emphasized ? 18 : 12;
-    self.layer.shadowOffset = CGSizeMake(0, self.emphasized ? 8 : 4);
+    self.layer.shadowOpacity = self.emphasized ? 0.032 : 0.016;
+    self.layer.shadowRadius = self.emphasized ? 20 : 13;
+    self.layer.shadowOffset = CGSizeMake(0, self.emphasized ? 9 : 4);
     self.layer.shadowPath = [UIBezierPath bezierPathWithRoundedRect:glassFrame cornerRadius:self.cornerRadius].CGPath;
 
     self.blurView.frame = self.glassView.bounds;
-    self.blurView.alpha = self.emphasized ? 0.96 : 0.9;
+    self.blurView.alpha = self.emphasized ? 0.985 : 0.94;
     self.tintView.frame = self.glassView.bounds;
     self.tintView.backgroundColor = self.emphasized ?
-        [UIColor colorWithRed:251/255.0 green:249/255.0 blue:245/255.0 alpha:0.15] :
-        [UIColor colorWithRed:250/255.0 green:247/255.0 blue:242/255.0 alpha:0.095];
+        [UIColor colorWithRed:255/255.0 green:252/255.0 blue:247/255.0 alpha:0.24] :
+        [UIColor colorWithRed:253/255.0 green:249/255.0 blue:243/255.0 alpha:0.16];
 
     self.topHighlightLayer.frame = self.glassView.bounds;
     self.topHighlightLayer.colors = @[
-        (__bridge id)[UIColor colorWithRed:1.0 green:0.997 blue:0.992 alpha:(self.emphasized ? 0.32 : 0.23)].CGColor,
-        (__bridge id)[UIColor colorWithRed:1.0 green:0.995 blue:0.988 alpha:(self.emphasized ? 0.13 : 0.085)].CGColor,
+        (__bridge id)[UIColor colorWithRed:1.0 green:0.999 blue:0.995 alpha:(self.emphasized ? 0.42 : 0.3)].CGColor,
+        (__bridge id)[UIColor colorWithRed:1.0 green:0.996 blue:0.99 alpha:(self.emphasized ? 0.18 : 0.11)].CGColor,
         (__bridge id)UIColor.clearColor.CGColor
     ];
-    self.topHighlightLayer.locations = @[@0.0, @0.14, @0.4];
+    self.topHighlightLayer.locations = @[@0.0, @0.13, @0.36];
 
     self.coolTintLayer.frame = self.glassView.bounds;
     self.coolTintLayer.colors = @[
-        (__bridge id)[UIColor colorWithRed:1.0 green:0.998 blue:0.994 alpha:(self.emphasized ? 0.105 : 0.075)].CGColor,
-        (__bridge id)[UIColor colorWithRed:248/255.0 green:245/255.0 blue:239/255.0 alpha:(self.emphasized ? 0.06 : 0.04)].CGColor,
-        (__bridge id)[UIColor colorWithRed:239/255.0 green:236/255.0 blue:230/255.0 alpha:(self.emphasized ? 0.065 : 0.045)].CGColor
+        (__bridge id)[UIColor colorWithRed:1.0 green:0.998 blue:0.995 alpha:(self.emphasized ? 0.14 : 0.1)].CGColor,
+        (__bridge id)[UIColor colorWithRed:250/255.0 green:246/255.0 blue:239/255.0 alpha:(self.emphasized ? 0.08 : 0.05)].CGColor,
+        (__bridge id)[UIColor colorWithRed:244/255.0 green:238/255.0 blue:229/255.0 alpha:(self.emphasized ? 0.07 : 0.045)].CGColor
     ];
-    self.coolTintLayer.locations = @[@0.0, @0.52, @1.0];
+    self.coolTintLayer.locations = @[@0.0, @0.48, @1.0];
 
     self.bottomShadeLayer.frame = self.glassView.bounds;
     self.bottomShadeLayer.colors = @[
         (__bridge id)UIColor.clearColor.CGColor,
-        (__bridge id)[UIColor colorWithRed:28/255.0 green:24/255.0 blue:18/255.0 alpha:(self.emphasized ? 0.028 : 0.018)].CGColor
+        (__bridge id)[UIColor colorWithRed:38/255.0 green:30/255.0 blue:20/255.0 alpha:(self.emphasized ? 0.02 : 0.012)].CGColor
     ];
     self.bottomShadeLayer.locations = @[@0.0, @1.0];
 }
