@@ -35,6 +35,12 @@ if [[ -z "${JAVA25_HOME}" ]]; then
   exit 1
 fi
 
+echo "Preparing macOS prerequisites for Java 25 iOS runtime build"
+HOMEBREW_NO_AUTO_UPDATE=1 brew install autoconf fontconfig ldid
+if [[ ! -d "/opt/X11/include/X11" ]]; then
+  HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask xquartz
+fi
+
 mkdir -p "${DEPENDS_DIR}"
 
 TMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/java25-ios.XXXXXX")"
@@ -81,6 +87,10 @@ content = content.replace(
 content = content.replace(
     '--with-boot-jdk=$(/usr/libexec/java_home -v $TARGET_VERSION) \\',
     '--with-boot-jdk=${JAVA25_HOME:-$(/usr/libexec/java_home -v $TARGET_VERSION)} \\'
+)
+content = content.replace(
+    '  HOMEBREW_NO_AUTO_UPDATE=1 brew install fontconfig ldid xquartz autoconf',
+    '  true'
 )
 path.write_text(content)
 PY
