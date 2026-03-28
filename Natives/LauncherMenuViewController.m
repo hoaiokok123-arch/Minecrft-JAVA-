@@ -65,7 +65,7 @@
         brandView.backgroundColor = UIColor.clearColor;
         brandView.userInteractionEnabled = NO;
         brandView.clipsToBounds = NO;
-        UIView *surface = PLCreateLauncherLensChromeBackground(NSDirectionalEdgeInsetsZero, 18, YES);
+        UIView *surface = PLCreateLauncherLensChromeBackground(NSDirectionalEdgeInsetsZero, 18, NO);
         surface.frame = brandView.bounds;
         surface.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         [brandView addSubview:surface];
