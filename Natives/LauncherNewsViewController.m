@@ -108,9 +108,10 @@ static NSString *const kLauncherIntroHTML =
     NSString *appName = info[@"CFBundleDisplayName"] ?: info[@"CFBundleName"] ?: @"Chill Launcher";
     NSString *version = info[@"CFBundleShortVersionString"] ?: @"1.0";
     NSString *build = info[@"CFBundleVersion"] ?: version;
-    return [[[[kLauncherIntroHTML stringByReplacingOccurrencesOfString:@"__APP_NAME__" withString:appName]
-        stringByReplacingOccurrencesOfString:@"__VERSION__" withString:version]
-        stringByReplacingOccurrencesOfString:@"__BUILD__" withString:build];
+    NSString *html = [kLauncherIntroHTML stringByReplacingOccurrencesOfString:@"__APP_NAME__" withString:appName];
+    html = [html stringByReplacingOccurrencesOfString:@"__VERSION__" withString:version];
+    html = [html stringByReplacingOccurrencesOfString:@"__BUILD__" withString:build];
+    return html;
 }
 
 - (id)init {
