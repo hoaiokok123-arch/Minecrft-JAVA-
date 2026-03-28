@@ -1,4 +1,6 @@
 #import <SafariServices/SafariServices.h>
+#import <AudioToolbox/AudioToolbox.h>
+#import <objc/runtime.h>
 
 #include "jni.h"
 #include <dlfcn.h>
@@ -134,6 +136,27 @@ UIColor *PLLauncherGlassIconTintColor(void) {
 }
 
 static const NSInteger kPLLauncherPreservedEffectTag = 0x504C4753;
+static void *kPLLauncherButtonFeedbackKey = &kPLLauncherButtonFeedbackKey;
+
+@interface PLLauncherButtonFeedbackTarget : NSObject
+@end
+
+@implementation PLLauncherButtonFeedbackTarget
+
+- (void)handleTouchDown:(UIButton *)sender {
+    PLAnimateLauncherPressView(sender, YES);
+}
+
+- (void)handleTouchUp:(UIButton *)sender {
+    PLAnimateLauncherPressView(sender, NO);
+}
+
+- (void)handlePrimaryAction:(UIButton *)sender {
+    PLPlayLauncherClickFeedback();
+    PLAnimateLauncherPressView(sender, NO);
+}
+
+@end
 
 @interface PLLauncherLensCardBackgroundView : UIView
 
@@ -480,6 +503,65 @@ void PLApplyLauncherCardChrome(UITableViewCell *cell, BOOL selected, NSDirection
     }
 }
 
+void PLPlayLauncherClickFeedback(void) {
+    static UISelectionFeedbackGenerator *selectionFeedback;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        if (@available(iOS 10.0, *)) {
+            selectionFeedback = [UISelectionFeedbackGenerator new];
+            [selectionFeedback prepare];
+        }
+    });
+
+    if (@available(iOS 10.0, *)) {
+        [selectionFeedback selectionChanged];
+        [selectionFeedback prepare];
+    }
+    AudioServicesPlaySystemSound(1104);
+}
+
+void PLAnimateLauncherPressView(UIView *view, BOOL pressed) {
+    if (!view) {
+        return;
+    }
+
+    [UIView animateWithDuration:(pressed ? 0.09 : 0.18)
+                          delay:0
+         usingSpringWithDamping:(pressed ? 1.0 : 0.82)
+          initialSpringVelocity:0
+                        options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionAllowUserInteraction
+                     animations:^{
+        view.transform = pressed ? CGAffineTransformMakeScale(0.982, 0.982) : CGAffineTransformIdentity;
+        view.alpha = pressed ? 0.94 : 1.0;
+    } completion:nil];
+}
+
+void PLApplyLauncherSelectableCellState(UITableViewCell *cell, BOOL pressed) {
+    if (!cell) {
+        return;
+    }
+
+    PLAnimateLauncherPressView(cell, pressed);
+    [UIView animateWithDuration:(pressed ? 0.09 : 0.16)
+                          delay:0
+                        options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionAllowUserInteraction
+                     animations:^{
+        cell.layer.shadowOpacity = pressed ? 0.15 : (cell.isSelected ? 0.12 : 0.08);
+    } completion:nil];
+}
+
+static void PLInstallLauncherButtonFeedback(UIButton *button) {
+    if (!button || objc_getAssociatedObject(button, kPLLauncherButtonFeedbackKey)) {
+        return;
+    }
+
+    PLLauncherButtonFeedbackTarget *target = [PLLauncherButtonFeedbackTarget new];
+    objc_setAssociatedObject(button, kPLLauncherButtonFeedbackKey, target, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    [button addTarget:target action:@selector(handleTouchDown:) forControlEvents:UIControlEventTouchDown | UIControlEventTouchDragEnter];
+    [button addTarget:target action:@selector(handleTouchUp:) forControlEvents:UIControlEventTouchUpInside | UIControlEventTouchUpOutside | UIControlEventTouchCancel | UIControlEventTouchDragExit];
+    [button addTarget:target action:@selector(handlePrimaryAction:) forControlEvents:UIControlEventPrimaryActionTriggered];
+}
+
 void PLApplyLauncherActionButtonChrome(UIButton *button) {
     UIColor *accentColor = PLLauncherAccentColor();
     UIColor *foregroundColor = button.buttonType == UIButtonTypeSystem ?
@@ -495,6 +577,7 @@ void PLApplyLauncherActionButtonChrome(UIButton *button) {
     button.tintColor = foregroundColor;
     [button setTitleColor:foregroundColor forState:UIControlStateNormal];
     [button setTitleColor:[foregroundColor colorWithAlphaComponent:0.45] forState:UIControlStateDisabled];
+    PLInstallLauncherButtonFeedback(button);
 }
 
 void PLApplyLauncherInputChrome(UITextField *textField) {

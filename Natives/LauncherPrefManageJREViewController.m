@@ -266,6 +266,7 @@ static WFWorkflowProgressView* currentProgressView;
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:NO];
+    PLPlayLauncherClickFeedback();
     if (indexPath.section == 0) {
         [self tableView:tableView openPickerAtIndexPath:indexPath
             minVersion:(indexPath.row==1 ? 17 : 8)];
@@ -296,6 +297,14 @@ static WFWorkflowProgressView* currentProgressView;
             cell.accessoryType = UITableViewCellAccessoryNone;
         }
     }
+}
+
+- (void)tableView:(UITableView *)tableView didHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
+    PLApplyLauncherSelectableCellState([tableView cellForRowAtIndexPath:indexPath], YES);
+}
+
+- (void)tableView:(UITableView *)tableView didUnhighlightRowAtIndexPath:(NSIndexPath *)indexPath {
+    PLApplyLauncherSelectableCellState([tableView cellForRowAtIndexPath:indexPath], NO);
 }
 
 #pragma mark Context Menu configuration

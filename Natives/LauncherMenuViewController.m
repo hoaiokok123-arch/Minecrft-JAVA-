@@ -292,6 +292,7 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
+    PLPlayLauncherClickFeedback();
     LauncherMenuCustomItem *selected = self.options[indexPath.section];
     
     if (selected.action != nil) {
@@ -313,6 +314,14 @@
         selected.vcArray[0].navigationItem.leftBarButtonItem = self.splitViewController.displayModeButtonItem;
         selected.vcArray[0].navigationItem.leftItemsSupplementBackButton = true;
     }
+}
+
+- (void)tableView:(UITableView *)tableView didHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
+    PLApplyLauncherSelectableCellState([tableView cellForRowAtIndexPath:indexPath], YES);
+}
+
+- (void)tableView:(UITableView *)tableView didUnhighlightRowAtIndexPath:(NSIndexPath *)indexPath {
+    PLApplyLauncherSelectableCellState([tableView cellForRowAtIndexPath:indexPath], NO);
 }
 
 - (void)selectAccount:(UIButton *)sender {

@@ -70,9 +70,18 @@
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    PLPlayLauncherClickFeedback();
     [self dismissViewControllerAnimated:YES completion:nil];
 
     self.whenItemSelected(self.fileList [indexPath.row]);
+}
+
+- (void)tableView:(UITableView *)tableView didHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
+    PLApplyLauncherSelectableCellState([tableView cellForRowAtIndexPath:indexPath], YES);
+}
+
+- (void)tableView:(UITableView *)tableView didUnhighlightRowAtIndexPath:(NSIndexPath *)indexPath {
+    PLApplyLauncherSelectableCellState([tableView cellForRowAtIndexPath:indexPath], NO);
 }
 
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {

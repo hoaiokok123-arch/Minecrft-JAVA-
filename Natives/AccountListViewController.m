@@ -133,6 +133,7 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:NO];
+    PLPlayLauncherClickFeedback();
     UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
 
     if (indexPath.row == self.accountList.count) {
@@ -150,6 +151,14 @@
         });
     };
     [[BaseAuthenticator loadSavedName:self.accountList[indexPath.row][@"username"]] refreshTokenWithCallback:callback];
+}
+
+- (void)tableView:(UITableView *)tableView didHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
+    PLApplyLauncherSelectableCellState([tableView cellForRowAtIndexPath:indexPath], YES);
+}
+
+- (void)tableView:(UITableView *)tableView didUnhighlightRowAtIndexPath:(NSIndexPath *)indexPath {
+    PLApplyLauncherSelectableCellState([tableView cellForRowAtIndexPath:indexPath], NO);
 }
 
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {

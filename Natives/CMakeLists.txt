@@ -188,6 +188,7 @@ target_link_libraries(AngelAuraAmethyst
   "-F'${CMAKE_CURRENT_LIST_DIR}/resources/Frameworks'"
   "-framework AltKit"
   "-framework AuthenticationServices"
+  "-framework AudioToolbox"
   "-framework AVFoundation"
   "-framework CAltKit"
   "-framework CoreFoundation"

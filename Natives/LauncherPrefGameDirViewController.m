@@ -192,6 +192,7 @@ viewForFooterInSection:(NSInteger)section
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    PLPlayLauncherClickFeedback();
     [self changeSelectionTo:self.array[indexPath.row]];
     [tableView deselectRowAtIndexPath:indexPath animated:NO];
     for (int i = 0; i < self.array.count; i++) {
@@ -202,6 +203,14 @@ viewForFooterInSection:(NSInteger)section
             cell.accessoryType = UITableViewCellAccessoryNone;
         }
     }
+}
+
+- (void)tableView:(UITableView *)tableView didHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
+    PLApplyLauncherSelectableCellState([tableView cellForRowAtIndexPath:indexPath], YES);
+}
+
+- (void)tableView:(UITableView *)tableView didUnhighlightRowAtIndexPath:(NSIndexPath *)indexPath {
+    PLApplyLauncherSelectableCellState([tableView cellForRowAtIndexPath:indexPath], NO);
 }
 
 - (id)createOpenScheme:(NSString *)scheme at:(NSString *)directory {

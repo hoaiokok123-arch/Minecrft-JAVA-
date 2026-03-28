@@ -178,6 +178,7 @@ typedef void(^CreateView)(UITableViewCell *, NSString *, NSDictionary *);
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:NO];
+    PLPlayLauncherClickFeedback();
 
     NSDictionary *item = [self prefContentForIndex:indexPath.section][indexPath.row];
     UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
@@ -189,6 +190,14 @@ typedef void(^CreateView)(UITableViewCell *, NSString *, NSDictionary *);
         [self.tableView reloadSections:section withRowAnimation:UITableViewRowAnimationNone];
     }
     // 1 and 2 handle themselves with picker views.
+}
+
+- (void)tableView:(UITableView *)tableView didHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
+    PLApplyLauncherSelectableCellState([tableView cellForRowAtIndexPath:indexPath], YES);
+}
+
+- (void)tableView:(UITableView *)tableView didUnhighlightRowAtIndexPath:(NSIndexPath *)indexPath {
+    PLApplyLauncherSelectableCellState([tableView cellForRowAtIndexPath:indexPath], NO);
 }
 
 #pragma mark UITextField + UIPickerView

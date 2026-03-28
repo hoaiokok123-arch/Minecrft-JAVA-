@@ -396,6 +396,7 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
     if (self.importingVideo) {
         return;
     }
+    PLPlayLauncherClickFeedback();
 
     if (indexPath.row == LauncherBackgroundRowChoose) {
         [self presentVideoPicker];
@@ -411,6 +412,14 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
         resetLauncherBackgroundVideoAdjustments();
         [self.tableView reloadData];
     }
+}
+
+- (void)tableView:(UITableView *)tableView didHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
+    PLApplyLauncherSelectableCellState([tableView cellForRowAtIndexPath:indexPath], YES);
+}
+
+- (void)tableView:(UITableView *)tableView didUnhighlightRowAtIndexPath:(NSIndexPath *)indexPath {
+    PLApplyLauncherSelectableCellState([tableView cellForRowAtIndexPath:indexPath], NO);
 }
 
 - (NSString *)preferredVideoTypeIdentifierForItemProvider:(NSItemProvider *)itemProvider {

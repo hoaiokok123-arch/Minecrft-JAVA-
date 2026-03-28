@@ -268,6 +268,7 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:NO];
+    PLPlayLauncherClickFeedback();
 
     if (indexPath.section == kInstances) {
         if (indexPath.row == 0) {
@@ -277,6 +278,14 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
     }
 
     [self actionEditProfile:PLProfiles.current.profiles.allValues[indexPath.row]];
+}
+
+- (void)tableView:(UITableView *)tableView didHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
+    PLApplyLauncherSelectableCellState([tableView cellForRowAtIndexPath:indexPath], YES);
+}
+
+- (void)tableView:(UITableView *)tableView didUnhighlightRowAtIndexPath:(NSIndexPath *)indexPath {
+    PLApplyLauncherSelectableCellState([tableView cellForRowAtIndexPath:indexPath], NO);
 }
 
 #pragma mark Context Menu configuration
