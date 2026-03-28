@@ -447,6 +447,11 @@ styleForMenuWithConfiguration:(UIContextMenuConfiguration *)configuration
     }
 
     [self.javaRuntimes[majorVer] addObject:file];
+    if (majorVer.intValue > 0 && majorVer.intValue != INVALID_JRE &&
+        !self.selectedRuntimes[majorVer.stringValue]) {
+        self.selectedRuntimes[majorVer.stringValue] = markInternal ? @"internal" : file;
+        setPrefObject(@"java.java_homes", self.selectedRuntimes);
+    }
 }
 
 - (void)removeRuntimeAtIndexPath:(NSIndexPath *)indexPath {
