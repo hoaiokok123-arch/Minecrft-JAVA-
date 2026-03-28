@@ -59,11 +59,16 @@
     if (wordmarkImage) {
         UIImageView *wordmarkView = [[UIImageView alloc] initWithImage:wordmarkImage];
         wordmarkView.contentMode = UIViewContentModeScaleAspectFit;
-        wordmarkView.frame = CGRectMake(0, 0, 152, 33);
+        wordmarkView.frame = CGRectMake(11, 6, 152, 33);
 
-        UIView *brandView = [[UIView alloc] initWithFrame:wordmarkView.frame];
+        UIView *brandView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 174, 45)];
         brandView.backgroundColor = UIColor.clearColor;
         brandView.userInteractionEnabled = NO;
+        brandView.clipsToBounds = NO;
+        UIView *surface = PLCreateLauncherLensChromeBackground(NSDirectionalEdgeInsetsZero, 18, NO);
+        surface.frame = brandView.bounds;
+        surface.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        [brandView addSubview:surface];
         [brandView addSubview:wordmarkView];
         return brandView;
     }
