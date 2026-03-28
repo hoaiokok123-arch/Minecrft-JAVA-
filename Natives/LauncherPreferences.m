@@ -249,10 +249,6 @@ void setLauncherBackgroundVideoRotateEnabled(BOOL enabled) {
     postLauncherAppearanceDidChange();
 }
 
-BOOL getLauncherOutlineControlsEnabled(void) {
-    return NO;
-}
-
 void resetLauncherBackgroundVideoAdjustments(void) {
     setPrefInt(PLLauncherBackgroundVideoScaleKey, 100);
     PLClearLegacyLauncherBackgroundOffsets();

@@ -36,9 +36,7 @@
 
     PLApplyCompactTableLayout(self.tableView, 40);
     self.preferredContentSize = PLCompactPopoverSize(300, 220);
-    [self.tableView setSeparatorStyle:getLauncherOutlineControlsEnabled() ?
-        UITableViewCellSeparatorStyleNone :
-        UITableViewCellSeparatorStyleSingleLine];
+    [self.tableView setSeparatorStyle:UITableViewCellSeparatorStyleSingleLine];
 }
 
 - (void)viewDidLayoutSubviews {

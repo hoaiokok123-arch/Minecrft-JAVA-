@@ -28,9 +28,7 @@ static void *TotalProgressObserverContext = &TotalProgressObserverContext;
     self.view.backgroundColor = UIColor.clearColor;
     self.tableView.backgroundColor = UIColor.clearColor;
     PLApplyCompactTableLayout(self.tableView, 42);
-    self.tableView.separatorStyle = getLauncherOutlineControlsEnabled() ?
-        UITableViewCellSeparatorStyleNone :
-        UITableViewCellSeparatorStyleSingleLine;
+    self.tableView.separatorStyle = UITableViewCellSeparatorStyleSingleLine;
 
     // Load WFWorkflowProgressView
     dlopen("/System/Library/PrivateFrameworks/WorkflowUIServices.framework/WorkflowUIServices", RTLD_GLOBAL);

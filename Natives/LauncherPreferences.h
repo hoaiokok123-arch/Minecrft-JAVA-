@@ -34,7 +34,6 @@ NSString *getLauncherBackgroundVideoDisplayName(void);
 CGFloat getLauncherBackgroundVideoScale(void);
 BOOL getLauncherBackgroundVideoRotateEnabled(void);
 void setLauncherBackgroundVideoRotateEnabled(BOOL enabled);
-BOOL getLauncherOutlineControlsEnabled(void);
 void resetLauncherBackgroundVideoAdjustments(void);
 void postLauncherAppearanceDidChange(void);
 NSError *setLauncherBackgroundVideoFromURL(NSURL *url);

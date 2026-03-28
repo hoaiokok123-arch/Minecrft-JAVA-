@@ -96,9 +96,7 @@
 }
 
 - (void)applyLauncherTableAppearance {
-    self.tableView.separatorStyle = getLauncherOutlineControlsEnabled() ?
-        UITableViewCellSeparatorStyleNone :
-        UITableViewCellSeparatorStyleSingleLine;
+    self.tableView.separatorStyle = UITableViewCellSeparatorStyleSingleLine;
 }
 
 - (void)handleLauncherAppearanceDidChange:(NSNotification *)notification {

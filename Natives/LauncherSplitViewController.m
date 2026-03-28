@@ -22,7 +22,7 @@ extern NSMutableDictionary *prefDict;
 @implementation LauncherSplitViewController
 
 - (void)applyBackgroundDimAppearance {
-    CGFloat dimAlpha = getLauncherOutlineControlsEnabled() ? 0.0 : 0.08;
+    CGFloat dimAlpha = 0.08;
     self.backgroundDimView.backgroundColor = [UIColor colorWithWhite:0 alpha:dimAlpha];
     self.backgroundDimView.hidden = self.backgroundVideoView.hidden || dimAlpha <= 0.001;
 }

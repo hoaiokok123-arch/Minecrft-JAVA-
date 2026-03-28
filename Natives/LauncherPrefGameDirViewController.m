@@ -77,9 +77,7 @@
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
     self.tableView.sectionFooterHeight = 44;
     self.tableView.backgroundColor = UIColor.clearColor;
-    self.tableView.separatorStyle = getLauncherOutlineControlsEnabled() ?
-        UITableViewCellSeparatorStyleNone :
-        UITableViewCellSeparatorStyleSingleLine;
+    self.tableView.separatorStyle = UITableViewCellSeparatorStyleSingleLine;
     PLApplyCompactTableLayout(self.tableView, 44);
 
     NSString *path = [NSString stringWithFormat:@"%s/instances", getenv("POJAV_HOME")];

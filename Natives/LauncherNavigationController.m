@@ -178,20 +178,16 @@ static void *ProgressObserverContext = &ProgressObserverContext;
         PLApplyLauncherActionButtonChrome(self.buttonInstall);
     }
     if (self.buttonInstallItem && !self.buttonInstallItem.customView) {
-        self.buttonInstallItem.tintColor = getLauncherOutlineControlsEnabled() ?
-            PLLauncherAccentColor() :
-            UIColor.whiteColor;
+        self.buttonInstallItem.tintColor = UIColor.whiteColor;
         dispatch_async(dispatch_get_main_queue(), ^{
             UIView *glassView = self.buttonInstallItem.buttonGlassView;
             if (!glassView) {
                 return;
             }
             glassView.layer.cornerRadius = 12;
-            glassView.layer.borderWidth = getLauncherOutlineControlsEnabled() ? 1.0 : 0.0;
+            glassView.layer.borderWidth = 0.0;
             glassView.layer.borderColor = PLLauncherAccentColor().CGColor;
-            glassView.backgroundColor = getLauncherOutlineControlsEnabled() ?
-                UIColor.clearColor :
-                [PLLauncherAccentColor() colorWithAlphaComponent:0.5];
+            glassView.backgroundColor = [PLLauncherAccentColor() colorWithAlphaComponent:0.5];
         });
     }
 }

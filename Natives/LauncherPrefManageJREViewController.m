@@ -62,9 +62,7 @@ static WFWorkflowProgressView* currentProgressView;
     self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStylePlain];
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
     self.tableView.backgroundColor = UIColor.clearColor;
-    self.tableView.separatorStyle = getLauncherOutlineControlsEnabled() ?
-        UITableViewCellSeparatorStyleNone :
-        UITableViewCellSeparatorStyleSingleLine;
+    self.tableView.separatorStyle = UITableViewCellSeparatorStyleSingleLine;
     PLApplyCompactTableLayout(self.tableView, 40);
 
     self.javaRuntimes = @{

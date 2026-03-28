@@ -61,9 +61,7 @@ typedef NS_ENUM(NSInteger, LauncherBackgroundRow) {
 }
 
 - (void)applyTableAppearance {
-    self.tableView.separatorStyle = getLauncherOutlineControlsEnabled() ?
-        UITableViewCellSeparatorStyleNone :
-        UITableViewCellSeparatorStyleSingleLine;
+    self.tableView.separatorStyle = UITableViewCellSeparatorStyleSingleLine;
 }
 
 - (BOOL)hasSelectedVideo {

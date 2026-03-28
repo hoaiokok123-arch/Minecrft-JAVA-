@@ -76,9 +76,7 @@
     self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 1, 1)];
     self.tableView.contentInset = UIEdgeInsetsZero;
     self.tableView.alwaysBounceVertical = NO;
-    [self.tableView setSeparatorStyle:getLauncherOutlineControlsEnabled() ?
-        UITableViewCellSeparatorStyleNone :
-        UITableViewCellSeparatorStyleSingleLine];
+    [self.tableView setSeparatorStyle:UITableViewCellSeparatorStyleSingleLine];
     [self updatePopoverSize];
 }
 

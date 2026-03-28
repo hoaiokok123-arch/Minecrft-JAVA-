@@ -48,9 +48,7 @@ typedef void(^CreateView)(UITableViewCell *, NSString *, NSDictionary *);
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
     self.tableView.sectionFooterHeight = 36;
     self.tableView.backgroundColor = UIColor.clearColor;
-    self.tableView.separatorStyle = getLauncherOutlineControlsEnabled() ?
-        UITableViewCellSeparatorStyleNone :
-        UITableViewCellSeparatorStyleSingleLine;
+    self.tableView.separatorStyle = UITableViewCellSeparatorStyleSingleLine;
     PLApplyCompactTableLayout(self.tableView, 40);
     
     [self loadGamepadConfigurationFile];
