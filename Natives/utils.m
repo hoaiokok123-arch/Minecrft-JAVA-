@@ -134,6 +134,8 @@ static const NSInteger kPLLauncherPreservedEffectTag = 0x504C4753;
 @property(nonatomic) UIView *rimView;
 @property(nonatomic) UIView *innerRimView;
 @property(nonatomic) CAGradientLayer *sheenLayer;
+@property(nonatomic) CAGradientLayer *topGlossLayer;
+@property(nonatomic) CAGradientLayer *edgeLightLayer;
 @property(nonatomic) CAGradientLayer *causticLayer;
 @property(nonatomic) CAGradientLayer *bottomShadeLayer;
 
@@ -162,7 +164,7 @@ static const NSInteger kPLLauncherPreservedEffectTag = 0x504C4753;
 
         UIBlurEffect *effect;
         if (@available(iOS 13.0, *)) {
-            effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemThinMaterialLight];
+            effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemUltraThinMaterialLight];
         } else {
             effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleExtraLight];
         }
@@ -188,6 +190,16 @@ static const NSInteger kPLLauncherPreservedEffectTag = 0x504C4753;
         self.sheenLayer.startPoint = CGPointMake(0.2, 0.0);
         self.sheenLayer.endPoint = CGPointMake(0.8, 0.62);
         [self.glassView.layer addSublayer:self.sheenLayer];
+
+        self.topGlossLayer = [CAGradientLayer layer];
+        self.topGlossLayer.startPoint = CGPointMake(0.5, 0.0);
+        self.topGlossLayer.endPoint = CGPointMake(0.5, 1.0);
+        [self.glassView.layer addSublayer:self.topGlossLayer];
+
+        self.edgeLightLayer = [CAGradientLayer layer];
+        self.edgeLightLayer.startPoint = CGPointMake(0.0, 0.5);
+        self.edgeLightLayer.endPoint = CGPointMake(1.0, 0.5);
+        [self.glassView.layer addSublayer:self.edgeLightLayer];
 
         self.causticLayer = [CAGradientLayer layer];
         self.causticLayer.startPoint = CGPointMake(0.0, 0.0);
@@ -218,31 +230,48 @@ static const NSInteger kPLLauncherPreservedEffectTag = 0x504C4753;
 
     self.blurView.frame = self.glassView.bounds;
     self.tintView.frame = self.glassView.bounds;
-    self.tintView.backgroundColor = [UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.16 : 0.1)];
+    self.tintView.backgroundColor = [UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.12 : 0.07)];
 
     self.rimView.frame = self.glassView.bounds;
     self.rimView.layer.cornerRadius = self.cornerRadius;
     self.rimView.layer.borderWidth = 1.0 / UIScreen.mainScreen.scale;
-    self.rimView.layer.borderColor = [UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.4 : 0.28)].CGColor;
+    self.rimView.layer.borderColor = [UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.5 : 0.36)].CGColor;
 
     CGRect innerFrame = CGRectInset(self.glassView.bounds, 1.25, 1.25);
     self.innerRimView.frame = innerFrame;
     self.innerRimView.layer.cornerRadius = MAX(self.cornerRadius - 1.25, 0);
     self.innerRimView.layer.borderWidth = 1.0 / UIScreen.mainScreen.scale;
-    self.innerRimView.layer.borderColor = [UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.16 : 0.08)].CGColor;
+    self.innerRimView.layer.borderColor = [UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.22 : 0.12)].CGColor;
 
     self.sheenLayer.frame = self.glassView.bounds;
     self.sheenLayer.colors = @[
-        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.28 : 0.22)].CGColor,
-        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.1 : 0.06)].CGColor,
+        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.42 : 0.34)].CGColor,
+        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.12 : 0.08)].CGColor,
         (__bridge id)UIColor.clearColor.CGColor
     ];
-    self.sheenLayer.locations = @[@0.0, @0.22, @0.68];
+    self.sheenLayer.locations = @[@0.0, @0.16, @0.5];
+
+    self.topGlossLayer.frame = self.glassView.bounds;
+    self.topGlossLayer.colors = @[
+        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.22 : 0.16)].CGColor,
+        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.08 : 0.04)].CGColor,
+        (__bridge id)UIColor.clearColor.CGColor
+    ];
+    self.topGlossLayer.locations = @[@0.0, @0.18, @0.52];
+
+    self.edgeLightLayer.frame = self.glassView.bounds;
+    self.edgeLightLayer.colors = @[
+        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.2 : 0.12)].CGColor,
+        (__bridge id)UIColor.clearColor.CGColor,
+        (__bridge id)UIColor.clearColor.CGColor,
+        (__bridge id)[UIColor colorWithWhite:1 alpha:(self.emphasized ? 0.16 : 0.1)].CGColor
+    ];
+    self.edgeLightLayer.locations = @[@0.0, @0.14, @0.86, @1.0];
 
     self.causticLayer.frame = self.glassView.bounds;
     self.causticLayer.colors = @[
-        (__bridge id)[UIColor colorWithRed:1 green:1 blue:1 alpha:(self.emphasized ? 0.14 : 0.1)].CGColor,
-        (__bridge id)[UIColor colorWithRed:0.88 green:0.95 blue:1 alpha:0.06].CGColor,
+        (__bridge id)[UIColor colorWithRed:0.84 green:0.94 blue:1 alpha:(self.emphasized ? 0.18 : 0.12)].CGColor,
+        (__bridge id)[UIColor colorWithRed:1 green:1 blue:1 alpha:(self.emphasized ? 0.08 : 0.05)].CGColor,
         (__bridge id)[UIColor colorWithRed:0 green:0 blue:0 alpha:0.03].CGColor
     ];
     self.causticLayer.locations = @[@0.0, @0.42, @1.0];
