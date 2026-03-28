@@ -157,12 +157,12 @@
     PLApplyCompactTableCell(cell);
 
     NSString *key = item[@"key"];
+    CreateView createView = item[@"type"];
     if (indexPath.row == 0 && self.prefSections) {
         key = self.prefSections[indexPath.section];
         cell.selectionStyle = UITableViewCellSelectionStyleDefault;
         cell.textLabel.text = localize(([NSString stringWithFormat:@"preference.section.%@", key]), nil);
     } else {
-        CreateView createView = item[@"type"];
         createView(cell, self.prefSections[indexPath.section], key, item);
         if (cell.accessoryView) {
             objc_setAssociatedObject(cell.accessoryView, @"section", self.prefSections[indexPath.section], OBJC_ASSOCIATION_ASSIGN);
