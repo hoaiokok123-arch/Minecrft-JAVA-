@@ -70,11 +70,6 @@
         }.mutableCopy
     }.mutableCopy;
 
-    NSString *bundledJava25Release = [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"java_runtimes/java-25-openjdk/release"];
-    if ([NSFileManager.defaultManager fileExistsAtPath:bundledJava25Release]) {
-        defaults[@"java"][@"java_homes"][@"25"] = @"internal";
-    }
-
     if (global) {
         // Preferences that cannot be isolated
         NSDictionary *general = @{

@@ -114,7 +114,6 @@ POJAV_BUNDLE_DIR      ?= $(OUTPUTDIR)/AngelAuraAmethyst.app
 POJAV_JRE8_DIR        ?= $(SOURCEDIR)/depends/java-8-openjdk
 POJAV_JRE17_DIR       ?= $(SOURCEDIR)/depends/java-17-openjdk
 POJAV_JRE21_DIR       ?= $(SOURCEDIR)/depends/java-21-openjdk
-POJAV_JRE25_DIR       ?= $(SOURCEDIR)/depends/java-25-openjdk
 
 # Function to use later for checking dependencies
 METHOD_DEPCHECK   = $(shell $(1) >/dev/null 2>&1 && echo 1)
@@ -296,10 +295,6 @@ jre: native
 	$(call METHOD_JAVA_UNPACK,8,'https://crystall1ne.dev/cdn/amethyst-ios/jre8-ios-aarch64.zip'); \
 	$(call METHOD_JAVA_UNPACK,17,'https://crystall1ne.dev/cdn/amethyst-ios/jre17-ios-aarch64.zip'); \
 	$(call METHOD_JAVA_UNPACK,21,'https://crystall1ne.dev/cdn/amethyst-ios/jre21-ios-aarch64.zip'); \
-	if [ ! -f "java-25-openjdk/release" ] && compgen -G "jre25-*.tar.xz" > /dev/null; then \
-		mkdir -p java-25-openjdk; \
-		tar xvf jre25-*.tar.xz -C java-25-openjdk; \
-	fi; \
 	if [ -f "$(ls jre*.tar.xz)" ]; then rm $(SOURCEDIR)/depends/jre*.tar.xz; fi; \
 	cd $(SOURCEDIR); \
 	rm -rf $(SOURCEDIR)/depends/java-*-openjdk/{ASSEMBLY_EXCEPTION,bin,include,jre,legal,LICENSE,man,THIRD_PARTY_README,lib/{ct.sym,jspawnhelper,libjsig.dylib,src.zip,tools.jar}}; \
@@ -309,11 +304,7 @@ jre: native
 	cp -R $(POJAV_JRE21_DIR) $(OUTPUTDIR)/java_runtimes; \
 	cp $(WORKINGDIR)/libawt_xawt.dylib $(OUTPUTDIR)/java_runtimes/java-8-openjdk/lib; \
 	cp $(WORKINGDIR)/libawt_xawt.dylib $(OUTPUTDIR)/java_runtimes/java-17-openjdk/lib;
-	cp $(WORKINGDIR)/libawt_xawt.dylib $(OUTPUTDIR)/java_runtimes/java-21-openjdk/lib; \
-	if [ -d "$(POJAV_JRE25_DIR)" ]; then \
-		cp -R $(POJAV_JRE25_DIR) $(OUTPUTDIR)/java_runtimes; \
-		cp $(WORKINGDIR)/libawt_xawt.dylib $(OUTPUTDIR)/java_runtimes/java-25-openjdk/lib; \
-	fi
+	cp $(WORKINGDIR)/libawt_xawt.dylib $(OUTPUTDIR)/java_runtimes/java-21-openjdk/lib
 	echo '[Amethyst v$(VERSION)] jre - end'
 
 dep_mg:

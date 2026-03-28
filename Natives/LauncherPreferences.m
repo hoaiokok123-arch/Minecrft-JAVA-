@@ -34,58 +34,6 @@ static NSString *PLBundledLauncherBackgroundVideoPath(void) {
     return cachedPath;
 }
 
-static NSNumber *PLJavaMajorVersionForReleaseFile(NSString *releasePath) {
-    NSError *error;
-    NSString *content = [NSString stringWithContentsOfFile:releasePath encoding:NSUTF8StringEncoding error:&error];
-    if (error || content.length == 0) {
-        return nil;
-    }
-
-    NSRange range = [content rangeOfString:@"JAVA_VERSION=\""];
-    if (range.location == NSNotFound) {
-        return nil;
-    }
-
-    NSString *version = [content substringFromIndex:range.location + range.length];
-    version = [version componentsSeparatedByString:@"\""].firstObject;
-    if ([version hasPrefix:@"1.8.0"]) {
-        return @8;
-    }
-
-    NSInteger majorVersion = [version componentsSeparatedByString:@"."].firstObject.integerValue;
-    return majorVersion > 0 ? @(majorVersion) : nil;
-}
-
-static void PLCollectJavaRuntimeSelectionsAtPath(NSString *path, BOOL markInternal, NSMutableDictionary<NSString *, NSString *> *detectedVersions) {
-    NSFileManager *fileManager = NSFileManager.defaultManager;
-    NSArray<NSString *> *entries = [[fileManager contentsOfDirectoryAtPath:path error:nil]
-        sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
-    BOOL isDirectory = NO;
-    for (NSString *entry in entries) {
-        NSString *runtimePath = [path stringByAppendingPathComponent:entry];
-        if (![fileManager fileExistsAtPath:runtimePath isDirectory:&isDirectory] || !isDirectory) {
-            continue;
-        }
-
-        NSNumber *majorVersion = PLJavaMajorVersionForReleaseFile([runtimePath stringByAppendingPathComponent:@"release"]);
-        if (!majorVersion) {
-            continue;
-        }
-
-        NSString *versionKey = majorVersion.stringValue;
-        if (!detectedVersions[versionKey]) {
-            detectedVersions[versionKey] = markInternal ? @"internal" : entry;
-        }
-    }
-}
-
-static NSMutableDictionary<NSString *, NSString *> *PLDetectJavaRuntimeSelections(void) {
-    NSMutableDictionary<NSString *, NSString *> *detectedVersions = [NSMutableDictionary new];
-    PLCollectJavaRuntimeSelectionsAtPath([NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"java_runtimes"], YES, detectedVersions);
-    PLCollectJavaRuntimeSelectionsAtPath([NSString stringWithFormat:@"%s/java_runtimes", getenv("POJAV_HOME")], NO, detectedVersions);
-    return detectedVersions;
-}
-
 void postLauncherAppearanceDidChange(void) {
     [NSNotificationCenter.defaultCenter postNotificationName:PLLauncherAppearanceDidChangeNotification object:nil];
 }
@@ -182,7 +130,6 @@ UIEdgeInsets getDefaultSafeArea() {
 #pragma mark Java runtime
 
 NSString* getSelectedJavaHome(NSString* defaultJRETag, int minVersion) {
-    getAvailableJavaVersions(NO);
     NSDictionary *pref = getPrefObject(@"java.java_homes");
     NSDictionary<NSString *, NSString *> *selected = pref[@"0"];
     NSString *selectedVer = selected[defaultJRETag];
@@ -214,40 +161,6 @@ NSString* getSelectedJavaHome(NSString* defaultJRETag, int minVersion) {
         NSLog(@"Error: selected runtime for %@ does not exist: %@", defaultJRETag, selectedDir);
         return nil;
     }
-}
-
-NSArray<NSString *> *getAvailableJavaVersions(BOOL includeDefault) {
-    NSMutableDictionary<NSString *, id> *javaHomes = [getPrefObject(@"java.java_homes") mutableCopy];
-    if (!javaHomes) {
-        javaHomes = [NSMutableDictionary new];
-    }
-
-    NSMutableDictionary<NSString *, NSString *> *detectedVersions = PLDetectJavaRuntimeSelections();
-    BOOL didChange = NO;
-    for (NSString *versionKey in detectedVersions) {
-        if (!javaHomes[versionKey]) {
-            javaHomes[versionKey] = detectedVersions[versionKey];
-            didChange = YES;
-        }
-    }
-    if (didChange) {
-        setPrefObject(@"java.java_homes", javaHomes);
-    }
-
-    NSMutableArray<NSString *> *availableVersions = [NSMutableArray new];
-    for (NSString *versionKey in javaHomes.allKeys) {
-        if (versionKey.integerValue > 0 && ![availableVersions containsObject:versionKey]) {
-            [availableVersions addObject:versionKey];
-        }
-    }
-    [availableVersions sortUsingComparator:^NSComparisonResult(NSString *obj1, NSString *obj2) {
-        return [@(obj1.integerValue) compare:@(obj2.integerValue)];
-    }];
-
-    if (includeDefault) {
-        [availableVersions insertObject:@"(default)" atIndex:0];
-    }
-    return availableVersions;
 }
 
 #pragma mark Renderer

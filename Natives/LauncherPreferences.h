@@ -25,7 +25,6 @@ CGRect getSafeArea(CGRect screenBounds);
 void setSafeArea(CGSize screenSize, CGRect safeArea);
 
 NSString* getSelectedJavaHome(NSString* defaultJRETag, int minVersion);
-NSArray<NSString *> *getAvailableJavaVersions(BOOL includeDefault);
 
 NSArray* getRendererKeys(BOOL containsDefault);
 NSArray* getRendererNames(BOOL containsDefault);
