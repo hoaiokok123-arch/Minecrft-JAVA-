@@ -22,8 +22,8 @@ extern NSMutableDictionary *prefDict;
 @implementation LauncherSplitViewController
 
 - (void)applyBackgroundDimAppearance {
-    CGFloat dimAlpha = 0.08;
-    self.backgroundDimView.backgroundColor = [UIColor colorWithWhite:0 alpha:dimAlpha];
+    CGFloat dimAlpha = 0.048;
+    self.backgroundDimView.backgroundColor = [UIColor colorWithRed:6/255.0 green:20/255.0 blue:34/255.0 alpha:dimAlpha];
     self.backgroundDimView.hidden = self.backgroundVideoView.hidden || dimAlpha <= 0.001;
 }
 
@@ -49,21 +49,9 @@ extern NSMutableDictionary *prefDict;
     }
 
     CGRect bounds = self.backgroundVideoView.bounds;
-    CGFloat scale = getLauncherBackgroundVideoScale();
-    BOOL rotateVideo = getLauncherBackgroundVideoRotateEnabled();
-    CGSize scaledSize = CGSizeMake(bounds.size.width * scale, bounds.size.height * scale);
-    CGSize contentSize = rotateVideo ?
-        CGSizeMake(scaledSize.height, scaledSize.width) :
-        scaledSize;
     self.backgroundVideoContentView.transform = CGAffineTransformIdentity;
-    self.backgroundVideoContentView.frame = CGRectMake(
-        CGRectGetMidX(bounds) - contentSize.width * 0.5,
-        CGRectGetMidY(bounds) - contentSize.height * 0.5,
-        contentSize.width,
-        contentSize.height);
-    self.backgroundVideoContentView.transform = rotateVideo ?
-        CGAffineTransformMakeRotation((CGFloat)M_PI_2) :
-        CGAffineTransformIdentity;
+    CGFloat overscan = MAX(4.0, MIN(bounds.size.width, bounds.size.height) * 0.012);
+    self.backgroundVideoContentView.frame = CGRectInset(bounds, -overscan, -overscan);
     self.backgroundLayer.frame = self.backgroundVideoContentView.bounds;
 }
 
