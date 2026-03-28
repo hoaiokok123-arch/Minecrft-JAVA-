@@ -230,6 +230,8 @@ static void *kPLLauncherButtonFeedbackKey = &kPLLauncherButtonFeedbackKey;
 
     CGRect glassFrame = UIEdgeInsetsInsetRect(self.bounds, UIEdgeInsetsMake(
         self.insets.top, self.insets.leading, self.insets.bottom, self.insets.trailing));
+    CGFloat nestInset = self.emphasized ? 0.75 : 1.15;
+    glassFrame = CGRectInset(glassFrame, nestInset, nestInset);
     self.glassView.frame = glassFrame;
     self.glassView.layer.cornerRadius = self.cornerRadius;
     if (@available(iOS 13.0, *)) {
@@ -237,38 +239,38 @@ static void *kPLLauncherButtonFeedbackKey = &kPLLauncherButtonFeedbackKey;
     }
 
     self.layer.shadowColor = [UIColor colorWithRed:8/255.0 green:22/255.0 blue:38/255.0 alpha:1.0].CGColor;
-    self.layer.shadowOpacity = self.emphasized ? 0.04 : 0.022;
-    self.layer.shadowRadius = self.emphasized ? 21 : 14;
-    self.layer.shadowOffset = CGSizeMake(0, self.emphasized ? 9 : 4);
+    self.layer.shadowOpacity = self.emphasized ? 0.026 : 0.012;
+    self.layer.shadowRadius = self.emphasized ? 16 : 10;
+    self.layer.shadowOffset = CGSizeMake(0, self.emphasized ? 5 : 2);
     self.layer.shadowPath = [UIBezierPath bezierPathWithRoundedRect:glassFrame cornerRadius:self.cornerRadius].CGPath;
 
     self.blurView.frame = self.glassView.bounds;
-    self.blurView.alpha = self.emphasized ? 0.965 : 0.92;
+    self.blurView.alpha = self.emphasized ? 0.93 : 0.885;
     self.tintView.frame = self.glassView.bounds;
     self.tintView.backgroundColor = self.emphasized ?
-        [UIColor colorWithRed:248/255.0 green:252/255.0 blue:255/255.0 alpha:0.22] :
-        [UIColor colorWithRed:242/255.0 green:249/255.0 blue:255/255.0 alpha:0.14];
+        [UIColor colorWithRed:244/255.0 green:251/255.0 blue:255/255.0 alpha:0.16] :
+        [UIColor colorWithRed:238/255.0 green:247/255.0 blue:255/255.0 alpha:0.095];
 
     self.topHighlightLayer.frame = self.glassView.bounds;
     self.topHighlightLayer.colors = @[
-        (__bridge id)[UIColor colorWithRed:1.0 green:1.0 blue:1.0 alpha:(self.emphasized ? 0.38 : 0.28)].CGColor,
-        (__bridge id)[UIColor colorWithRed:243/255.0 green:251/255.0 blue:1.0 alpha:(self.emphasized ? 0.15 : 0.095)].CGColor,
+        (__bridge id)[UIColor colorWithRed:1.0 green:1.0 blue:1.0 alpha:(self.emphasized ? 0.28 : 0.20)].CGColor,
+        (__bridge id)[UIColor colorWithRed:240/255.0 green:250/255.0 blue:1.0 alpha:(self.emphasized ? 0.10 : 0.06)].CGColor,
         (__bridge id)UIColor.clearColor.CGColor
     ];
-    self.topHighlightLayer.locations = @[@0.0, @0.13, @0.36];
+    self.topHighlightLayer.locations = @[@0.0, @0.11, @0.34];
 
     self.coolTintLayer.frame = self.glassView.bounds;
     self.coolTintLayer.colors = @[
-        (__bridge id)[UIColor colorWithRed:1.0 green:1.0 blue:1.0 alpha:(self.emphasized ? 0.16 : 0.11)].CGColor,
-        (__bridge id)[UIColor colorWithRed:229/255.0 green:243/255.0 blue:1.0 alpha:(self.emphasized ? 0.10 : 0.06)].CGColor,
-        (__bridge id)[UIColor colorWithRed:190/255.0 green:224/255.0 blue:246/255.0 alpha:(self.emphasized ? 0.09 : 0.055)].CGColor
+        (__bridge id)[UIColor colorWithRed:1.0 green:1.0 blue:1.0 alpha:(self.emphasized ? 0.10 : 0.065)].CGColor,
+        (__bridge id)[UIColor colorWithRed:225/255.0 green:242/255.0 blue:1.0 alpha:(self.emphasized ? 0.065 : 0.038)].CGColor,
+        (__bridge id)[UIColor colorWithRed:182/255.0 green:219/255.0 blue:244/255.0 alpha:(self.emphasized ? 0.055 : 0.03)].CGColor
     ];
     self.coolTintLayer.locations = @[@0.0, @0.48, @1.0];
 
     self.bottomShadeLayer.frame = self.glassView.bounds;
     self.bottomShadeLayer.colors = @[
         (__bridge id)UIColor.clearColor.CGColor,
-        (__bridge id)[UIColor colorWithRed:8/255.0 green:24/255.0 blue:42/255.0 alpha:(self.emphasized ? 0.024 : 0.014)].CGColor
+        (__bridge id)[UIColor colorWithRed:8/255.0 green:24/255.0 blue:42/255.0 alpha:(self.emphasized ? 0.015 : 0.008)].CGColor
     ];
     self.bottomShadeLayer.locations = @[@0.0, @1.0];
 }
