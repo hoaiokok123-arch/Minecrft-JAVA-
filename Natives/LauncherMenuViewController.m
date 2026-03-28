@@ -196,11 +196,14 @@
     if (!self.accountBtnItem) {
         self.accountButton = [UIButton buttonWithType:UIButtonTypeCustom];
         [self.accountButton addTarget:self action:@selector(selectAccount:) forControlEvents:UIControlEventPrimaryActionTriggered];
-        self.accountButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
+        self.accountButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentCenter;
 
-        self.accountButton.titleEdgeInsets = UIEdgeInsetsMake(0, 4, 0, -4);
+        self.accountButton.titleEdgeInsets = UIEdgeInsetsZero;
         self.accountButton.imageView.contentMode = UIViewContentModeScaleAspectFit;
-        self.accountButton.titleLabel.lineBreakMode = NSLineBreakByWordWrapping;
+        self.accountButton.titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+        self.accountButton.titleLabel.numberOfLines = 1;
+        self.accountButton.titleLabel.adjustsFontSizeToFitWidth = YES;
+        self.accountButton.titleLabel.minimumScaleFactor = 0.75;
         self.accountBtnItem = [[UIBarButtonItem alloc] initWithCustomView:self.accountButton];
     }
 
@@ -210,11 +213,25 @@
     return self.accountBtnItem;
 }
 
+- (void)applyAccountButtonLayoutShowingTitle:(BOOL)showsTitle {
+    CGFloat height = 36.0;
+    CGFloat width = showsTitle ? 148.0 : 38.0;
+    self.accountButton.contentHorizontalAlignment = showsTitle ?
+        UIControlContentHorizontalAlignmentLeft :
+        UIControlContentHorizontalAlignmentCenter;
+    self.accountButton.contentEdgeInsets = showsTitle ?
+        UIEdgeInsetsMake(4, 5, 4, 8) :
+        UIEdgeInsetsMake(4, 4, 4, 4);
+    self.accountButton.titleEdgeInsets = showsTitle ? UIEdgeInsetsMake(0, 4, 0, -4) : UIEdgeInsetsZero;
+    self.accountButton.frame = CGRectMake(0, 0, width, height);
+    self.accountButton.bounds = CGRectMake(0, 0, width, height);
+}
+
 - (void)applyLauncherAppearance {
     self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
     self.accountButton.layer.cornerRadius = 10;
-    self.accountButton.contentEdgeInsets = UIEdgeInsetsMake(4, 4, 4, 6);
     PLApplyLauncherActionButtonChrome(self.accountButton);
+    [self applyAccountButtonLayoutShowingTitle:self.accountButton.currentAttributedTitle.length > 0];
 }
 
 - (void)handleLauncherAppearanceDidChange:(NSNotification *)notification {
@@ -357,15 +374,17 @@
 - (void)updateAccountInfo {
     NSDictionary *selected = BaseAuthenticator.current.authData;
     CGSize size = CGSizeMake(contentNavigationController.view.frame.size.width, contentNavigationController.view.frame.size.height);
+    BOOL showsTitle = (size.width / 3) > 260;
+    UIImage *placeholder = [[UIImage imageNamed:@"DefaultAccount"] _imageWithSize:CGSizeMake(28, 28)];
     
     if (selected == nil) {
-        if((size.width / 3) > 200) {
+        if (showsTitle) {
             [self.accountButton setAttributedTitle:[[NSAttributedString alloc] initWithString:localize(@"login.option.select", nil)] forState:UIControlStateNormal];
         } else {
             [self.accountButton setAttributedTitle:(NSAttributedString *)@"" forState:UIControlStateNormal];
         }
-        [self.accountButton setImage:[UIImage imageNamed:@"DefaultAccount"] forState:UIControlStateNormal];
-        [self.accountButton sizeToFit];
+        [self.accountButton setImage:placeholder forState:UIControlStateNormal];
+        [self applyAccountButtonLayoutShowingTitle:showsTitle];
         return;
     }
 
@@ -396,7 +415,7 @@
     [title appendAttributedString:[[NSAttributedString alloc] initWithString:@"\n" attributes:nil]];
     [title appendAttributedString:subtitle];
     
-    if((size.width / 3) > 200) {
+    if (showsTitle) {
         [self.accountButton setAttributedTitle:title forState:UIControlStateNormal];
     } else {
         [self.accountButton setAttributedTitle:(NSAttributedString *)@"" forState:UIControlStateNormal];
@@ -404,10 +423,9 @@
     
     // TODO: Add caching mechanism for profile pictures
     NSURL *url = [NSURL URLWithString:[selected[@"profilePicURL"] stringByReplacingOccurrencesOfString:@"\\/" withString:@"/"]];
-    UIImage *placeholder = [UIImage imageNamed:@"DefaultAccount"];
     [self.accountButton setImageForState:UIControlStateNormal withURL:url placeholderImage:placeholder];
     [self.accountButton.imageView setImageWithURL:url placeholderImage:placeholder];
-    [self.accountButton sizeToFit];
+    [self applyAccountButtonLayoutShowingTitle:showsTitle];
 
     // Update profiles and local version list if needed
     if (shouldUpdateProfiles) {
