@@ -505,6 +505,7 @@ public class GLFW
     private static Map<Integer, String> mGLFWKeyCodes;
     private static GLFWVidMode mGLFWVideoMode;
     private static long mGLFWWindowMonitor;
+    private static long mGLFWMonitorUserPointer;
 
     private static double mGLFWInitialTime;
 
@@ -805,9 +806,15 @@ public class GLFW
 
     public static void glfwInitHint(int hint, int value) { }
 
+    public static boolean glfwPlatformSupported(int platform) {
+        return platform == GLFW_ANY_PLATFORM || platform == glfwGetPlatform();
+    }
+
     public static int glfwGetPlatform() {
         return GLFW_PLATFORM_X11;
     }
+
+    public static void glfwInitAllocator(@Nullable GLFWAllocator allocator) { }
 
     @NativeType("GLFWwindow *")
     public static long glfwGetCurrentContext() {
@@ -840,6 +847,18 @@ public class GLFW
     public static long glfwGetPrimaryMonitor() {
         // Prevent NULL check
         return 1L;
+    }
+
+    public static String glfwGetMonitorName(@NativeType("GLFWmonitor *") long monitor) {
+        return "iOS Virtual Monitor";
+    }
+
+    public static void glfwSetMonitorUserPointer(@NativeType("GLFWmonitor *") long monitor, long pointer) {
+        mGLFWMonitorUserPointer = pointer;
+    }
+
+    public static long glfwGetMonitorUserPointer(@NativeType("GLFWmonitor *") long monitor) {
+        return mGLFWMonitorUserPointer;
     }
 
     public static void glfwGetMonitorPos(@NativeType("GLFWmonitor *") long monitor, @Nullable @NativeType("int *") IntBuffer xpos, @Nullable @NativeType("int *") IntBuffer ypos) {
@@ -930,6 +949,8 @@ public class GLFW
     public static void glfwSetGammaRamp(@NativeType("GLFWmonitor *") long monitor, @NativeType("const GLFWgammaramp *") GLFWGammaRamp ramp) {
         mGLFWGammaRamp = ramp;
     }
+
+    public static void glfwSetGamma(@NativeType("GLFWmonitor *") long monitor, float gamma) { }
 
     public static void glfwMakeContextCurrent(@NativeType("GLFWwindow *") long window) {
         long __functionAddress = Functions.MakeContextCurrent;
@@ -1028,8 +1049,33 @@ public class GLFW
     }
 
     public static void glfwShowWindow(long window) {
+        internalGetWindow(window).windowAttribs.put(GLFW_VISIBLE, 1);
         nglfwSetShowingWindow(window);
     }
+
+    public static void glfwHideWindow(long window) {
+        internalGetWindow(window).windowAttribs.put(GLFW_VISIBLE, 0);
+    }
+
+    public static void glfwIconifyWindow(long window) {
+        internalGetWindow(window).windowAttribs.put(GLFW_ICONIFIED, 1);
+    }
+
+    public static void glfwRestoreWindow(long window) {
+        GLFWWindowProperties win = internalGetWindow(window);
+        win.windowAttribs.put(GLFW_ICONIFIED, 0);
+        win.windowAttribs.put(GLFW_MAXIMIZED, 0);
+        win.windowAttribs.put(GLFW_VISIBLE, 1);
+    }
+
+    public static void glfwMaximizeWindow(long window) {
+        internalGetWindow(window).windowAttribs.put(GLFW_MAXIMIZED, 1);
+    }
+
+    public static void glfwFocusWindow(long window) {
+        internalGetWindow(window).windowAttribs.put(GLFW_FOCUSED, 1);
+    }
+
     public static void glfwWindowHint(int hint, int value) {
         long __functionAddress = Functions.SetWindowHint;
         invokeV(hint, value, __functionAddress);
@@ -1055,6 +1101,24 @@ public class GLFW
     }
 
     public static void glfwSetWindowIcon(@NativeType("GLFWwindow *") long window, @Nullable @NativeType("GLFWimage const *") GLFWImage.Buffer images) {}
+
+    public static void glfwSetWindowAspectRatio(@NativeType("GLFWwindow *") long window, int numer, int denom) { }
+
+    public static void glfwSetWindowOpacity(@NativeType("GLFWwindow *") long window, float opacity) {
+        internalGetWindow(window).opacity = opacity;
+    }
+
+    public static float glfwGetWindowOpacity(@NativeType("GLFWwindow *") long window) {
+        return internalGetWindow(window).opacity;
+    }
+
+    public static void glfwSetWindowUserPointer(@NativeType("GLFWwindow *") long window, long pointer) {
+        internalGetWindow(window).userPointer = pointer;
+    }
+
+    public static long glfwGetWindowUserPointer(@NativeType("GLFWwindow *") long window) {
+        return internalGetWindow(window).userPointer;
+    }
 
     public static void glfwPollEvents() {
         for (Long ptr : mGLFWWindowMap.keySet()) callJV(ptr, Functions.PumpEvents);
@@ -1165,6 +1229,21 @@ public class GLFW
 
     public static String glfwGetClipboardString(@NativeType("GLFWwindow *") long window) {
         return CallbackBridge.nativeClipboard(CallbackBridge.CLIPBOARD_PASTE, null);
+    }
+
+    public static long glfwGetProcAddress(@NativeType("char const *") ByteBuffer procname) {
+        return procname == null ? NULL : glfwGetProcAddress(memASCII(procname));
+    }
+
+    public static long glfwGetProcAddress(@NativeType("char const *") CharSequence procname) {
+        if (procname == null) {
+            return NULL;
+        }
+        try {
+            return apiGetFunctionAddress(org.lwjgl.opengl.GL.getFunctionProvider(), procname.toString());
+        } catch (Throwable ignored) {
+            return NULL;
+        }
     }
 
     public static void glfwRequestWindowAttention(@NativeType("GLFWwindow *") long window) {
