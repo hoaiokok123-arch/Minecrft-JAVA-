@@ -120,12 +120,10 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build.yml
           path: depends
-          workflow_conclusion: success
+          run_id: 23702859820
           allow_forks: true
           repo: hoaiokok123-arch/angelauramc-openjdk-build
-          branch: judge/buildjre17-21-25
           name: jre25-ios-aarch64
 
       - name: Build for ${{ matrix.platform_name }}
