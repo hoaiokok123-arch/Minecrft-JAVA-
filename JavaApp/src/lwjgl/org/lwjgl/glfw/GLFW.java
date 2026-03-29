@@ -320,7 +320,9 @@ public class GLFW
     GLFW_STICKY_KEYS          = 0x33002,
     GLFW_STICKY_MOUSE_BUTTONS = 0x33003,
     GLFW_LOCK_KEY_MODS        = 0x33004,
-    GLFW_RAW_MOUSE_MOTION     = 0x33005;
+    GLFW_RAW_MOUSE_MOTION     = 0x33005,
+    GLFW_UNLIMITED_MOUSE_BUTTONS = 0x33006,
+    GLFW_IME                  = 0x33007;
 
     /** Cursor state. */
     public static final int
@@ -371,6 +373,8 @@ public class GLFW
     /** Init hints. */
     public static final int
     GLFW_JOYSTICK_HAT_BUTTONS  = 0x50001,
+    GLFW_PLATFORM              = 0x50003,
+    GLFW_MANAGE_PREEDIT_CANDIDATE = 0x50004,
     GLFW_COCOA_CHDIR_RESOURCES = 0x51001,
     GLFW_COCOA_MENUBAR         = 0x51002;
 
@@ -485,10 +489,13 @@ public class GLFW
     /* volatile */ public static GLFWDropCallback mGLFWDropCallback;
     /* volatile */ public static GLFWErrorCallback mGLFWErrorCallback;
     /* volatile */ public static GLFWFramebufferSizeCallback mGLFWFramebufferSizeCallback;
+    /* volatile */ public static GLFWIMEStatusCallback mGLFWIMEStatusCallback;
     /* volatile */ public static GLFWJoystickCallback mGLFWJoystickCallback;
     /* volatile */ public static GLFWKeyCallback mGLFWKeyCallback;
     /* volatile */ public static GLFWMonitorCallback mGLFWMonitorCallback;
     /* volatile */ public static GLFWMouseButtonCallback mGLFWMouseButtonCallback;
+    /* volatile */ public static GLFWPreeditCallback mGLFWPreeditCallback;
+    /* volatile */ public static GLFWPreeditCandidateCallback mGLFWPreeditCandidateCallback;
     /* volatile */ public static GLFWScrollCallback mGLFWScrollCallback;
     /* volatile */ public static GLFWWindowCloseCallback mGLFWWindowCloseCallback;
     /* volatile */ public static GLFWWindowContentScaleCallback mGLFWWindowContentScaleCallback;
@@ -641,6 +648,30 @@ public class GLFW
         GLFWCharModsCallback lastCallback = mGLFWCharModsCallback;
         if (cbfun == null) mGLFWCharModsCallback = null;
         else mGLFWCharModsCallback = GLFWCharModsCallback.createSafe(nglfwSetCharModsCallback(window, memAddressSafe(cbfun)));
+
+        return lastCallback;
+    }
+
+    public static GLFWPreeditCallback glfwSetPreeditCallback(@NativeType("GLFWwindow *") long window, @Nullable @NativeType("GLFWpreeditfun") GLFWPreeditCallbackI cbfun) {
+        GLFWPreeditCallback lastCallback = mGLFWPreeditCallback;
+        if (cbfun == null) mGLFWPreeditCallback = null;
+        else mGLFWPreeditCallback = GLFWPreeditCallback.create(cbfun);
+
+        return lastCallback;
+    }
+
+    public static GLFWIMEStatusCallback glfwSetIMEStatusCallback(@NativeType("GLFWwindow *") long window, @Nullable @NativeType("GLFWimestatusfun") GLFWIMEStatusCallbackI cbfun) {
+        GLFWIMEStatusCallback lastCallback = mGLFWIMEStatusCallback;
+        if (cbfun == null) mGLFWIMEStatusCallback = null;
+        else mGLFWIMEStatusCallback = GLFWIMEStatusCallback.create(cbfun);
+
+        return lastCallback;
+    }
+
+    public static GLFWPreeditCandidateCallback glfwSetPreeditCandidateCallback(@NativeType("GLFWwindow *") long window, @Nullable @NativeType("GLFWpreeditcandidatefun") GLFWPreeditCandidateCallbackI cbfun) {
+        GLFWPreeditCandidateCallback lastCallback = mGLFWPreeditCandidateCallback;
+        if (cbfun == null) mGLFWPreeditCandidateCallback = null;
+        else mGLFWPreeditCandidateCallback = GLFWPreeditCandidateCallback.create(cbfun);
 
         return lastCallback;
     }
@@ -1152,7 +1183,7 @@ public class GLFW
     public static void glfwPostEmptyEvent() {}
 
     public static int glfwGetInputMode(@NativeType("GLFWwindow *") long window, int mode) {
-        return internalGetWindow(window).inputModes.get(mode);
+        return internalGetWindow(window).inputModes.getOrDefault(mode, 0);
     }
 
     public static void glfwSetInputMode(@NativeType("GLFWwindow *") long window, int mode, int value) {
@@ -1211,6 +1242,29 @@ public class GLFW
     }
     public static void glfwDestroyCursor(@NativeType("GLFWcursor *") long cursor) {}
     public static void glfwSetCursor(@NativeType("GLFWwindow *") long window, @NativeType("GLFWcursor *") long cursor) {}
+
+    public static void glfwGetPreeditCursorRectangle(@NativeType("GLFWwindow *") long window, @Nullable @NativeType("int *") IntBuffer x, @Nullable @NativeType("int *") IntBuffer y, @Nullable @NativeType("int *") IntBuffer w, @Nullable @NativeType("int *") IntBuffer h) {
+        if (CHECKS) {
+            checkSafe(x, 1);
+            checkSafe(y, 1);
+            checkSafe(w, 1);
+            checkSafe(h, 1);
+        }
+        if (x != null) x.put(x.position(), 0);
+        if (y != null) y.put(y.position(), 0);
+        if (w != null) w.put(w.position(), 0);
+        if (h != null) h.put(h.position(), 0);
+    }
+
+    public static void glfwSetPreeditCursorRectangle(@NativeType("GLFWwindow *") long window, int x, int y, int w, int h) {}
+
+    public static void glfwResetPreeditText(@NativeType("GLFWwindow *") long window) {}
+
+    @Nullable
+    @NativeType("unsigned int *")
+    public static IntBuffer glfwGetPreeditCandidate(@NativeType("GLFWwindow *") long window, int index) {
+        return null;
+    }
 
     public static boolean glfwRawMouseMotionSupported() {
         // Should be not supported?
@@ -1429,6 +1483,20 @@ public class GLFW
             checkSafe(ypos, 1);
         }
         nglfwGetCursorPosA(window, xpos, ypos);
+    }
+
+    /** Array version of: {@link #glfwGetPreeditCursorRectangle GetPreeditCursorRectangle} */
+    public static void glfwGetPreeditCursorRectangle(@NativeType("GLFWwindow *") long window, @Nullable @NativeType("int *") int[] x, @Nullable @NativeType("int *") int[] y, @Nullable @NativeType("int *") int[] w, @Nullable @NativeType("int *") int[] h) {
+        if (CHECKS) {
+            checkSafe(x, 1);
+            checkSafe(y, 1);
+            checkSafe(w, 1);
+            checkSafe(h, 1);
+        }
+        if (x != null) x[0] = 0;
+        if (y != null) y[0] = 0;
+        if (w != null) w[0] = 0;
+        if (h != null) h[0] = 0;
     }
 
     @NativeType("int")
