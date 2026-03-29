@@ -87,6 +87,19 @@ jobs:
           git add Natives/resources/Frameworks/libgl4es_114.dylib
           git commit -am "CI: Update gl4es"
           git push
+
+      - name: Get JRE25
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          workflow: build.yml
+          path: depends
+          workflow_conclusion: success
+          allow_forks: false
+          repo: hoaiokok123-arch/angelauramc-openjdk-build
+          branch: judge/buildjre17-21-25
+          name: jre25-ios-aarch64
+
       - name: Build for ${{ matrix.platform_name }}
         run: |
           export PATH=/opt/homebrew/bin:$PATH

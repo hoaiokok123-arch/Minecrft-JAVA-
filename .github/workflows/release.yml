@@ -116,6 +116,18 @@ jobs:
           branch: buildjre17-21
           name: jre21-ios-aarch64
 
+      - name: Get JRE25
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          workflow: build.yml
+          path: depends
+          workflow_conclusion: success
+          allow_forks: false
+          repo: hoaiokok123-arch/angelauramc-openjdk-build
+          branch: judge/buildjre17-21-25
+          name: jre25-ios-aarch64
+
       - name: Build for ${{ matrix.platform_name }}
         env:
           password: ${{ secrets.ELLIE_MINI_SECRET }}

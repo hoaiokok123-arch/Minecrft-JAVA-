@@ -44,6 +44,11 @@ $(OUTPUTDIR)/launcher.jar: $(CLASSES) check_empty_classes
 	@echo "Creating $@"
 	@$(BOOTJDK)/jar -cf $@ -C $(basename $@) .
 
+$(OUTPUTDIR)/%.jar: $(CLASSES) check_empty_classes
+	@set -e
+	@echo "Creating $@"
+	@$(BOOTJDK)/jar -cf $@ -C $(basename $@) .
+
 $(OUTPUTDIR)/lwjgl.jar: $(CLASSES) check_empty_classes
 	@set -e
 	@echo "Creating $@"
