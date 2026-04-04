@@ -21,11 +21,38 @@ all: $(TARGETS)
 	
 # Sometimes the CI produces empty class file resulting in broken jar, so we check and abort here
 check_empty_classes:
-	@set -e
-	@echo "Checking for empty class files"
-	$(eval EMPTY_CLASSES := $(shell find $(OUTPUTDIR) -name '*.class' -size 0))
-	@if [ -n "$(EMPTY_CLASSES)" ]; then \
-		echo "Error: found empty class files in $@: $(EMPTY_CLASSES)"; \
+	@set -e; \
+	echo "Checking for empty class files"; \
+	EMPTY_CLASSES=$$(find $(OUTPUTDIR) -name '*.class' -size 0); \
+	if [ -z "$$EMPTY_CLASSES" ]; then \
+		exit 0; \
+	fi; \
+	echo "Found empty class files, recompiling affected sources"; \
+	EMPTY_SOURCES=$$(printf '%s\n' "$$EMPTY_CLASSES" | sed \
+		-e 's#^$(OUTPUTDIR)/classes/##' \
+		-e 's#^$(OUTPUTDIR)/[^/]*/##' \
+		-e 's#\\$$[^/]*\.class$$#.class#' \
+		-e 's#\.class$$#.java#' | while IFS= read -r rel; do \
+			find $(SOURCEDIR) -path "*/$$rel" -print -quit; \
+		done | sort -u); \
+	if [ -z "$$EMPTY_SOURCES" ]; then \
+		echo "Error: unable to map empty class files to source files: $$EMPTY_CLASSES"; \
+		exit 1; \
+	fi; \
+	for src in $$EMPTY_SOURCES; do \
+		target=$${src#$(SOURCEDIR)/}; \
+		target=$${target%%/*}; \
+		class_rel=$${src#$(SOURCEDIR)/$$target/}; \
+		class_rel=$${class_rel%.java}; \
+		class_dir=$$(dirname "$$class_rel"); \
+		echo "Recompiling $$src"; \
+		$(BOOTJDK)/javac $(JCFLAGS) -d $(OUTPUTDIR)/classes "$$src"; \
+		mkdir -p "$(OUTPUTDIR)/$$target/$$class_dir"; \
+		cp $(OUTPUTDIR)/classes/$$class_rel*.class "$(OUTPUTDIR)/$$target/$$class_dir/"; \
+	done; \
+	EMPTY_CLASSES=$$(find $(OUTPUTDIR) -name '*.class' -size 0); \
+	if [ -n "$$EMPTY_CLASSES" ]; then \
+		echo "Error: found empty class files in $@: $$EMPTY_CLASSES"; \
 		exit 1; \
 	fi
 
