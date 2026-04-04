@@ -26,52 +26,132 @@ static NSString *LauncherProfileResolvedGameDirectory(NSDictionary *profile) {
         getenv("POJAV_HOME"), instanceName, profileGameDir] stringByStandardizingPath];
 }
 
-static NSString *LauncherProfileResolvedModsDirectory(NSDictionary *profile) {
-    return [LauncherProfileResolvedGameDirectory(profile) stringByAppendingPathComponent:@"mods"];
-}
-
 static NSString *LauncherProfileResolvedSubdirectory(NSDictionary *profile, NSString *directoryName) {
     return [LauncherProfileResolvedGameDirectory(profile) stringByAppendingPathComponent:directoryName];
 }
 
-static NSString *LauncherModNormalizedFileName(NSString *fileName) {
+typedef NS_ENUM(NSUInteger, LauncherProfileManagedContentType) {
+    LauncherProfileManagedContentTypeMod = 0,
+    LauncherProfileManagedContentTypeResourcePack,
+    LauncherProfileManagedContentTypeDataPack,
+    LauncherProfileManagedContentTypeShader
+};
+
+static NSString *LauncherProfileDirectoryNameForManagedContent(LauncherProfileManagedContentType type) {
+    switch (type) {
+        case LauncherProfileManagedContentTypeResourcePack:
+            return @"resourcepacks";
+        case LauncherProfileManagedContentTypeDataPack:
+            return @"datapacks";
+        case LauncherProfileManagedContentTypeShader:
+            return @"shaderpacks";
+        case LauncherProfileManagedContentTypeMod:
+        default:
+            return @"mods";
+    }
+}
+
+static NSString *LauncherProfileManageTitleKeyForManagedContent(LauncherProfileManagedContentType type) {
+    switch (type) {
+        case LauncherProfileManagedContentTypeResourcePack:
+            return @"profile.title.manage_resourcepacks";
+        case LauncherProfileManagedContentTypeDataPack:
+            return @"profile.title.manage_datapacks";
+        case LauncherProfileManagedContentTypeShader:
+            return @"profile.title.manage_shaders";
+        case LauncherProfileManagedContentTypeMod:
+        default:
+            return @"profile.title.manage_mods";
+    }
+}
+
+static NSString *LauncherProfileManageEmptyKeyForManagedContent(LauncherProfileManagedContentType type) {
+    switch (type) {
+        case LauncherProfileManagedContentTypeResourcePack:
+            return @"profile.detail.manage_resourcepacks.empty";
+        case LauncherProfileManagedContentTypeDataPack:
+            return @"profile.detail.manage_datapacks.empty";
+        case LauncherProfileManagedContentTypeShader:
+            return @"profile.detail.manage_shaders.empty";
+        case LauncherProfileManagedContentTypeMod:
+        default:
+            return @"profile.detail.manage_mods.empty";
+    }
+}
+
+static NSString *LauncherProfileIconNameForManagedContent(LauncherProfileManagedContentType type, BOOL isDirectory) {
+    switch (type) {
+        case LauncherProfileManagedContentTypeResourcePack:
+            return isDirectory ? @"folder" : @"square.stack.3d.down.forward";
+        case LauncherProfileManagedContentTypeDataPack:
+            return isDirectory ? @"folder" : @"externaldrive.badge.plus";
+        case LauncherProfileManagedContentTypeShader:
+            return isDirectory ? @"folder" : @"sparkles";
+        case LauncherProfileManagedContentTypeMod:
+        default:
+            return @"shippingbox";
+    }
+}
+
+static NSString *LauncherManagedContentNormalizedName(NSString *fileName) {
     if ([fileName hasSuffix:LauncherModDisabledSuffix]) {
         return [fileName substringToIndex:fileName.length - LauncherModDisabledSuffix.length];
     }
     return fileName;
 }
 
-static BOOL LauncherFileLooksLikeMod(NSString *fileName) {
+static BOOL LauncherManagedContentAllowsDirectories(LauncherProfileManagedContentType type) {
+    return type != LauncherProfileManagedContentTypeMod;
+}
+
+static BOOL LauncherManagedContentLooksLikeItem(NSString *fileName, BOOL isDirectory, LauncherProfileManagedContentType type) {
     if (fileName.length == 0 || [fileName hasPrefix:@"."]) {
         return NO;
     }
 
-    NSString *normalizedName = LauncherModNormalizedFileName(fileName);
+    NSString *normalizedName = LauncherManagedContentNormalizedName(fileName);
+    if (normalizedName.length == 0) {
+        return NO;
+    }
+
+    if (isDirectory) {
+        return LauncherManagedContentAllowsDirectories(type);
+    }
+
     NSString *extension = normalizedName.pathExtension.lowercaseString;
-    return [@[@"jar", @"zip", @"litemod"] containsObject:extension];
+    switch (type) {
+        case LauncherProfileManagedContentTypeResourcePack:
+        case LauncherProfileManagedContentTypeDataPack:
+        case LauncherProfileManagedContentTypeShader:
+            return [@[@"zip"] containsObject:extension];
+        case LauncherProfileManagedContentTypeMod:
+        default:
+            return [@[@"jar", @"zip", @"litemod"] containsObject:extension];
+    }
 }
 
-static NSMutableArray<NSMutableDictionary *> *LauncherEnumerateMods(NSDictionary *profile) {
-    NSMutableArray<NSMutableDictionary *> *mods = [NSMutableArray array];
-    NSString *modsDirectory = LauncherProfileResolvedModsDirectory(profile);
-    NSArray<NSString *> *files = [NSFileManager.defaultManager contentsOfDirectoryAtPath:modsDirectory error:nil];
+static NSMutableArray<NSMutableDictionary *> *LauncherEnumerateManagedContent(NSDictionary *profile, LauncherProfileManagedContentType type) {
+    NSMutableArray<NSMutableDictionary *> *items = [NSMutableArray array];
+    NSString *directory = LauncherProfileResolvedSubdirectory(profile, LauncherProfileDirectoryNameForManagedContent(type));
+    NSArray<NSString *> *files = [NSFileManager.defaultManager contentsOfDirectoryAtPath:directory error:nil];
     for (NSString *fileName in files) {
-        NSString *fullPath = [modsDirectory stringByAppendingPathComponent:fileName];
+        NSString *fullPath = [directory stringByAppendingPathComponent:fileName];
         BOOL isDirectory = NO;
         [NSFileManager.defaultManager fileExistsAtPath:fullPath isDirectory:&isDirectory];
-        if (isDirectory || !LauncherFileLooksLikeMod(fileName)) {
+        if (!LauncherManagedContentLooksLikeItem(fileName, isDirectory, type)) {
             continue;
         }
 
         BOOL enabled = ![fileName hasSuffix:LauncherModDisabledSuffix];
-        [mods addObject:@{
+        [items addObject:@{
             @"fileName": fileName,
-            @"displayName": LauncherModNormalizedFileName(fileName),
-            @"enabled": @(enabled)
+            @"displayName": LauncherManagedContentNormalizedName(fileName),
+            @"enabled": @(enabled),
+            @"isDirectory": @(isDirectory)
         }.mutableCopy];
     }
 
-    [mods sortUsingComparator:^NSComparisonResult(NSDictionary *lhs, NSDictionary *rhs) {
+    [items sortUsingComparator:^NSComparisonResult(NSDictionary *lhs, NSDictionary *rhs) {
         BOOL leftEnabled = [lhs[@"enabled"] boolValue];
         BOOL rightEnabled = [rhs[@"enabled"] boolValue];
         if (leftEnabled != rightEnabled) {
@@ -79,14 +159,14 @@ static NSMutableArray<NSMutableDictionary *> *LauncherEnumerateMods(NSDictionary
         }
         return [lhs[@"displayName"] localizedStandardCompare:rhs[@"displayName"]];
     }];
-    return mods;
+    return items;
 }
 
-static NSString *LauncherModSummary(NSDictionary *profile) {
+static NSString *LauncherManagedContentSummary(NSDictionary *profile, LauncherProfileManagedContentType type) {
     NSUInteger enabledCount = 0;
     NSUInteger disabledCount = 0;
-    for (NSDictionary *mod in LauncherEnumerateMods(profile)) {
-        if ([mod[@"enabled"] boolValue]) {
+    for (NSDictionary *item in LauncherEnumerateManagedContent(profile, type)) {
+        if ([item[@"enabled"] boolValue]) {
             enabledCount++;
         } else {
             disabledCount++;
@@ -94,19 +174,20 @@ static NSString *LauncherModSummary(NSDictionary *profile) {
     }
 
     if (enabledCount == 0 && disabledCount == 0) {
-        return localize(@"profile.detail.manage_mods.empty", nil);
+        return localize(LauncherProfileManageEmptyKeyForManagedContent(type), nil);
     }
-    return [NSString stringWithFormat:localize(@"profile.detail.manage_mods.summary", nil),
+    return [NSString stringWithFormat:localize(@"profile.detail.manage_content.summary", nil),
         (unsigned long)enabledCount, (unsigned long)disabledCount];
 }
 
-@interface LauncherProfileModsViewController : UITableViewController
+@interface LauncherProfileContentManagerViewController : UITableViewController
 @property(nonatomic) NSMutableDictionary *profile;
-@property(nonatomic) NSMutableArray<NSMutableDictionary *> *mods;
+@property(nonatomic) LauncherProfileManagedContentType contentType;
+@property(nonatomic) NSMutableArray<NSMutableDictionary *> *items;
 @property(nonatomic) UILabel *emptyViewLabel;
 @end
 
-@implementation LauncherProfileModsViewController
+@implementation LauncherProfileContentManagerViewController
 
 - (instancetype)init {
     return [super initWithStyle:UITableViewStyleInsetGrouped];
@@ -115,11 +196,11 @@ static NSString *LauncherModSummary(NSDictionary *profile) {
 - (void)viewDidLoad {
     [super viewDidLoad];
 
-    self.title = localize(@"profile.title.manage_mods", nil);
+    self.title = localize(LauncherProfileManageTitleKeyForManagedContent(self.contentType), nil);
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
     self.emptyViewLabel = [[UILabel alloc] initWithFrame:self.tableView.bounds];
     self.emptyViewLabel.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    self.emptyViewLabel.text = localize(@"mods.empty", nil);
+    self.emptyViewLabel.text = localize(LauncherProfileManageEmptyKeyForManagedContent(self.contentType), nil);
     self.emptyViewLabel.textAlignment = NSTextAlignmentCenter;
     self.emptyViewLabel.textColor = UIColor.secondaryLabelColor;
     self.emptyViewLabel.numberOfLines = 0;
@@ -128,57 +209,58 @@ static NSString *LauncherModSummary(NSDictionary *profile) {
 
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
-    [self reloadMods];
+    [self reloadItems];
 }
 
-- (void)reloadMods {
-    self.mods = LauncherEnumerateMods(self.profile);
-    self.emptyViewLabel.hidden = self.mods.count > 0;
+- (void)reloadItems {
+    self.items = LauncherEnumerateManagedContent(self.profile, self.contentType);
+    self.emptyViewLabel.hidden = self.items.count > 0;
     [self.tableView reloadData];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    return self.mods.count;
+    return self.items.count;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"ModCell"];
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"ContentCell"];
     if (cell == nil) {
-        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"ModCell"];
+        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"ContentCell"];
         cell.detailTextLabel.numberOfLines = 0;
         cell.detailTextLabel.lineBreakMode = NSLineBreakByWordWrapping;
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
     }
 
-    NSDictionary *item = self.mods[indexPath.row];
+    NSDictionary *item = self.items[indexPath.row];
+    BOOL isDirectory = [item[@"isDirectory"] boolValue];
     cell.textLabel.text = item[@"displayName"];
     cell.detailTextLabel.text = localize([item[@"enabled"] boolValue] ? @"mods.status.enabled" : @"mods.status.disabled", nil);
-    cell.imageView.image = [UIImage systemImageNamed:@"shippingbox"];
+    cell.imageView.image = [UIImage systemImageNamed:LauncherProfileIconNameForManagedContent(self.contentType, isDirectory)];
 
     UISwitch *toggle = [UISwitch new];
     [toggle setOn:[item[@"enabled"] boolValue] animated:NO];
-    [toggle addTarget:self action:@selector(toggleMod:) forControlEvents:UIControlEventValueChanged];
+    [toggle addTarget:self action:@selector(toggleItem:) forControlEvents:UIControlEventValueChanged];
     cell.accessoryView = toggle;
 
     return cell;
 }
 
-- (void)toggleMod:(UISwitch *)sender {
+- (void)toggleItem:(UISwitch *)sender {
     CGPoint point = [sender convertPoint:CGPointMake(CGRectGetMidX(sender.bounds), CGRectGetMidY(sender.bounds))
                                   toView:self.tableView];
     NSIndexPath *indexPath = [self.tableView indexPathForRowAtPoint:point];
-    if (!indexPath || indexPath.row >= self.mods.count) {
+    if (!indexPath || indexPath.row >= self.items.count) {
         return;
     }
 
-    NSDictionary *item = self.mods[indexPath.row];
+    NSDictionary *item = self.items[indexPath.row];
     NSString *sourceName = item[@"fileName"];
     NSString *targetName;
     if (sender.isOn) {
         if (![sourceName hasSuffix:LauncherModDisabledSuffix]) {
             return;
         }
-        targetName = LauncherModNormalizedFileName(sourceName);
+        targetName = LauncherManagedContentNormalizedName(sourceName);
     } else {
         if ([sourceName hasSuffix:LauncherModDisabledSuffix]) {
             return;
@@ -186,9 +268,9 @@ static NSString *LauncherModSummary(NSDictionary *profile) {
         targetName = [sourceName stringByAppendingString:LauncherModDisabledSuffix];
     }
 
-    NSString *modsDirectory = LauncherProfileResolvedModsDirectory(self.profile);
-    NSString *sourcePath = [modsDirectory stringByAppendingPathComponent:sourceName];
-    NSString *targetPath = [modsDirectory stringByAppendingPathComponent:targetName];
+    NSString *directory = LauncherProfileResolvedSubdirectory(self.profile, LauncherProfileDirectoryNameForManagedContent(self.contentType));
+    NSString *sourcePath = [directory stringByAppendingPathComponent:sourceName];
+    NSString *targetPath = [directory stringByAppendingPathComponent:targetName];
     NSError *error;
     if (![NSFileManager.defaultManager moveItemAtPath:sourcePath toPath:targetPath error:&error]) {
         [sender setOn:!sender.isOn animated:YES];
@@ -196,21 +278,21 @@ static NSString *LauncherModSummary(NSDictionary *profile) {
         return;
     }
 
-    [self reloadMods];
+    [self reloadItems];
 }
 
-- (void)confirmDeleteModAtIndexPath:(NSIndexPath *)indexPath sourceView:(UIView *)sourceView completion:(void (^)(BOOL))completion {
-    if (indexPath.row >= self.mods.count) {
+- (void)confirmDeleteItemAtIndexPath:(NSIndexPath *)indexPath sourceView:(UIView *)sourceView completion:(void (^)(BOOL))completion {
+    if (indexPath.row >= self.items.count) {
         if (completion) {
             completion(NO);
         }
         return;
     }
 
-    NSDictionary *item = self.mods[indexPath.row];
+    NSDictionary *item = self.items[indexPath.row];
     UIAlertController *confirmAlert = [UIAlertController
         alertControllerWithTitle:localize(@"preference.title.confirm", nil)
-                         message:[NSString stringWithFormat:localize(@"profile.title.confirm.delete_mod", nil), item[@"displayName"]]
+                         message:[NSString stringWithFormat:localize(@"profile.title.confirm.delete_content", nil), item[@"displayName"]]
                   preferredStyle:UIAlertControllerStyleActionSheet];
     if (sourceView == nil) {
         sourceView = self.view;
@@ -228,8 +310,8 @@ static NSString *LauncherModSummary(NSDictionary *profile) {
     UIAlertAction *deleteAction = [UIAlertAction actionWithTitle:localize(@"Delete", nil)
                                                            style:UIAlertActionStyleDestructive
                                                          handler:^(__unused UIAlertAction *action) {
-        NSString *modsDirectory = LauncherProfileResolvedModsDirectory(self.profile);
-        NSString *filePath = [modsDirectory stringByAppendingPathComponent:item[@"fileName"]];
+        NSString *directory = LauncherProfileResolvedSubdirectory(self.profile, LauncherProfileDirectoryNameForManagedContent(self.contentType));
+        NSString *filePath = [directory stringByAppendingPathComponent:item[@"fileName"]];
         NSError *error;
         if (![NSFileManager.defaultManager removeItemAtPath:filePath error:&error]) {
             showDialog(localize(@"Error", nil), error.localizedDescription);
@@ -238,7 +320,7 @@ static NSString *LauncherModSummary(NSDictionary *profile) {
             }
             return;
         }
-        [self reloadMods];
+        [self reloadItems];
         if (completion) {
             completion(YES);
         }
@@ -253,7 +335,7 @@ static NSString *LauncherModSummary(NSDictionary *profile) {
     UIContextualAction *deleteAction = [UIContextualAction contextualActionWithStyle:UIContextualActionStyleDestructive
                                                                                title:localize(@"Delete", nil)
                                                                              handler:^(__unused UIContextualAction *action, UIView *sourceView, void (^completionHandler)(BOOL)) {
-        [self confirmDeleteModAtIndexPath:indexPath sourceView:sourceView completion:completionHandler];
+        [self confirmDeleteItemAtIndexPath:indexPath sourceView:sourceView completion:completionHandler];
     }];
     UISwipeActionsConfiguration *configuration = [UISwipeActionsConfiguration configurationWithActions:@[deleteAction]];
     configuration.performsFirstActionWithFullSwipe = NO;
@@ -287,7 +369,13 @@ static NSString *LauncherModSummary(NSDictionary *profile) {
     __weak LauncherProfileEditorViewController *weakSelf = self;
     self.getPreference = ^id(NSString *section, NSString *key){
         if ([key isEqualToString:@"manageMods"]) {
-            return LauncherModSummary(weakSelf.profile);
+            return LauncherManagedContentSummary(weakSelf.profile, LauncherProfileManagedContentTypeMod);
+        } else if ([key isEqualToString:@"manageResourcePacks"]) {
+            return LauncherManagedContentSummary(weakSelf.profile, LauncherProfileManagedContentTypeResourcePack);
+        } else if ([key isEqualToString:@"manageDataPacks"]) {
+            return LauncherManagedContentSummary(weakSelf.profile, LauncherProfileManagedContentTypeDataPack);
+        } else if ([key isEqualToString:@"manageShaders"]) {
+            return LauncherManagedContentSummary(weakSelf.profile, LauncherProfileManagedContentTypeShader);
         } else if ([key isEqualToString:@"downloadMods"]) {
             return localize(@"profile.detail.download_mods", nil);
         } else if ([key isEqualToString:@"downloadResourcePacks"]) {
@@ -378,6 +466,21 @@ static NSString *LauncherModSummary(NSDictionary *profile) {
             @{@"key": @"manageMods",
               @"icon": @"shippingbox",
               @"title": @"preference.profile.title.manage_mods",
+              @"type": self.typeChildPane
+            },
+            @{@"key": @"manageResourcePacks",
+              @"icon": @"square.stack.3d.down.forward",
+              @"title": @"preference.profile.title.manage_resourcepacks",
+              @"type": self.typeChildPane
+            },
+            @{@"key": @"manageDataPacks",
+              @"icon": @"externaldrive.badge.plus",
+              @"title": @"preference.profile.title.manage_datapacks",
+              @"type": self.typeChildPane
+            },
+            @{@"key": @"manageShaders",
+              @"icon": @"sparkles",
+              @"title": @"preference.profile.title.manage_shaders",
               @"type": self.typeChildPane
             },
             @{@"key": @"downloadMods",
@@ -503,15 +606,34 @@ static NSString *LauncherModSummary(NSDictionary *profile) {
     [self.navigationController pushViewController:vc animated:YES];
 }
 
+- (void)openContentManagerForType:(LauncherProfileManagedContentType)type {
+    LauncherProfileContentManagerViewController *vc = [LauncherProfileContentManagerViewController new];
+    vc.profile = self.profile;
+    vc.contentType = type;
+    [self.navigationController pushViewController:vc animated:YES];
+}
+
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     NSDictionary *item = self.prefContents[indexPath.section][indexPath.row];
     if ([item[@"key"] isEqualToString:@"manageMods"]) {
         [tableView deselectRowAtIndexPath:indexPath animated:NO];
         [self.view endEditing:YES];
-
-        LauncherProfileModsViewController *vc = [LauncherProfileModsViewController new];
-        vc.profile = self.profile;
-        [self.navigationController pushViewController:vc animated:YES];
+        [self openContentManagerForType:LauncherProfileManagedContentTypeMod];
+        return;
+    } else if ([item[@"key"] isEqualToString:@"manageResourcePacks"]) {
+        [tableView deselectRowAtIndexPath:indexPath animated:NO];
+        [self.view endEditing:YES];
+        [self openContentManagerForType:LauncherProfileManagedContentTypeResourcePack];
+        return;
+    } else if ([item[@"key"] isEqualToString:@"manageDataPacks"]) {
+        [tableView deselectRowAtIndexPath:indexPath animated:NO];
+        [self.view endEditing:YES];
+        [self openContentManagerForType:LauncherProfileManagedContentTypeDataPack];
+        return;
+    } else if ([item[@"key"] isEqualToString:@"manageShaders"]) {
+        [tableView deselectRowAtIndexPath:indexPath animated:NO];
+        [self.view endEditing:YES];
+        [self openContentManagerForType:LauncherProfileManagedContentTypeShader];
         return;
     } else if ([item[@"key"] isEqualToString:@"downloadMods"]) {
         [tableView deselectRowAtIndexPath:indexPath animated:NO];

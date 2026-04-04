@@ -282,6 +282,9 @@
 "preference.profile.title.version" = "Version";
 "preference.profile.title.version_type" = "Version type";
 "preference.profile.title.manage_mods" = "Manage mods";
+"preference.profile.title.manage_resourcepacks" = "Manage resource packs";
+"preference.profile.title.manage_datapacks" = "Manage data packs";
+"preference.profile.title.manage_shaders" = "Manage shaders";
 "preference.profile.title.download_mods" = "Download mods";
 "preference.profile.title.download_resourcepacks" = "Download resource packs";
 "preference.profile.title.download_datapacks" = "Download data packs";
@@ -294,9 +297,15 @@
 "profile.section.profiles" = "Profiles in this instance";
 "profile.title.create" = "Create new profile";
 "profile.title.manage_mods" = "Mods";
-"profile.title.confirm.delete_mod" = "%@ will be deleted permanently.";
+"profile.title.manage_resourcepacks" = "Resource packs";
+"profile.title.manage_datapacks" = "Data packs";
+"profile.title.manage_shaders" = "Shaders";
+"profile.title.confirm.delete_content" = "%@ will be deleted permanently.";
 "profile.detail.manage_mods.empty" = "No mods found";
-"profile.detail.manage_mods.summary" = "%lu enabled, %lu disabled";
+"profile.detail.manage_resourcepacks.empty" = "No resource packs found";
+"profile.detail.manage_datapacks.empty" = "No data packs found";
+"profile.detail.manage_shaders.empty" = "No shaders found";
+"profile.detail.manage_content.summary" = "%lu enabled, %lu disabled";
 "profile.detail.download_mods" = "Install into mods/";
 "profile.detail.download_resourcepacks" = "Install into resourcepacks/";
 "profile.detail.download_datapacks" = "Install into datapacks/";
