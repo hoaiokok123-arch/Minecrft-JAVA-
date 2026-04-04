@@ -114,7 +114,18 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
     packet.y = htonl(yValue.i);
 
     size_t packetLength = type == 2 ? 8 : 16;
-    sendto(_socketFd, &packet, packetLength, 0, (struct sockaddr *)&_targetAddress, sizeof(_targetAddress));
+    int maxRetries = type == 2 ? 3 : 2;
+    for (int retry = 0; retry < maxRetries; retry++) {
+        ssize_t sent = sendto(_socketFd, &packet, packetLength, 0, (struct sockaddr *)&_targetAddress, sizeof(_targetAddress));
+        if (sent == (ssize_t)packetLength) {
+            return;
+        }
+        if (sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+            usleep(500);
+            continue;
+        }
+        break;
+    }
 }
 
 - (void)sendClearPointers {
@@ -123,7 +134,17 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
     }
 
     int32_t clearType = htonl(3);
-    sendto(_socketFd, &clearType, sizeof(clearType), 0, (struct sockaddr *)&_targetAddress, sizeof(_targetAddress));
+    for (int retry = 0; retry < 4; retry++) {
+        ssize_t sent = sendto(_socketFd, &clearType, sizeof(clearType), 0, (struct sockaddr *)&_targetAddress, sizeof(_targetAddress));
+        if (sent == sizeof(clearType)) {
+            return;
+        }
+        if (sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+            usleep(500);
+            continue;
+        }
+        break;
+    }
 }
 
 @end
@@ -215,6 +236,9 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
     for (UITouch *touch in touches) {
         NSString *touchKey = [NSString stringWithFormat:@"%p", touch];
         [touchControllerFingerIds removeObjectForKey:touchKey];
+    }
+    if (touchControllerFingerIds.count == 0) {
+        [self touchControllerClearRemotePointers];
     }
 }
 
