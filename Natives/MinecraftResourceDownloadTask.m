@@ -282,6 +282,40 @@
     [task resume];
 }
 
+- (void)downloadProjectFileFromDetail:(NSDictionary *)modDetail atIndex:(NSUInteger)selectedVersion toPath:(NSString *)destinationPath {
+    [self prepareForDownload];
+
+    NSString *url = modDetail[@"versionUrls"][selectedVersion];
+    id shaValue = modDetail[@"versionHashes"][selectedVersion];
+    NSString *sha = [shaValue isKindOfClass:NSString.class] ? shaValue : nil;
+    NSUInteger size = [modDetail[@"versionSizes"][selectedVersion] unsignedLongLongValue];
+    NSString *fileName = nil;
+    if (selectedVersion < [modDetail[@"versionFileNames"] count]) {
+        fileName = modDetail[@"versionFileNames"][selectedVersion];
+    }
+    if (fileName.length == 0) {
+        fileName = [NSURL URLWithString:url].lastPathComponent;
+    }
+    if (url.length == 0 || fileName.length == 0 || destinationPath.length == 0) {
+        [self finishDownloadWithErrorString:@"Unable to determine download destination for this file."];
+        return;
+    }
+
+    NSString *filePath = [destinationPath stringByAppendingPathComponent:fileName];
+    if ([self checkSHA:sha forFile:filePath altName:fileName]) {
+        self.progress.totalUnitCount = 1;
+        self.progress.completedUnitCount = 1;
+        self.textProgress.totalUnitCount = 1;
+        self.textProgress.completedUnitCount = 1;
+        return;
+    } else if (![self checkAccessWithDialog:YES]) {
+        return;
+    }
+
+    NSURLSessionDownloadTask *task = [self createDownloadTask:url size:size sha:sha altName:fileName toPath:filePath];
+    [task resume];
+}
+
 #pragma mark - Utilities
 
 - (void)prepareForDownload {
@@ -303,7 +337,9 @@
     [self.progress cancel];
     [self.manager invalidateSessionCancelingTasks:YES resetSession:YES];
     showDialog(localize(@"Error", nil), error);
-    self.handleError();
+    if (self.handleError) {
+        self.handleError();
+    }
 }
 
 - (void)finishDownloadWithError:(NSError *)error file:(NSString *)file {

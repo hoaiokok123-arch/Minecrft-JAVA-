@@ -282,6 +282,10 @@
 "preference.profile.title.version" = "Version";
 "preference.profile.title.version_type" = "Version type";
 "preference.profile.title.manage_mods" = "Manage mods";
+"preference.profile.title.download_mods" = "Download mods";
+"preference.profile.title.download_resourcepacks" = "Download resource packs";
+"preference.profile.title.download_datapacks" = "Download data packs";
+"preference.profile.title.download_shaders" = "Download shaders";
 "preference.profile.title.default_touch_control" = "Touch controls";
 "preference.profile.title.default_gamepad_control" = "Gamepad controls";
 
@@ -293,9 +297,25 @@
 "profile.title.confirm.delete_mod" = "%@ will be deleted permanently.";
 "profile.detail.manage_mods.empty" = "No mods found";
 "profile.detail.manage_mods.summary" = "%lu enabled, %lu disabled";
+"profile.detail.download_mods" = "Install into mods/";
+"profile.detail.download_resourcepacks" = "Install into resourcepacks/";
+"profile.detail.download_datapacks" = "Install into datapacks/";
+"profile.detail.download_shaders" = "Install into shaderpacks/";
 "profile.title.separate_preference" = "Isolate settings";
 "profile.detail.separate_preference" = "Enable this option to isolate any changes made in settings. Doing a Reset will restore to global settings instead of default settings.";
 "profile.title.install_fabric_quilt" = "Install Fabric/Quilt";
+
+"installer.title.modpack" = "Install modpack";
+"installer.title.mod" = "Download mods";
+"installer.title.resourcepack" = "Download resource packs";
+"installer.title.datapack" = "Download data packs";
+"installer.title.shader" = "Download shaders";
+"installer.search.modpack" = "Search Modrinth modpacks";
+"installer.search.mod" = "Search Modrinth mods";
+"installer.search.resourcepack" = "Search Modrinth resource packs";
+"installer.search.datapack" = "Search Modrinth data packs";
+"installer.search.shader" = "Search Modrinth shaders";
+"installer.error.destination_missing" = "This installer has no destination folder configured.";
 
 "mods.empty" = "No mods found in this profile.";
 "mods.status.enabled" = "Enabled";

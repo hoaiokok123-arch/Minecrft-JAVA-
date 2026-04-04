@@ -5,6 +5,7 @@
 #import "PickTextField.h"
 #import "PLProfiles.h"
 #import "UIKit+hook.h"
+#import "installer/ModpackInstallViewController.h"
 #import "ios_uikit_bridge.h"
 #import "utils.h"
 
@@ -27,6 +28,10 @@ static NSString *LauncherProfileResolvedGameDirectory(NSDictionary *profile) {
 
 static NSString *LauncherProfileResolvedModsDirectory(NSDictionary *profile) {
     return [LauncherProfileResolvedGameDirectory(profile) stringByAppendingPathComponent:@"mods"];
+}
+
+static NSString *LauncherProfileResolvedSubdirectory(NSDictionary *profile, NSString *directoryName) {
+    return [LauncherProfileResolvedGameDirectory(profile) stringByAppendingPathComponent:directoryName];
 }
 
 static NSString *LauncherModNormalizedFileName(NSString *fileName) {
@@ -283,6 +288,14 @@ static NSString *LauncherModSummary(NSDictionary *profile) {
     self.getPreference = ^id(NSString *section, NSString *key){
         if ([key isEqualToString:@"manageMods"]) {
             return LauncherModSummary(weakSelf.profile);
+        } else if ([key isEqualToString:@"downloadMods"]) {
+            return localize(@"profile.detail.download_mods", nil);
+        } else if ([key isEqualToString:@"downloadResourcePacks"]) {
+            return localize(@"profile.detail.download_resourcepacks", nil);
+        } else if ([key isEqualToString:@"downloadDataPacks"]) {
+            return localize(@"profile.detail.download_datapacks", nil);
+        } else if ([key isEqualToString:@"downloadShaders"]) {
+            return localize(@"profile.detail.download_shaders", nil);
         }
 
         NSString *value = weakSelf.profile[key];
@@ -365,6 +378,26 @@ static NSString *LauncherModSummary(NSDictionary *profile) {
             @{@"key": @"manageMods",
               @"icon": @"shippingbox",
               @"title": @"preference.profile.title.manage_mods",
+              @"type": self.typeChildPane
+            },
+            @{@"key": @"downloadMods",
+              @"icon": @"arrow.down.circle",
+              @"title": @"preference.profile.title.download_mods",
+              @"type": self.typeChildPane
+            },
+            @{@"key": @"downloadResourcePacks",
+              @"icon": @"square.stack.3d.down.forward",
+              @"title": @"preference.profile.title.download_resourcepacks",
+              @"type": self.typeChildPane
+            },
+            @{@"key": @"downloadDataPacks",
+              @"icon": @"externaldrive.badge.plus",
+              @"title": @"preference.profile.title.download_datapacks",
+              @"type": self.typeChildPane
+            },
+            @{@"key": @"downloadShaders",
+              @"icon": @"sparkles",
+              @"title": @"preference.profile.title.download_shaders",
               @"type": self.typeChildPane
             },
             // Video and renderer settings
@@ -463,6 +496,13 @@ static NSString *LauncherModSummary(NSDictionary *profile) {
     return pref[@"type"] == self.typePickField;
 }
 
+- (void)openInstallerForMode:(ModrinthInstallMode)mode directoryName:(NSString *)directoryName {
+    ModpackInstallViewController *vc = [ModpackInstallViewController new];
+    vc.installMode = mode;
+    vc.installDestinationPath = LauncherProfileResolvedSubdirectory(self.profile, directoryName);
+    [self.navigationController pushViewController:vc animated:YES];
+}
+
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     NSDictionary *item = self.prefContents[indexPath.section][indexPath.row];
     if ([item[@"key"] isEqualToString:@"manageMods"]) {
@@ -472,6 +512,26 @@ static NSString *LauncherModSummary(NSDictionary *profile) {
         LauncherProfileModsViewController *vc = [LauncherProfileModsViewController new];
         vc.profile = self.profile;
         [self.navigationController pushViewController:vc animated:YES];
+        return;
+    } else if ([item[@"key"] isEqualToString:@"downloadMods"]) {
+        [tableView deselectRowAtIndexPath:indexPath animated:NO];
+        [self.view endEditing:YES];
+        [self openInstallerForMode:ModrinthInstallModeMod directoryName:@"mods"];
+        return;
+    } else if ([item[@"key"] isEqualToString:@"downloadResourcePacks"]) {
+        [tableView deselectRowAtIndexPath:indexPath animated:NO];
+        [self.view endEditing:YES];
+        [self openInstallerForMode:ModrinthInstallModeResourcePack directoryName:@"resourcepacks"];
+        return;
+    } else if ([item[@"key"] isEqualToString:@"downloadDataPacks"]) {
+        [tableView deselectRowAtIndexPath:indexPath animated:NO];
+        [self.view endEditing:YES];
+        [self openInstallerForMode:ModrinthInstallModeDataPack directoryName:@"datapacks"];
+        return;
+    } else if ([item[@"key"] isEqualToString:@"downloadShaders"]) {
+        [tableView deselectRowAtIndexPath:indexPath animated:NO];
+        [self.view endEditing:YES];
+        [self openInstallerForMode:ModrinthInstallModeShader directoryName:@"shaderpacks"];
         return;
     }
 

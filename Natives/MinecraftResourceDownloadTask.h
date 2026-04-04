@@ -13,5 +13,6 @@
 
 - (void)downloadVersion:(NSDictionary *)version;
 - (void)downloadModpackFromAPI:(ModpackAPI *)api detail:(NSDictionary *)modDetail atIndex:(NSUInteger)selectedVersion;
+- (void)downloadProjectFileFromDetail:(NSDictionary *)modDetail atIndex:(NSUInteger)selectedVersion toPath:(NSString *)destinationPath;
 
 @end

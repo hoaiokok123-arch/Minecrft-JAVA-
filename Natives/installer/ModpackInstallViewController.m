@@ -1,4 +1,5 @@
 #import "AFNetworking.h"
+#import "DownloadProgressViewController.h"
 #import "LauncherNavigationController.h"
 #import "ModpackInstallViewController.h"
 #import "UIKit+AFNetworking.h"
@@ -14,15 +15,80 @@
 #define kCurseForgeClassIDModpack 4471
 #define kCurseForgeClassIDMod 6
 
+static NSString *InstallerProjectTypeForMode(ModrinthInstallMode mode) {
+    switch (mode) {
+        case ModrinthInstallModeMod:
+            return @"mod";
+        case ModrinthInstallModeResourcePack:
+            return @"resourcepack";
+        case ModrinthInstallModeDataPack:
+            return @"datapack";
+        case ModrinthInstallModeShader:
+            return @"shader";
+        case ModrinthInstallModeModpack:
+        default:
+            return @"modpack";
+    }
+}
+
+static NSString *InstallerTitleKeyForMode(ModrinthInstallMode mode) {
+    switch (mode) {
+        case ModrinthInstallModeMod:
+            return @"installer.title.mod";
+        case ModrinthInstallModeResourcePack:
+            return @"installer.title.resourcepack";
+        case ModrinthInstallModeDataPack:
+            return @"installer.title.datapack";
+        case ModrinthInstallModeShader:
+            return @"installer.title.shader";
+        case ModrinthInstallModeModpack:
+        default:
+            return @"installer.title.modpack";
+    }
+}
+
+static NSString *InstallerSearchPlaceholderKeyForMode(ModrinthInstallMode mode) {
+    switch (mode) {
+        case ModrinthInstallModeMod:
+            return @"installer.search.mod";
+        case ModrinthInstallModeResourcePack:
+            return @"installer.search.resourcepack";
+        case ModrinthInstallModeDataPack:
+            return @"installer.search.datapack";
+        case ModrinthInstallModeShader:
+            return @"installer.search.shader";
+        case ModrinthInstallModeModpack:
+        default:
+            return @"installer.search.modpack";
+    }
+}
+
 @interface ModpackInstallViewController()<UIContextMenuInteractionDelegate>
 @property(nonatomic) UISearchController *searchController;
 @property(nonatomic) UIMenu *currentMenu;
 @property(nonatomic) NSMutableArray *list;
 @property(nonatomic) NSMutableDictionary *filters;
+@property(nonatomic) NSMutableArray<MinecraftResourceDownloadTask *> *activeTasks;
 @property ModrinthAPI *modrinth;
 @end
 
 @implementation ModpackInstallViewController
+
+- (BOOL)isInstallingModpack {
+    return self.installMode == ModrinthInstallModeModpack;
+}
+
+- (void)startStandaloneProjectDownload:(NSDictionary *)item atIndex:(NSUInteger)index {
+    MinecraftResourceDownloadTask *task = [MinecraftResourceDownloadTask new];
+    [self.activeTasks addObject:task];
+    [task downloadProjectFileFromDetail:item atIndex:index toPath:self.installDestinationPath];
+    if (task.progress.cancelled) {
+        [self.activeTasks removeObject:task];
+        return;
+    }
+    DownloadProgressViewController *vc = [[DownloadProgressViewController alloc] initWithTask:task];
+    [self.navigationController pushViewController:vc animated:YES];
+}
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -31,10 +97,13 @@
     self.searchController = [[UISearchController alloc] initWithSearchResultsController:nil];
     self.searchController.searchResultsUpdater = self;
     self.searchController.obscuresBackgroundDuringPresentation = NO;
+    self.searchController.searchBar.placeholder = localize(InstallerSearchPlaceholderKeyForMode(self.installMode), nil);
     self.navigationItem.searchController = self.searchController;
+    self.title = localize(InstallerTitleKeyForMode(self.installMode), nil);
+    self.activeTasks = [NSMutableArray array];
     self.modrinth = [ModrinthAPI new];
     self.filters = @{
-        @"isModpack": @(YES),
+        @"projectType": InstallerProjectTypeForMode(self.installMode),
         @"name": @" "
         // mcVersion
     }.mutableCopy;
@@ -73,7 +142,11 @@
 }
 
 - (void)actionClose {
-    [self.navigationController dismissViewControllerAnimated:YES completion:nil];
+    if (self.navigationController.viewControllers.firstObject == self) {
+        [self.navigationController dismissViewControllerAnimated:YES completion:nil];
+    } else {
+        [self.navigationController popViewControllerAnimated:YES];
+    }
 }
 
 - (void)switchToLoadingState {
@@ -154,10 +227,18 @@
             actionWithTitle:nameWithVersion
             image:nil identifier:nil
             handler:^(UIAction *action) {
-            [self actionClose];
-            NSString *tmpIconPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"icon.png"];
+            if (![self isInstallingModpack] && self.installDestinationPath.length == 0) {
+                showDialog(localize(@"Error", nil), localize(@"installer.error.destination_missing", nil));
+                return;
+            }
+            if ([self isInstallingModpack]) {
+                [self actionClose];
+                NSString *tmpIconPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"icon.png"];
                 [UIImagePNGRepresentation([cell.imageView.image _imageWithSize:CGSizeMake(40, 40)]) writeToFile:tmpIconPath atomically:YES];
-            [self.modrinth installModpackFromDetail:self.list[indexPath.row] atIndex:i];
+                [self.modrinth installModpackFromDetail:self.list[indexPath.row] atIndex:i];
+            } else {
+                [self startStandaloneProjectDownload:self.list[indexPath.row] atIndex:i];
+            }
         }]];
     }];
 

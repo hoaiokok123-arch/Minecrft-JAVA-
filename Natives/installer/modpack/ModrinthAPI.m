@@ -10,10 +10,14 @@
 
 - (NSMutableArray *)searchModWithFilters:(NSDictionary<NSString *, NSString *> *)searchFilters previousPageResult:(NSMutableArray *)modrinthSearchResult {
     int limit = 50;
+    NSString *projectType = searchFilters[@"projectType"];
+    if (projectType.length == 0) {
+        projectType = searchFilters[@"isModpack"].boolValue ? @"modpack" : @"mod";
+    }
 
     NSMutableString *facetString = [NSMutableString new];
     [facetString appendString:@"["];
-    [facetString appendFormat:@"[\"project_type:%@\"]", searchFilters[@"isModpack"].boolValue ? @"modpack" : @"mod"];
+    [facetString appendFormat:@"[\"project_type:%@\"]", projectType];
     if (searchFilters[@"mcVersion"].length > 0) {
         [facetString appendFormat:@",[\"versions:%@\"]", searchFilters[@"mcVersion"]];
     }
@@ -52,25 +56,37 @@
     if (!response) {
         return;
     }
-    NSArray<NSString *> *names = [response valueForKey:@"name"];
+    NSMutableArray<NSString *> *names = [NSMutableArray new];
     NSMutableArray<NSString *> *mcNames = [NSMutableArray new];
     NSMutableArray<NSString *> *urls = [NSMutableArray new];
     NSMutableArray<NSString *> *hashes = [NSMutableArray new];
     NSMutableArray<NSString *> *sizes = [NSMutableArray new];
+    NSMutableArray<NSString *> *fileNames = [NSMutableArray new];
     [response enumerateObjectsUsingBlock:
   ^(NSDictionary *version, NSUInteger i, BOOL *stop) {
-        NSDictionary *file = [version[@"files"] firstObject];
-        mcNames[i] = [version[@"game_versions"] firstObject];
-        sizes[i] = file[@"size"];
-        urls[i] = file[@"url"];
+        NSArray *files = version[@"files"];
+        NSDictionary *file = [[files filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"(primary == YES)"]] firstObject];
+        if (!file) {
+            file = files.firstObject;
+        }
+        if (!file) {
+            return;
+        }
+
+        [names addObject:version[@"name"] ?: version[@"version_number"] ?: version[@"id"] ?: @"Unknown version"];
+        [mcNames addObject:[version[@"game_versions"] firstObject] ?: @""];
+        [sizes addObject:file[@"size"] ?: @0];
+        [urls addObject:file[@"url"] ?: @""];
+        [fileNames addObject:file[@"filename"] ?: [NSURL URLWithString:file[@"url"]].lastPathComponent ?: @"download.bin"];
         NSDictionary *hashesMap = file[@"hashes"];
-        hashes[i] = hashesMap[@"sha1"] ?: [NSNull null];
+        [hashes addObject:hashesMap[@"sha1"] ?: [NSNull null]];
     }];
     item[@"versionNames"] = names;
     item[@"mcVersionNames"] = mcNames;
     item[@"versionSizes"] = sizes;
     item[@"versionUrls"] = urls;
     item[@"versionHashes"] = hashes;
+    item[@"versionFileNames"] = fileNames;
     item[@"versionDetailsLoaded"] = @(YES);
 }
 
