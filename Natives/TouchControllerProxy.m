@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#import "LauncherPreferences.h"
 #import "PLProfiles.h"
 #import "utils.h"
 
@@ -153,7 +154,7 @@ typedef struct {
             int32_t rawKind = 0;
             [message getBytes:&rawKind range:NSMakeRange(sizeof(uint32_t), sizeof(rawKind))];
             NSInteger kind = (NSInteger)(int32_t)ntohl((uint32_t)rawKind);
-            TouchControllerVibrationHandler handler = nil;
+            __block TouchControllerVibrationHandler handler = nil;
             dispatch_sync(_queue, ^{
                 handler = [self.vibrationHandler copy];
             });
