@@ -50,6 +50,7 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
 }
 
 - (void)sendMessageType:(int32_t)type fingerId:(int32_t)fingerId x:(float)x y:(float)y;
+- (void)sendClearPointers;
 
 @end
 
@@ -116,6 +117,15 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
     sendto(_socketFd, &packet, packetLength, 0, (struct sockaddr *)&_targetAddress, sizeof(_targetAddress));
 }
 
+- (void)sendClearPointers {
+    if (_socketFd < 0) {
+        return;
+    }
+
+    int32_t clearType = htonl(3);
+    sendto(_socketFd, &clearType, sizeof(clearType), 0, (struct sockaddr *)&_targetAddress, sizeof(_targetAddress));
+}
+
 @end
 
 @interface SurfaceViewController ()<UITextFieldDelegate, UIGestureRecognizerDelegate> {
@@ -146,6 +156,8 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
 @property(nonatomic) UIImpactFeedbackGenerator *mediumHaptic;
 @property(nonatomic) BOOL touchControllerInstalled;
 @property(nonatomic) TouchControllerUDPSender *touchControllerSender;
+@property(nonatomic) id appWillResignActiveObserver;
+@property(nonatomic) id appWillTerminateObserver;
 
 @end
 
@@ -158,6 +170,13 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
 }
 
 - (void)dealloc {
+    if (self.appWillResignActiveObserver != nil) {
+        [[NSNotificationCenter defaultCenter] removeObserver:self.appWillResignActiveObserver];
+    }
+    if (self.appWillTerminateObserver != nil) {
+        [[NSNotificationCenter defaultCenter] removeObserver:self.appWillTerminateObserver];
+    }
+    [self touchControllerClearRemotePointers];
     [self touchControllerClearAllFingerIds];
 }
 
@@ -203,6 +222,17 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
     [touchControllerFingerIds removeAllObjects];
 }
 
+- (void)touchControllerClearRemotePointers {
+    if (!self.touchControllerInstalled || self.touchControllerSender == nil) {
+        return;
+    }
+    [self.touchControllerSender sendClearPointers];
+}
+
+- (BOOL)touchControllerShouldConsumeSurfaceTouch:(UITouch *)touch {
+    return self.touchControllerInstalled && touch.type != UITouchTypeIndirectPointer && touch.view == self.surfaceView;
+}
+
 - (void)touchControllerSendLegacyPointerForTouch:(UITouch *)touch remove:(BOOL)remove {
     if (!self.touchControllerInstalled || self.touchControllerSender == nil) {
         return;
@@ -237,6 +267,25 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
     self.mediumHaptic = [[UIImpactFeedbackGenerator alloc] initWithStyle:(UIImpactFeedbackStyleMedium)];
     self.touchControllerInstalled = TouchControllerShouldEnableForCurrentProfile();
     self.touchControllerSender = self.touchControllerInstalled ? [TouchControllerUDPSender new] : nil;
+    __weak typeof(self) weakSelf = self;
+    self.appWillResignActiveObserver = [[NSNotificationCenter defaultCenter]
+        addObserverForName:UIApplicationWillResignActiveNotification
+                    object:nil
+                     queue:[NSOperationQueue mainQueue]
+                usingBlock:^(NSNotification * _Nonnull note) {
+                    __strong typeof(weakSelf) strongSelf = weakSelf;
+                    [strongSelf touchControllerClearRemotePointers];
+                    [strongSelf touchControllerClearAllFingerIds];
+                }];
+    self.appWillTerminateObserver = [[NSNotificationCenter defaultCenter]
+        addObserverForName:UIApplicationWillTerminateNotification
+                    object:nil
+                     queue:[NSOperationQueue mainQueue]
+                usingBlock:^(NSNotification * _Nonnull note) {
+                    __strong typeof(weakSelf) strongSelf = weakSelf;
+                    [strongSelf touchControllerClearRemotePointers];
+                    [strongSelf touchControllerClearAllFingerIds];
+                }];
 
     //setPrefBool(@"internal.internal_launch_on_boot", NO);
 
@@ -428,6 +477,14 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
     [self setNeedsUpdateOfPrefersPointerLocked];
 }
 
+- (void)viewDidDisappear:(BOOL)animated {
+    [super viewDidDisappear:animated];
+    if (self.isBeingDismissed || self.view.window == nil) {
+        [self touchControllerClearRemotePointers];
+        [self touchControllerClearAllFingerIds];
+    }
+}
+
 - (void)updateAudioSettings {
     NSError *sessionError = nil;
     AVAudioSessionCategory category;
@@ -494,11 +551,11 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
     self.enableHotbarGestures = getPrefBool(@"control.gesture_hotbar");
     self.shouldTriggerHaptic = !getPrefBool(@"control.disable_haptics");
     self.longPressGesture.minimumPressDuration = getPrefFloat(@"control.press_duration") / 1000.0;
-    self.tapGesture.enabled = YES;
-    self.longPressGesture.enabled = YES;
-    self.longPressTwoGesture.enabled = YES;
-    self.doubleTapGesture.enabled = self.enableHotbarGestures;
-    self.scrollPanGesture.enabled = self.enableMouseGestures;
+    self.tapGesture.enabled = !self.touchControllerInstalled;
+    self.longPressGesture.enabled = !self.touchControllerInstalled;
+    self.longPressTwoGesture.enabled = !self.touchControllerInstalled;
+    self.doubleTapGesture.enabled = !self.touchControllerInstalled && self.enableHotbarGestures;
+    self.scrollPanGesture.enabled = !self.touchControllerInstalled && self.enableMouseGestures;
 
     // Update audio settings
     [self updateAudioSettings];
@@ -572,7 +629,7 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
         virtualMouseFrame.origin.y = self.view.frame.size.height / 2;
         self.mousePointerView.frame = virtualMouseFrame;
     }
-    self.scrollPanGesture.enabled = !isGrabbing && self.enableMouseGestures;
+    self.scrollPanGesture.enabled = !self.touchControllerInstalled && !isGrabbing && self.enableMouseGestures;
     self.mousePointerView.hidden = isGrabbing || !virtualMouseEnabled;
     [self setNeedsUpdateOfPrefersPointerLocked];
     self.ctrlView.hidden = [self shouldHideControlsForExternalInput];
@@ -1142,6 +1199,9 @@ int touchesMovedCount;
     }
 
     for (UITouch *touch in touches) {
+        if ([self touchControllerShouldConsumeSurfaceTouch:touch]) {
+            continue;
+        }
         if (touch.type == UITouchTypeIndirectPointer) {
             continue; // handle this in a different place
         }
@@ -1178,6 +1238,9 @@ int touchesMovedCount;
     }
 
     for (UITouch *touch in touches) {
+        if ([self touchControllerShouldConsumeSurfaceTouch:touch]) {
+            continue;
+        }
         if (touch.type == UITouchTypeIndirectPointer) {
             if (!isGrabbing && !virtualMouseEnabled) {
                 CGPoint point = [touch locationInView:self.rootView];
@@ -1204,6 +1267,9 @@ int touchesMovedCount;
         [self touchControllerClearFingerIdsForTouches:touches];
     }
     for (UITouch *touch in touches) {
+        if ([self touchControllerShouldConsumeSurfaceTouch:touch]) {
+            continue;
+        }
         if (touch.type == UITouchTypeIndirectPointer) {
             continue; // handle this in a different place
         }
