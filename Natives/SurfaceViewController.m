@@ -17,6 +17,7 @@
 #import "MinecraftResourceUtils.h"
 #import "PLProfiles.h"
 #import "SurfaceViewController.h"
+#import "TouchControllerProxy.h"
 #import "TrackedTextField.h"
 #import "UIKit+hook.h"
 #import "ios_uikit_bridge.h"
@@ -39,6 +40,7 @@ static GameSurfaceView* pojavWindow;
 
 @property(nonatomic) TrackedTextField *inputTextField;
 @property(nonatomic) NSMutableArray* swipeableButtons;
+@property(nonatomic) NSMutableDictionary<NSValue *, NSNumber *> *touchControllerPointerMap;
 @property(nonatomic) ControlButton* swipingButton;
 @property(nonatomic) UITouch *primaryTouch, *hotbarTouch;
 
@@ -58,6 +60,8 @@ static GameSurfaceView* pojavWindow;
 
 @property(nonatomic) UIImpactFeedbackGenerator *lightHaptic;
 @property(nonatomic) UIImpactFeedbackGenerator *mediumHaptic;
+@property(nonatomic) NSUInteger touchControllerPointerCounter;
+@property(nonatomic) BOOL touchControllerInstalled;
 
 @end
 
@@ -67,6 +71,84 @@ static GameSurfaceView* pojavWindow;
     self = [super init];
     self.metadata = metadata;
     return self;
+}
+
+- (void)dealloc {
+    TouchControllerSetVibrationHandler(nil);
+    TouchControllerSendClearPointer();
+}
+
+- (BOOL)usesTouchControllerInput {
+    return self.touchControllerInstalled;
+}
+
+- (void)updateTouchControllerUIState {
+    if (![self usesTouchControllerInput]) {
+        return;
+    }
+
+    self.tapGesture.enabled = NO;
+    self.doubleTapGesture.enabled = NO;
+    self.longPressGesture.enabled = NO;
+    self.longPressTwoGesture.enabled = NO;
+    self.scrollPanGesture.enabled = NO;
+    self.ctrlView.hidden = YES;
+    self.edgeGesture.enabled = YES;
+}
+
+- (NSValue *)touchControllerKeyForTouch:(UITouch *)touch {
+    return [NSValue valueWithNonretainedObject:touch];
+}
+
+- (NSNumber *)touchControllerPointerNumberForTouch:(UITouch *)touch createIfNeeded:(BOOL)createIfNeeded {
+    if (touch == nil) {
+        return nil;
+    }
+
+    NSValue *key = [self touchControllerKeyForTouch:touch];
+    NSNumber *pointerNumber = self.touchControllerPointerMap[key];
+    if (pointerNumber == nil && createIfNeeded) {
+        pointerNumber = @(self.touchControllerPointerCounter++);
+        self.touchControllerPointerMap[key] = pointerNumber;
+    }
+    return pointerNumber;
+}
+
+- (CGPoint)touchControllerNormalizedLocationForTouch:(UITouch *)touch {
+    CGRect bounds = self.touchView.bounds;
+    if (CGRectIsEmpty(bounds)) {
+        bounds = self.view.bounds;
+    }
+
+    CGPoint location = [touch locationInView:self.touchView];
+    CGFloat width = MAX(bounds.size.width, 1.0);
+    CGFloat height = MAX(bounds.size.height, 1.0);
+    CGFloat normalizedX = clamp(location.x / width, 0.0, 1.0);
+    CGFloat normalizedY = clamp(location.y / height, 0.0, 1.0);
+    return CGPointMake(normalizedX, normalizedY);
+}
+
+- (void)touchControllerHandleTouch:(UITouch *)touch ended:(BOOL)ended {
+    if (touch.type == UITouchTypeIndirectPointer) {
+        return;
+    }
+
+    NSNumber *pointerNumber = [self touchControllerPointerNumberForTouch:touch createIfNeeded:!ended];
+    if (pointerNumber == nil) {
+        return;
+    }
+
+    if (ended) {
+        [self.touchControllerPointerMap removeObjectForKey:[self touchControllerKeyForTouch:touch]];
+        TouchControllerSendRemovePointer(pointerNumber.unsignedIntValue);
+        if (self.touchControllerPointerMap.count == 0) {
+            TouchControllerSendClearPointer();
+        }
+        return;
+    }
+
+    CGPoint normalizedLocation = [self touchControllerNormalizedLocationForTouch:touch];
+    TouchControllerSendAddPointer(pointerNumber.unsignedIntValue, normalizedLocation.x, normalizedLocation.y);
 }
 
 - (void)viewDidLoad
@@ -79,6 +161,22 @@ static GameSurfaceView* pojavWindow;
 
     self.lightHaptic = [[UIImpactFeedbackGenerator alloc] initWithStyle:(UIImpactFeedbackStyleLight)];
     self.mediumHaptic = [[UIImpactFeedbackGenerator alloc] initWithStyle:(UIImpactFeedbackStyleMedium)];
+    self.touchControllerInstalled = TouchControllerShouldEnableForCurrentProfile();
+    self.touchControllerPointerMap = [NSMutableDictionary dictionary];
+    self.touchControllerPointerCounter = 1;
+
+    __weak typeof(self) weakSelf = self;
+    TouchControllerSetVibrationHandler(^(NSInteger kind) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (strongSelf == nil || !strongSelf.shouldTriggerHaptic || !strongSelf.touchControllerInstalled) {
+            return;
+        }
+        if (kind == 0) {
+            [strongSelf.lightHaptic impactOccurred];
+        } else {
+            [strongSelf.mediumHaptic impactOccurred];
+        }
+    });
 
     //setPrefBool(@"internal.internal_launch_on_boot", NO);
 
@@ -220,7 +318,7 @@ static GameSurfaceView* pojavWindow;
         mouse.mouseInput.rightButton.pressedChangedHandler = nil;
         [mouse.mouseInput.auxiliaryButtons makeObjectsPerformSelector:@selector(setPressedChangedHandler:) withObject:nil];
         [self setNeedsUpdateOfPrefersPointerLocked];
-        if (getPrefBool(@"controll.hardware_hide")) {
+        if (!self.touchControllerInstalled && getPrefBool(@"controll.hardware_hide")) {
             self.ctrlView.hidden = NO;
         }
     }];
@@ -237,7 +335,7 @@ static GameSurfaceView* pojavWindow;
         [ControllerInput registerControllerCallbacks:controller];
         self.mousePointerView.hidden = isGrabbing;
         virtualMouseEnabled = YES;
-        if (getPrefBool(@"control.hardware_hide")) {
+        if (self.touchControllerInstalled || getPrefBool(@"control.hardware_hide")) {
             self.ctrlView.hidden = YES;
         }
     }];
@@ -245,7 +343,7 @@ static GameSurfaceView* pojavWindow;
         NSLog(@"Input: Controller disconnected!");
         GCController* controller = note.object;
         [ControllerInput unregisterControllerCallbacks:controller];
-        if (getPrefBool(@"control.hardware_hide")) {
+        if (!self.touchControllerInstalled && getPrefBool(@"control.hardware_hide")) {
             self.ctrlView.hidden = NO;
         }
     }];
@@ -341,10 +439,12 @@ static GameSurfaceView* pojavWindow;
     self.enableMouseGestures = getPrefBool(@"control.gesture_mouse");
     self.enableHotbarGestures = getPrefBool(@"control.gesture_hotbar");
     self.shouldTriggerHaptic = !getPrefBool(@"control.disable_haptics");
-
-    self.scrollPanGesture.enabled = self.enableMouseGestures;
-    self.doubleTapGesture.enabled = self.enableHotbarGestures;
     self.longPressGesture.minimumPressDuration = getPrefFloat(@"control.press_duration") / 1000.0;
+    self.tapGesture.enabled = !self.touchControllerInstalled;
+    self.longPressGesture.enabled = !self.touchControllerInstalled;
+    self.longPressTwoGesture.enabled = !self.touchControllerInstalled;
+    self.doubleTapGesture.enabled = !self.touchControllerInstalled && self.enableHotbarGestures;
+    self.scrollPanGesture.enabled = !self.touchControllerInstalled && self.enableMouseGestures;
 
     // Update audio settings
     [self updateAudioSettings];
@@ -359,6 +459,7 @@ static GameSurfaceView* pojavWindow;
     }
     // Update pointer lock state
     [self setNeedsUpdateOfPrefersPointerLocked];
+    [self updateTouchControllerUIState];
 }
 
 - (void)updateSavedResolution {
@@ -417,9 +518,12 @@ static GameSurfaceView* pojavWindow;
         virtualMouseFrame.origin.y = self.view.frame.size.height / 2;
         self.mousePointerView.frame = virtualMouseFrame;
     }
-    self.scrollPanGesture.enabled = !isGrabbing;
+    self.scrollPanGesture.enabled = !self.touchControllerInstalled && !isGrabbing;
     self.mousePointerView.hidden = isGrabbing || !virtualMouseEnabled;
     [self setNeedsUpdateOfPrefersPointerLocked];
+    if (self.touchControllerInstalled) {
+        self.ctrlView.hidden = YES;
+    }
 
     // Update buttons visibility
     [self updateControlHiddenState:NO];
@@ -443,6 +547,11 @@ static GameSurfaceView* pojavWindow;
 - (void)loadCustomControls {
     self.edgeGesture.enabled = YES;
     [self.swipeableButtons removeAllObjects];
+    if (self.touchControllerInstalled) {
+        [self.ctrlView.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
+        self.ctrlView.hidden = YES;
+        return;
+    }
     NSString *controlFile = [PLProfiles resolveKeyForCurrentProfile:@"defaultTouchCtrl"];
     [self.ctrlView loadControlFile:controlFile];
 
@@ -551,6 +660,9 @@ static GameSurfaceView* pojavWindow;
 }
 
 - (void)keyboardGesture:(UIGestureRecognizer*)gestureRecognizer {
+    if (self.touchControllerInstalled) {
+        return;
+    }
     if (gestureRecognizer.state == UIGestureRecognizerStateBegan) {
         if (self.inputTextField.isFirstResponder) {
             [self.inputTextField resignFirstResponder];
@@ -692,6 +804,9 @@ static GameSurfaceView* pojavWindow;
 }
 
 - (void)surfaceOnClick:(UITapGestureRecognizer *)sender {
+    if (self.touchControllerInstalled) {
+        return;
+    }
     if (sender.state == UIGestureRecognizerStateBegan || sender.state == UIGestureRecognizerStateEnded){
         if(self.shouldTriggerHaptic) {
             [self.lightHaptic impactOccurred];
@@ -717,6 +832,9 @@ static GameSurfaceView* pojavWindow;
 }
 
 - (void)surfaceOnDoubleClick:(UITapGestureRecognizer *)sender {
+    if (self.touchControllerInstalled) {
+        return;
+    }
     if (sender.state == UIGestureRecognizerStateBegan || sender.state == UIGestureRecognizerStateEnded){
         if(self.shouldTriggerHaptic) {
             [self.lightHaptic impactOccurred];
@@ -760,6 +878,9 @@ static GameSurfaceView* pojavWindow;
 
 -(void)surfaceOnLongpress:(UILongPressGestureRecognizer *)sender
 {
+    if (self.touchControllerInstalled) {
+        return;
+    }
     if (sender.state == UIGestureRecognizerStateBegan || sender.state == UIGestureRecognizerStateEnded){
         if(self.shouldTriggerHaptic) {
             [self.mediumHaptic impactOccurred];
@@ -797,6 +918,9 @@ static GameSurfaceView* pojavWindow;
 }
 
 - (void)surfaceOnTouchesScroll:(UIPanGestureRecognizer *)sender {
+    if (self.touchControllerInstalled) {
+        return;
+    }
     if (sender.state == UIGestureRecognizerStateBegan || sender.state == UIGestureRecognizerStateEnded){
         if(self.shouldTriggerHaptic) {
             [self.lightHaptic impactOccurred];
@@ -980,7 +1104,12 @@ int touchesMovedCount;
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
     [super touchesBegan:touches withEvent:event];
-    int i = 0;
+    if (self.touchControllerInstalled) {
+        for (UITouch *touch in touches) {
+            [self touchControllerHandleTouch:touch ended:NO];
+        }
+        return;
+    }
     for (UITouch *touch in touches) {
         if (touch.type == UITouchTypeIndirectPointer) {
             continue; // handle this in a different place
@@ -1004,6 +1133,19 @@ int touchesMovedCount;
 - (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
 {
     [super touchesMoved:touches withEvent:event];
+    if (self.touchControllerInstalled) {
+        for (UITouch *touch in touches) {
+            if (touch.type == UITouchTypeIndirectPointer) {
+                if (!isGrabbing && !virtualMouseEnabled) {
+                    CGPoint point = [touch locationInView:self.rootView];
+                    [self sendTouchPoint:point withEvent:ACTION_MOVE];
+                }
+                continue;
+            }
+            [self touchControllerHandleTouch:touch ended:NO];
+        }
+        return;
+    }
 
     for (UITouch *touch in touches) {
         if (touch.type == UITouchTypeIndirectPointer) {
@@ -1025,6 +1167,12 @@ int touchesMovedCount;
 // For ACTION_UP and ACTION_CANCEL
 - (void)touchesEndedGlobal:(NSSet *)touches withEvent:(UIEvent *)event
 {
+    if (self.touchControllerInstalled) {
+        for (UITouch *touch in touches) {
+            [self touchControllerHandleTouch:touch ended:YES];
+        }
+        return;
+    }
     for (UITouch *touch in touches) {
         if (touch.type == UITouchTypeIndirectPointer) {
             continue; // handle this in a different place

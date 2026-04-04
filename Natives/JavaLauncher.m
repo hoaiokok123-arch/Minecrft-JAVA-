@@ -16,6 +16,7 @@
 #import "LauncherPreferences.h"
 #import "PLLogOutputView.h"
 #import "PLProfiles.h"
+#import "TouchControllerProxy.h"
 
 #define fm NSFileManager.defaultManager
 
@@ -200,6 +201,8 @@ int launchJVM(NSString *username, id launchTarget, int width, int height, int mi
 
     init_loadDefaultEnv();
     init_loadCustomEnv();
+    unsetenv("TOUCH_CONTROLLER_PROXY_SOCKET");
+    TouchControllerResetSession();
 
     BOOL launchJar = NO;
     NSString *gameDir;
@@ -277,6 +280,14 @@ int launchJVM(NSString *username, id launchTarget, int width, int height, int mi
         return 1;
     }
 
+    if ([launchTarget isKindOfClass:NSDictionary.class]) {
+        NSString *touchControllerSession = TouchControllerPrepareSessionForGameDirectory(gameDir);
+        if (touchControllerSession.length > 0) {
+            setenv("TOUCH_CONTROLLER_PROXY_SOCKET", touchControllerSession.UTF8String, 1);
+            NSLog(@"[JavaLauncher] TouchController session enabled");
+        }
+    }
+
     int margc = -1;
     const char *margv[1000];
 
@@ -335,6 +346,8 @@ int launchJVM(NSString *username, id launchTarget, int width, int height, int mi
     if (!libjli) {
         const char *error = dlerror();
         NSLog(@"[Init] JLI lib = NULL: %s", error);
+        unsetenv("TOUCH_CONTROLLER_PROXY_SOCKET");
+        TouchControllerResetSession();
         UIKit_returnToSplitView();
         showDialog(localize(@"Error", nil), @(error));
         return 1;
@@ -428,6 +441,8 @@ int launchJVM(NSString *username, id launchTarget, int width, int height, int mi
 
     if (NULL == pJLI_Launch) {
         NSLog(@"[Init] JLI_Launch = NULL");
+        unsetenv("TOUCH_CONTROLLER_PROXY_SOCKET");
+        TouchControllerResetSession();
         return -2;
     }
 
@@ -444,14 +459,17 @@ int launchJVM(NSString *username, id launchTarget, int width, int height, int mi
     // Free split VC
     tmpRootVC = nil;
 
-    return pJLI_Launch(++margc, margv,
-                   0, NULL, // sizeof(const_jargs) / sizeof(char *), const_jargs,
-                   0, NULL, // sizeof(const_appclasspath) / sizeof(char *), const_appclasspath,
-                   // These values are ignored in Java 17, so keep it anyways
-                   "1.8.0-internal",
-                   "1.8",
+    int result = pJLI_Launch(++margc, margv,
+                 0, NULL, // sizeof(const_jargs) / sizeof(char *), const_jargs,
+                 0, NULL, // sizeof(const_appclasspath) / sizeof(char *), const_appclasspath,
+                 // These values are ignored in Java 17, so keep it anyways
+                 "1.8.0-internal",
+                 "1.8",
 
-                   "java", "openjdk",
-                   /* (const_jargs != NULL) ? JNI_TRUE : */ JNI_FALSE,
-                   JNI_TRUE, JNI_FALSE, JNI_TRUE);
+                 "java", "openjdk",
+                 /* (const_jargs != NULL) ? JNI_TRUE : */ JNI_FALSE,
+                 JNI_TRUE, JNI_FALSE, JNI_TRUE);
+    unsetenv("TOUCH_CONTROLLER_PROXY_SOCKET");
+    TouchControllerResetSession();
+    return result;
 }
