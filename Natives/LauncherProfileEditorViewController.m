@@ -8,6 +8,255 @@
 #import "ios_uikit_bridge.h"
 #import "utils.h"
 
+static NSString *const LauncherModDisabledSuffix = @".disabled";
+
+static NSString *LauncherProfileResolvedGameDirectory(NSDictionary *profile) {
+    NSString *instanceName = getPrefObject(@"general.game_directory");
+    if (instanceName.length == 0) {
+        instanceName = @"default";
+    }
+
+    NSString *profileGameDir = profile[@"gameDir"];
+    if (profileGameDir.length == 0) {
+        profileGameDir = @".";
+    }
+
+    return [[NSString stringWithFormat:@"%s/instances/%@/%@",
+        getenv("POJAV_HOME"), instanceName, profileGameDir] stringByStandardizingPath];
+}
+
+static NSString *LauncherProfileResolvedModsDirectory(NSDictionary *profile) {
+    return [LauncherProfileResolvedGameDirectory(profile) stringByAppendingPathComponent:@"mods"];
+}
+
+static NSString *LauncherModNormalizedFileName(NSString *fileName) {
+    if ([fileName hasSuffix:LauncherModDisabledSuffix]) {
+        return [fileName substringToIndex:fileName.length - LauncherModDisabledSuffix.length];
+    }
+    return fileName;
+}
+
+static BOOL LauncherFileLooksLikeMod(NSString *fileName) {
+    if (fileName.length == 0 || [fileName hasPrefix:@"."]) {
+        return NO;
+    }
+
+    NSString *normalizedName = LauncherModNormalizedFileName(fileName);
+    NSString *extension = normalizedName.pathExtension.lowercaseString;
+    return [@[@"jar", @"zip", @"litemod"] containsObject:extension];
+}
+
+static NSMutableArray<NSMutableDictionary *> *LauncherEnumerateMods(NSDictionary *profile) {
+    NSMutableArray<NSMutableDictionary *> *mods = [NSMutableArray array];
+    NSString *modsDirectory = LauncherProfileResolvedModsDirectory(profile);
+    NSArray<NSString *> *files = [NSFileManager.defaultManager contentsOfDirectoryAtPath:modsDirectory error:nil];
+    for (NSString *fileName in files) {
+        NSString *fullPath = [modsDirectory stringByAppendingPathComponent:fileName];
+        BOOL isDirectory = NO;
+        [NSFileManager.defaultManager fileExistsAtPath:fullPath isDirectory:&isDirectory];
+        if (isDirectory || !LauncherFileLooksLikeMod(fileName)) {
+            continue;
+        }
+
+        BOOL enabled = ![fileName hasSuffix:LauncherModDisabledSuffix];
+        [mods addObject:@{
+            @"fileName": fileName,
+            @"displayName": LauncherModNormalizedFileName(fileName),
+            @"enabled": @(enabled)
+        }.mutableCopy];
+    }
+
+    [mods sortUsingComparator:^NSComparisonResult(NSDictionary *lhs, NSDictionary *rhs) {
+        BOOL leftEnabled = [lhs[@"enabled"] boolValue];
+        BOOL rightEnabled = [rhs[@"enabled"] boolValue];
+        if (leftEnabled != rightEnabled) {
+            return leftEnabled ? NSOrderedAscending : NSOrderedDescending;
+        }
+        return [lhs[@"displayName"] localizedStandardCompare:rhs[@"displayName"]];
+    }];
+    return mods;
+}
+
+static NSString *LauncherModSummary(NSDictionary *profile) {
+    NSUInteger enabledCount = 0;
+    NSUInteger disabledCount = 0;
+    for (NSDictionary *mod in LauncherEnumerateMods(profile)) {
+        if ([mod[@"enabled"] boolValue]) {
+            enabledCount++;
+        } else {
+            disabledCount++;
+        }
+    }
+
+    if (enabledCount == 0 && disabledCount == 0) {
+        return localize(@"profile.detail.manage_mods.empty", nil);
+    }
+    return [NSString stringWithFormat:localize(@"profile.detail.manage_mods.summary", nil),
+        (unsigned long)enabledCount, (unsigned long)disabledCount];
+}
+
+@interface LauncherProfileModsViewController : UITableViewController
+@property(nonatomic) NSMutableDictionary *profile;
+@property(nonatomic) NSMutableArray<NSMutableDictionary *> *mods;
+@property(nonatomic) UILabel *emptyViewLabel;
+@end
+
+@implementation LauncherProfileModsViewController
+
+- (instancetype)init {
+    return [super initWithStyle:UITableViewStyleInsetGrouped];
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+
+    self.title = localize(@"profile.title.manage_mods", nil);
+    self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
+    self.emptyViewLabel = [[UILabel alloc] initWithFrame:self.tableView.bounds];
+    self.emptyViewLabel.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    self.emptyViewLabel.text = localize(@"mods.empty", nil);
+    self.emptyViewLabel.textAlignment = NSTextAlignmentCenter;
+    self.emptyViewLabel.textColor = UIColor.secondaryLabelColor;
+    self.emptyViewLabel.numberOfLines = 0;
+    self.tableView.backgroundView = self.emptyViewLabel;
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    [self reloadMods];
+}
+
+- (void)reloadMods {
+    self.mods = LauncherEnumerateMods(self.profile);
+    self.emptyViewLabel.hidden = self.mods.count > 0;
+    [self.tableView reloadData];
+}
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    return self.mods.count;
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"ModCell"];
+    if (cell == nil) {
+        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"ModCell"];
+        cell.detailTextLabel.numberOfLines = 0;
+        cell.detailTextLabel.lineBreakMode = NSLineBreakByWordWrapping;
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+    }
+
+    NSDictionary *item = self.mods[indexPath.row];
+    cell.textLabel.text = item[@"displayName"];
+    cell.detailTextLabel.text = localize([item[@"enabled"] boolValue] ? @"mods.status.enabled" : @"mods.status.disabled", nil);
+    cell.imageView.image = [UIImage systemImageNamed:@"shippingbox"];
+
+    UISwitch *toggle = [UISwitch new];
+    [toggle setOn:[item[@"enabled"] boolValue] animated:NO];
+    [toggle addTarget:self action:@selector(toggleMod:) forControlEvents:UIControlEventValueChanged];
+    cell.accessoryView = toggle;
+
+    return cell;
+}
+
+- (void)toggleMod:(UISwitch *)sender {
+    CGPoint point = [sender convertPoint:CGPointMake(CGRectGetMidX(sender.bounds), CGRectGetMidY(sender.bounds))
+                                  toView:self.tableView];
+    NSIndexPath *indexPath = [self.tableView indexPathForRowAtPoint:point];
+    if (!indexPath || indexPath.row >= self.mods.count) {
+        return;
+    }
+
+    NSDictionary *item = self.mods[indexPath.row];
+    NSString *sourceName = item[@"fileName"];
+    NSString *targetName;
+    if (sender.isOn) {
+        if (![sourceName hasSuffix:LauncherModDisabledSuffix]) {
+            return;
+        }
+        targetName = LauncherModNormalizedFileName(sourceName);
+    } else {
+        if ([sourceName hasSuffix:LauncherModDisabledSuffix]) {
+            return;
+        }
+        targetName = [sourceName stringByAppendingString:LauncherModDisabledSuffix];
+    }
+
+    NSString *modsDirectory = LauncherProfileResolvedModsDirectory(self.profile);
+    NSString *sourcePath = [modsDirectory stringByAppendingPathComponent:sourceName];
+    NSString *targetPath = [modsDirectory stringByAppendingPathComponent:targetName];
+    NSError *error;
+    if (![NSFileManager.defaultManager moveItemAtPath:sourcePath toPath:targetPath error:&error]) {
+        [sender setOn:!sender.isOn animated:YES];
+        showDialog(localize(@"Error", nil), error.localizedDescription);
+        return;
+    }
+
+    [self reloadMods];
+}
+
+- (void)confirmDeleteModAtIndexPath:(NSIndexPath *)indexPath sourceView:(UIView *)sourceView completion:(void (^)(BOOL))completion {
+    if (indexPath.row >= self.mods.count) {
+        if (completion) {
+            completion(NO);
+        }
+        return;
+    }
+
+    NSDictionary *item = self.mods[indexPath.row];
+    UIAlertController *confirmAlert = [UIAlertController
+        alertControllerWithTitle:localize(@"preference.title.confirm", nil)
+                         message:[NSString stringWithFormat:localize(@"profile.title.confirm.delete_mod", nil), item[@"displayName"]]
+                  preferredStyle:UIAlertControllerStyleActionSheet];
+    if (sourceView == nil) {
+        sourceView = self.view;
+    }
+    confirmAlert.popoverPresentationController.sourceView = sourceView;
+    confirmAlert.popoverPresentationController.sourceRect = sourceView.bounds;
+
+    UIAlertAction *cancel = [UIAlertAction actionWithTitle:localize(@"Cancel", nil)
+                                                     style:UIAlertActionStyleCancel
+                                                   handler:^(__unused UIAlertAction *action) {
+        if (completion) {
+            completion(NO);
+        }
+    }];
+    UIAlertAction *deleteAction = [UIAlertAction actionWithTitle:localize(@"Delete", nil)
+                                                           style:UIAlertActionStyleDestructive
+                                                         handler:^(__unused UIAlertAction *action) {
+        NSString *modsDirectory = LauncherProfileResolvedModsDirectory(self.profile);
+        NSString *filePath = [modsDirectory stringByAppendingPathComponent:item[@"fileName"]];
+        NSError *error;
+        if (![NSFileManager.defaultManager removeItemAtPath:filePath error:&error]) {
+            showDialog(localize(@"Error", nil), error.localizedDescription);
+            if (completion) {
+                completion(NO);
+            }
+            return;
+        }
+        [self reloadMods];
+        if (completion) {
+            completion(YES);
+        }
+    }];
+
+    [confirmAlert addAction:cancel];
+    [confirmAlert addAction:deleteAction];
+    [self presentViewController:confirmAlert animated:YES completion:nil];
+}
+
+- (UISwipeActionsConfiguration *)tableView:(UITableView *)tableView trailingSwipeActionsConfigurationForRowAtIndexPath:(NSIndexPath *)indexPath {
+    UIContextualAction *deleteAction = [UIContextualAction contextualActionWithStyle:UIContextualActionStyleDestructive
+                                                                               title:localize(@"Delete", nil)
+                                                                             handler:^(__unused UIContextualAction *action, UIView *sourceView, void (^completionHandler)(BOOL)) {
+        [self confirmDeleteModAtIndexPath:indexPath sourceView:sourceView completion:completionHandler];
+    }];
+    UISwipeActionsConfiguration *configuration = [UISwipeActionsConfiguration configurationWithActions:@[deleteAction]];
+    configuration.performsFirstActionWithFullSwipe = NO;
+    return configuration;
+}
+
+@end
+
 @interface LauncherProfileEditorViewController()<UIPickerViewDataSource, UIPickerViewDelegate>
 @property(nonatomic) NSString* oldName;
 
@@ -32,6 +281,10 @@
     // Setup preference getter and setter
     __weak LauncherProfileEditorViewController *weakSelf = self;
     self.getPreference = ^id(NSString *section, NSString *key){
+        if ([key isEqualToString:@"manageMods"]) {
+            return LauncherModSummary(weakSelf.profile);
+        }
+
         NSString *value = weakSelf.profile[key];
         if (value.length > 0 || ![weakSelf isPickFieldAtSection:section key:key]) {
             return value;
@@ -109,6 +362,11 @@
               @"type": self.typeTextField,
               @"placeholder": [NSString stringWithFormat:@". -> /Documents/instances/%@", getPrefObject(@"general.game_directory")]
             },
+            @{@"key": @"manageMods",
+              @"icon": @"shippingbox",
+              @"title": @"preference.profile.title.manage_mods",
+              @"type": self.typeChildPane
+            },
             // Video and renderer settings
             @{@"key": @"renderer",
               @"icon": @"cpu",
@@ -149,6 +407,11 @@
     ];
 
     [super viewDidLoad];
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    [self.tableView reloadData];
 }
 
 - (void)actionClose {
@@ -198,6 +461,21 @@
 - (BOOL)isPickFieldAtSection:(NSString *)section key:(NSString *)key {
     NSDictionary *pref = [self.prefContents[0] filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"(key == %@)", key]].firstObject;
     return pref[@"type"] == self.typePickField;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    NSDictionary *item = self.prefContents[indexPath.section][indexPath.row];
+    if ([item[@"key"] isEqualToString:@"manageMods"]) {
+        [tableView deselectRowAtIndexPath:indexPath animated:NO];
+        [self.view endEditing:YES];
+
+        LauncherProfileModsViewController *vc = [LauncherProfileModsViewController new];
+        vc.profile = self.profile;
+        [self.navigationController pushViewController:vc animated:YES];
+        return;
+    }
+
+    [super tableView:tableView didSelectRowAtIndexPath:indexPath];
 }
 
 - (NSArray *)listFilesAtPath:(NSString *)path {
