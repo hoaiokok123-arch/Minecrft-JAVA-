@@ -201,6 +201,7 @@ int launchJVM(NSString *username, id launchTarget, int width, int height, int mi
 
     init_loadDefaultEnv();
     init_loadCustomEnv();
+    unsetenv("TOUCH_CONTROLLER_PROXY");
     unsetenv("TOUCH_CONTROLLER_PROXY_SOCKET");
     TouchControllerResetSession();
 
@@ -281,10 +282,9 @@ int launchJVM(NSString *username, id launchTarget, int width, int height, int mi
     }
 
     if ([launchTarget isKindOfClass:NSDictionary.class]) {
-        NSString *touchControllerSession = TouchControllerPrepareSessionForGameDirectory(gameDir);
-        if (touchControllerSession.length > 0) {
-            setenv("TOUCH_CONTROLLER_PROXY_SOCKET", touchControllerSession.UTF8String, 1);
-            NSLog(@"[JavaLauncher] TouchController session enabled");
+        if (TouchControllerShouldEnableForGameDirectory(gameDir)) {
+            setenv("TOUCH_CONTROLLER_PROXY", "12450", 1);
+            NSLog(@"[JavaLauncher] TouchController legacy UDP enabled");
         }
     }
 
@@ -346,6 +346,7 @@ int launchJVM(NSString *username, id launchTarget, int width, int height, int mi
     if (!libjli) {
         const char *error = dlerror();
         NSLog(@"[Init] JLI lib = NULL: %s", error);
+        unsetenv("TOUCH_CONTROLLER_PROXY");
         unsetenv("TOUCH_CONTROLLER_PROXY_SOCKET");
         TouchControllerResetSession();
         UIKit_returnToSplitView();
@@ -441,6 +442,7 @@ int launchJVM(NSString *username, id launchTarget, int width, int height, int mi
 
     if (NULL == pJLI_Launch) {
         NSLog(@"[Init] JLI_Launch = NULL");
+        unsetenv("TOUCH_CONTROLLER_PROXY");
         unsetenv("TOUCH_CONTROLLER_PROXY_SOCKET");
         TouchControllerResetSession();
         return -2;
@@ -469,6 +471,7 @@ int launchJVM(NSString *username, id launchTarget, int width, int height, int mi
                  "java", "openjdk",
                  /* (const_jargs != NULL) ? JNI_TRUE : */ JNI_FALSE,
                  JNI_TRUE, JNI_FALSE, JNI_TRUE);
+    unsetenv("TOUCH_CONTROLLER_PROXY");
     unsetenv("TOUCH_CONTROLLER_PROXY_SOCKET");
     TouchControllerResetSession();
     return result;
