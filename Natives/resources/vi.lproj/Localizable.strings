@@ -306,3 +306,12 @@
 "profile.detail.download_resourcepacks" = "Cài vào resourcepacks/";
 "profile.detail.download_datapacks" = "Cài vào datapacks/";
 "profile.detail.download_shaders" = "Cài vào shaderpacks/";
+"preference.profile.title.manage_shared_mods" = "Quản lý mod cá nhân";
+"preference.profile.title.download_shared_mods" = "Tải mod cá nhân";
+"profile.title.manage_shared_mods" = "Mod cá nhân";
+"profile.detail.manage_shared_mods.empty" = "Không tìm thấy mod cá nhân";
+"profile.detail.download_mods" = "Cài vào mods của profile này/";
+"profile.detail.download_shared_mods" = "Cài vào default/mods/";
+"profile.detail.download_resourcepacks" = "Cài vào default/resourcepacks/";
+"profile.detail.download_datapacks" = "Cài vào default/datapacks/";
+"profile.detail.download_shaders" = "Cài vào default/shaderpacks/";

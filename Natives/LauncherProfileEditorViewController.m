@@ -11,23 +11,46 @@
 
 static NSString *const LauncherModDisabledSuffix = @".disabled";
 
-static NSString *LauncherProfileResolvedGameDirectory(NSDictionary *profile) {
-    NSString *instanceName = getPrefObject(@"general.game_directory");
+static NSString *LauncherInstanceDirectory(NSString *instanceName) {
     if (instanceName.length == 0) {
         instanceName = @"default";
     }
 
+    return [[NSString stringWithFormat:@"%s/instances/%@",
+        getenv("POJAV_HOME"), instanceName] stringByStandardizingPath];
+}
+
+static NSString *LauncherProfileResolvedGameDirectory(NSDictionary *profile) {
+    NSString *instanceName = getPrefObject(@"general.game_directory");
     NSString *profileGameDir = profile[@"gameDir"];
     if (profileGameDir.length == 0) {
         profileGameDir = @".";
     }
 
-    return [[NSString stringWithFormat:@"%s/instances/%@/%@",
-        getenv("POJAV_HOME"), instanceName, profileGameDir] stringByStandardizingPath];
+    return [[LauncherInstanceDirectory(instanceName)
+        stringByAppendingPathComponent:profileGameDir] stringByStandardizingPath];
+}
+
+static NSString *LauncherDefaultInstanceDirectory(void) {
+    return LauncherInstanceDirectory(@"default");
 }
 
 static NSString *LauncherProfileResolvedSubdirectory(NSDictionary *profile, NSString *directoryName) {
     return [LauncherProfileResolvedGameDirectory(profile) stringByAppendingPathComponent:directoryName];
+}
+
+static NSString *LauncherDefaultInstanceSubdirectory(NSString *directoryName) {
+    return [LauncherDefaultInstanceDirectory() stringByAppendingPathComponent:directoryName];
+}
+
+static BOOL LauncherProfileUsesCustomGameDirectory(NSDictionary *profile) {
+    NSString *profileGameDir = profile[@"gameDir"];
+    if (profileGameDir.length == 0) {
+        return NO;
+    }
+
+    NSString *normalizedGameDir = [profileGameDir stringByStandardizingPath];
+    return normalizedGameDir.length > 0 && ![normalizedGameDir isEqualToString:@"."];
 }
 
 typedef NS_ENUM(NSUInteger, LauncherProfileManagedContentType) {
@@ -130,9 +153,8 @@ static BOOL LauncherManagedContentLooksLikeItem(NSString *fileName, BOOL isDirec
     }
 }
 
-static NSMutableArray<NSMutableDictionary *> *LauncherEnumerateManagedContent(NSDictionary *profile, LauncherProfileManagedContentType type) {
+static NSMutableArray<NSMutableDictionary *> *LauncherEnumerateManagedContent(NSString *directory, LauncherProfileManagedContentType type) {
     NSMutableArray<NSMutableDictionary *> *items = [NSMutableArray array];
-    NSString *directory = LauncherProfileResolvedSubdirectory(profile, LauncherProfileDirectoryNameForManagedContent(type));
     NSArray<NSString *> *files = [NSFileManager.defaultManager contentsOfDirectoryAtPath:directory error:nil];
     for (NSString *fileName in files) {
         NSString *fullPath = [directory stringByAppendingPathComponent:fileName];
@@ -162,10 +184,10 @@ static NSMutableArray<NSMutableDictionary *> *LauncherEnumerateManagedContent(NS
     return items;
 }
 
-static NSString *LauncherManagedContentSummary(NSDictionary *profile, LauncherProfileManagedContentType type) {
+static NSString *LauncherManagedContentSummary(NSString *directory, LauncherProfileManagedContentType type, NSString *emptyKey) {
     NSUInteger enabledCount = 0;
     NSUInteger disabledCount = 0;
-    for (NSDictionary *item in LauncherEnumerateManagedContent(profile, type)) {
+    for (NSDictionary *item in LauncherEnumerateManagedContent(directory, type)) {
         if ([item[@"enabled"] boolValue]) {
             enabledCount++;
         } else {
@@ -174,14 +196,16 @@ static NSString *LauncherManagedContentSummary(NSDictionary *profile, LauncherPr
     }
 
     if (enabledCount == 0 && disabledCount == 0) {
-        return localize(LauncherProfileManageEmptyKeyForManagedContent(type), nil);
+        return localize(emptyKey, nil);
     }
     return [NSString stringWithFormat:localize(@"profile.detail.manage_content.summary", nil),
         (unsigned long)enabledCount, (unsigned long)disabledCount];
 }
 
 @interface LauncherProfileContentManagerViewController : UITableViewController
-@property(nonatomic) NSMutableDictionary *profile;
+@property(nonatomic, copy) NSString *directoryPath;
+@property(nonatomic, copy) NSString *titleKey;
+@property(nonatomic, copy) NSString *emptyKey;
 @property(nonatomic) LauncherProfileManagedContentType contentType;
 @property(nonatomic) NSMutableArray<NSMutableDictionary *> *items;
 @property(nonatomic) UILabel *emptyViewLabel;
@@ -196,11 +220,11 @@ static NSString *LauncherManagedContentSummary(NSDictionary *profile, LauncherPr
 - (void)viewDidLoad {
     [super viewDidLoad];
 
-    self.title = localize(LauncherProfileManageTitleKeyForManagedContent(self.contentType), nil);
+    self.title = localize(self.titleKey ?: LauncherProfileManageTitleKeyForManagedContent(self.contentType), nil);
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
     self.emptyViewLabel = [[UILabel alloc] initWithFrame:self.tableView.bounds];
     self.emptyViewLabel.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    self.emptyViewLabel.text = localize(LauncherProfileManageEmptyKeyForManagedContent(self.contentType), nil);
+    self.emptyViewLabel.text = localize(self.emptyKey ?: LauncherProfileManageEmptyKeyForManagedContent(self.contentType), nil);
     self.emptyViewLabel.textAlignment = NSTextAlignmentCenter;
     self.emptyViewLabel.textColor = UIColor.secondaryLabelColor;
     self.emptyViewLabel.numberOfLines = 0;
@@ -213,7 +237,7 @@ static NSString *LauncherManagedContentSummary(NSDictionary *profile, LauncherPr
 }
 
 - (void)reloadItems {
-    self.items = LauncherEnumerateManagedContent(self.profile, self.contentType);
+    self.items = LauncherEnumerateManagedContent(self.directoryPath, self.contentType);
     self.emptyViewLabel.hidden = self.items.count > 0;
     [self.tableView reloadData];
 }
@@ -268,9 +292,8 @@ static NSString *LauncherManagedContentSummary(NSDictionary *profile, LauncherPr
         targetName = [sourceName stringByAppendingString:LauncherModDisabledSuffix];
     }
 
-    NSString *directory = LauncherProfileResolvedSubdirectory(self.profile, LauncherProfileDirectoryNameForManagedContent(self.contentType));
-    NSString *sourcePath = [directory stringByAppendingPathComponent:sourceName];
-    NSString *targetPath = [directory stringByAppendingPathComponent:targetName];
+    NSString *sourcePath = [self.directoryPath stringByAppendingPathComponent:sourceName];
+    NSString *targetPath = [self.directoryPath stringByAppendingPathComponent:targetName];
     NSError *error;
     if (![NSFileManager.defaultManager moveItemAtPath:sourcePath toPath:targetPath error:&error]) {
         [sender setOn:!sender.isOn animated:YES];
@@ -310,8 +333,7 @@ static NSString *LauncherManagedContentSummary(NSDictionary *profile, LauncherPr
     UIAlertAction *deleteAction = [UIAlertAction actionWithTitle:localize(@"Delete", nil)
                                                            style:UIAlertActionStyleDestructive
                                                          handler:^(__unused UIAlertAction *action) {
-        NSString *directory = LauncherProfileResolvedSubdirectory(self.profile, LauncherProfileDirectoryNameForManagedContent(self.contentType));
-        NSString *filePath = [directory stringByAppendingPathComponent:item[@"fileName"]];
+        NSString *filePath = [self.directoryPath stringByAppendingPathComponent:item[@"fileName"]];
         NSError *error;
         if (![NSFileManager.defaultManager removeItemAtPath:filePath error:&error]) {
             showDialog(localize(@"Error", nil), error.localizedDescription);
@@ -369,15 +391,24 @@ static NSString *LauncherManagedContentSummary(NSDictionary *profile, LauncherPr
     __weak LauncherProfileEditorViewController *weakSelf = self;
     self.getPreference = ^id(NSString *section, NSString *key){
         if ([key isEqualToString:@"manageMods"]) {
-            return LauncherManagedContentSummary(weakSelf.profile, LauncherProfileManagedContentTypeMod);
+            return LauncherManagedContentSummary([weakSelf profileManagedContentDirectoryForType:LauncherProfileManagedContentTypeMod],
+                LauncherProfileManagedContentTypeMod, @"profile.detail.manage_mods.empty");
+        } else if ([key isEqualToString:@"manageSharedMods"]) {
+            return LauncherManagedContentSummary([weakSelf sharedManagedContentDirectoryForType:LauncherProfileManagedContentTypeMod],
+                LauncherProfileManagedContentTypeMod, @"profile.detail.manage_shared_mods.empty");
         } else if ([key isEqualToString:@"manageResourcePacks"]) {
-            return LauncherManagedContentSummary(weakSelf.profile, LauncherProfileManagedContentTypeResourcePack);
+            return LauncherManagedContentSummary([weakSelf sharedManagedContentDirectoryForType:LauncherProfileManagedContentTypeResourcePack],
+                LauncherProfileManagedContentTypeResourcePack, @"profile.detail.manage_resourcepacks.empty");
         } else if ([key isEqualToString:@"manageDataPacks"]) {
-            return LauncherManagedContentSummary(weakSelf.profile, LauncherProfileManagedContentTypeDataPack);
+            return LauncherManagedContentSummary([weakSelf sharedManagedContentDirectoryForType:LauncherProfileManagedContentTypeDataPack],
+                LauncherProfileManagedContentTypeDataPack, @"profile.detail.manage_datapacks.empty");
         } else if ([key isEqualToString:@"manageShaders"]) {
-            return LauncherManagedContentSummary(weakSelf.profile, LauncherProfileManagedContentTypeShader);
+            return LauncherManagedContentSummary([weakSelf sharedManagedContentDirectoryForType:LauncherProfileManagedContentTypeShader],
+                LauncherProfileManagedContentTypeShader, @"profile.detail.manage_shaders.empty");
         } else if ([key isEqualToString:@"downloadMods"]) {
             return localize(@"profile.detail.download_mods", nil);
+        } else if ([key isEqualToString:@"downloadSharedMods"]) {
+            return localize(@"profile.detail.download_shared_mods", nil);
         } else if ([key isEqualToString:@"downloadResourcePacks"]) {
             return localize(@"profile.detail.download_resourcepacks", nil);
         } else if ([key isEqualToString:@"downloadDataPacks"]) {
@@ -441,105 +472,126 @@ static NSString *LauncherManagedContentSummary(NSDictionary *profile, LauncherPr
         [self changeVersionType:nil];
     };
 
+    BOOL showsSharedMods = LauncherProfileUsesCustomGameDirectory(self.profile);
+    NSMutableArray<NSDictionary *> *generalPrefs = [NSMutableArray arrayWithArray:@[
+        // General settings
+        @{@"key": @"name",
+          @"icon": @"tag",
+          @"title": @"preference.profile.title.name",
+          @"type": self.typeTextField,
+          @"placeholder": self.oldName
+        },
+        @{@"key": @"lastVersionId",
+          @"icon": @"archivebox",
+          @"title": @"preference.profile.title.version",
+          @"type": typeVersionPicker,
+          @"placeholder": self.getPreference(nil, @"lastVersionId"),
+          @"customClass": PickTextField.class
+        },
+        @{@"key": @"gameDir",
+          @"icon": @"folder",
+          @"title": @"preference.title.game_directory",
+          @"type": self.typeTextField,
+          @"placeholder": [NSString stringWithFormat:@". -> /Documents/instances/%@", getPrefObject(@"general.game_directory")]
+        },
+        @{@"key": @"manageMods",
+          @"icon": @"shippingbox",
+          @"title": @"preference.profile.title.manage_mods",
+          @"type": self.typeChildPane
+        }
+    ]];
+    if (showsSharedMods) {
+        [generalPrefs addObject:@{@"key": @"manageSharedMods",
+            @"icon": @"shippingbox.circle",
+            @"title": @"preference.profile.title.manage_shared_mods",
+            @"type": self.typeChildPane
+        }];
+    }
+    [generalPrefs addObjectsFromArray:@[
+        @{@"key": @"manageResourcePacks",
+          @"icon": @"square.stack.3d.down.forward",
+          @"title": @"preference.profile.title.manage_resourcepacks",
+          @"type": self.typeChildPane
+        },
+        @{@"key": @"manageDataPacks",
+          @"icon": @"externaldrive.badge.plus",
+          @"title": @"preference.profile.title.manage_datapacks",
+          @"type": self.typeChildPane
+        },
+        @{@"key": @"manageShaders",
+          @"icon": @"sparkles",
+          @"title": @"preference.profile.title.manage_shaders",
+          @"type": self.typeChildPane
+        },
+        @{@"key": @"downloadMods",
+          @"icon": @"arrow.down.circle",
+          @"title": @"preference.profile.title.download_mods",
+          @"type": self.typeChildPane
+        }
+    ]];
+    if (showsSharedMods) {
+        [generalPrefs addObject:@{@"key": @"downloadSharedMods",
+            @"icon": @"arrow.down.circle.fill",
+            @"title": @"preference.profile.title.download_shared_mods",
+            @"type": self.typeChildPane
+        }];
+    }
+    [generalPrefs addObjectsFromArray:@[
+        @{@"key": @"downloadResourcePacks",
+          @"icon": @"square.stack.3d.down.forward",
+          @"title": @"preference.profile.title.download_resourcepacks",
+          @"type": self.typeChildPane
+        },
+        @{@"key": @"downloadDataPacks",
+          @"icon": @"externaldrive.badge.plus",
+          @"title": @"preference.profile.title.download_datapacks",
+          @"type": self.typeChildPane
+        },
+        @{@"key": @"downloadShaders",
+          @"icon": @"sparkles",
+          @"title": @"preference.profile.title.download_shaders",
+          @"type": self.typeChildPane
+        },
+        // Video and renderer settings
+        @{@"key": @"renderer",
+          @"icon": @"cpu",
+          @"type": self.typePickField,
+          @"pickKeys": rendererKeys,
+          @"pickList": rendererList
+        },
+        // Control settings
+        @{@"key": @"defaultTouchCtrl",
+          @"icon": @"hand.tap",
+          @"title": @"preference.profile.title.default_touch_control",
+          @"type": self.typePickField,
+          @"pickKeys": touchControlList,
+          @"pickList": touchControlList
+        },
+        @{@"key": @"defaultGamepadCtrl",
+          @"icon": @"gamecontroller",
+          @"title": @"preference.profile.title.default_gamepad_control",
+          @"type": self.typePickField,
+          @"pickKeys": gamepadControlList,
+          @"pickList": gamepadControlList
+        },
+        // Java tweaks
+        @{@"key": @"javaVersion",
+          @"icon": @"cube",
+          @"title": @"preference.manage_runtime.header.default",
+          @"type": self.typePickField,
+          @"pickKeys": javaList,
+          @"pickList": javaList
+        },
+        @{@"key": @"javaArgs",
+          @"icon": @"slider.vertical.3",
+          @"title": @"preference.title.java_args",
+          @"type": self.typeTextField,
+          @"placeholder": @"(default)"
+        }
+    ]];
+
     self.prefContents = @[
-        @[
-            // General settings
-            @{@"key": @"name",
-              @"icon": @"tag",
-              @"title": @"preference.profile.title.name",
-              @"type": self.typeTextField,
-              @"placeholder": self.oldName
-            },
-            @{@"key": @"lastVersionId",
-              @"icon": @"archivebox",
-              @"title": @"preference.profile.title.version",
-              @"type": typeVersionPicker,
-              @"placeholder": self.getPreference(nil, @"lastVersionId"),
-              @"customClass": PickTextField.class
-            },
-            @{@"key": @"gameDir",
-              @"icon": @"folder",
-              @"title": @"preference.title.game_directory",
-              @"type": self.typeTextField,
-              @"placeholder": [NSString stringWithFormat:@". -> /Documents/instances/%@", getPrefObject(@"general.game_directory")]
-            },
-            @{@"key": @"manageMods",
-              @"icon": @"shippingbox",
-              @"title": @"preference.profile.title.manage_mods",
-              @"type": self.typeChildPane
-            },
-            @{@"key": @"manageResourcePacks",
-              @"icon": @"square.stack.3d.down.forward",
-              @"title": @"preference.profile.title.manage_resourcepacks",
-              @"type": self.typeChildPane
-            },
-            @{@"key": @"manageDataPacks",
-              @"icon": @"externaldrive.badge.plus",
-              @"title": @"preference.profile.title.manage_datapacks",
-              @"type": self.typeChildPane
-            },
-            @{@"key": @"manageShaders",
-              @"icon": @"sparkles",
-              @"title": @"preference.profile.title.manage_shaders",
-              @"type": self.typeChildPane
-            },
-            @{@"key": @"downloadMods",
-              @"icon": @"arrow.down.circle",
-              @"title": @"preference.profile.title.download_mods",
-              @"type": self.typeChildPane
-            },
-            @{@"key": @"downloadResourcePacks",
-              @"icon": @"square.stack.3d.down.forward",
-              @"title": @"preference.profile.title.download_resourcepacks",
-              @"type": self.typeChildPane
-            },
-            @{@"key": @"downloadDataPacks",
-              @"icon": @"externaldrive.badge.plus",
-              @"title": @"preference.profile.title.download_datapacks",
-              @"type": self.typeChildPane
-            },
-            @{@"key": @"downloadShaders",
-              @"icon": @"sparkles",
-              @"title": @"preference.profile.title.download_shaders",
-              @"type": self.typeChildPane
-            },
-            // Video and renderer settings
-            @{@"key": @"renderer",
-              @"icon": @"cpu",
-              @"type": self.typePickField,
-              @"pickKeys": rendererKeys,
-              @"pickList": rendererList
-            },
-            // Control settings
-            @{@"key": @"defaultTouchCtrl",
-              @"icon": @"hand.tap",
-              @"title": @"preference.profile.title.default_touch_control",
-              @"type": self.typePickField,
-              @"pickKeys": touchControlList,
-              @"pickList": touchControlList
-            },
-            @{@"key": @"defaultGamepadCtrl",
-              @"icon": @"gamecontroller",
-              @"title": @"preference.profile.title.default_gamepad_control",
-              @"type": self.typePickField,
-              @"pickKeys": gamepadControlList,
-              @"pickList": gamepadControlList
-            },
-            // Java tweaks
-            @{@"key": @"javaVersion",
-              @"icon": @"cube",
-              @"title": @"preference.manage_runtime.header.default",
-              @"type": self.typePickField,
-              @"pickKeys": javaList,
-              @"pickList": javaList
-            },
-            @{@"key": @"javaArgs",
-              @"icon": @"slider.vertical.3",
-              @"title": @"preference.title.java_args",
-              @"type": self.typeTextField,
-              @"placeholder": @"(default)"
-            }
-        ]
+        generalPrefs
     ];
 
     [super viewDidLoad];
@@ -599,16 +651,29 @@ static NSString *LauncherManagedContentSummary(NSDictionary *profile, LauncherPr
     return pref[@"type"] == self.typePickField;
 }
 
-- (void)openInstallerForMode:(ModrinthInstallMode)mode directoryName:(NSString *)directoryName {
+- (NSString *)profileManagedContentDirectoryForType:(LauncherProfileManagedContentType)type {
+    return LauncherProfileResolvedSubdirectory(self.profile, LauncherProfileDirectoryNameForManagedContent(type));
+}
+
+- (NSString *)sharedManagedContentDirectoryForType:(LauncherProfileManagedContentType)type {
+    return LauncherDefaultInstanceSubdirectory(LauncherProfileDirectoryNameForManagedContent(type));
+}
+
+- (void)openInstallerForMode:(ModrinthInstallMode)mode destinationPath:(NSString *)destinationPath {
     ModpackInstallViewController *vc = [ModpackInstallViewController new];
     vc.installMode = mode;
-    vc.installDestinationPath = LauncherProfileResolvedSubdirectory(self.profile, directoryName);
+    vc.installDestinationPath = destinationPath;
     [self.navigationController pushViewController:vc animated:YES];
 }
 
-- (void)openContentManagerForType:(LauncherProfileManagedContentType)type {
+- (void)openContentManagerForType:(LauncherProfileManagedContentType)type
+                     directoryPath:(NSString *)directoryPath
+                          titleKey:(NSString *)titleKey
+                          emptyKey:(NSString *)emptyKey {
     LauncherProfileContentManagerViewController *vc = [LauncherProfileContentManagerViewController new];
-    vc.profile = self.profile;
+    vc.directoryPath = directoryPath;
+    vc.titleKey = titleKey;
+    vc.emptyKey = emptyKey;
     vc.contentType = type;
     [self.navigationController pushViewController:vc animated:YES];
 }
@@ -618,42 +683,72 @@ static NSString *LauncherManagedContentSummary(NSDictionary *profile, LauncherPr
     if ([item[@"key"] isEqualToString:@"manageMods"]) {
         [tableView deselectRowAtIndexPath:indexPath animated:NO];
         [self.view endEditing:YES];
-        [self openContentManagerForType:LauncherProfileManagedContentTypeMod];
+        [self openContentManagerForType:LauncherProfileManagedContentTypeMod
+                           directoryPath:[self profileManagedContentDirectoryForType:LauncherProfileManagedContentTypeMod]
+                                titleKey:@"profile.title.manage_mods"
+                                emptyKey:@"profile.detail.manage_mods.empty"];
+        return;
+    } else if ([item[@"key"] isEqualToString:@"manageSharedMods"]) {
+        [tableView deselectRowAtIndexPath:indexPath animated:NO];
+        [self.view endEditing:YES];
+        [self openContentManagerForType:LauncherProfileManagedContentTypeMod
+                           directoryPath:[self sharedManagedContentDirectoryForType:LauncherProfileManagedContentTypeMod]
+                                titleKey:@"profile.title.manage_shared_mods"
+                                emptyKey:@"profile.detail.manage_shared_mods.empty"];
         return;
     } else if ([item[@"key"] isEqualToString:@"manageResourcePacks"]) {
         [tableView deselectRowAtIndexPath:indexPath animated:NO];
         [self.view endEditing:YES];
-        [self openContentManagerForType:LauncherProfileManagedContentTypeResourcePack];
+        [self openContentManagerForType:LauncherProfileManagedContentTypeResourcePack
+                           directoryPath:[self sharedManagedContentDirectoryForType:LauncherProfileManagedContentTypeResourcePack]
+                                titleKey:@"profile.title.manage_resourcepacks"
+                                emptyKey:@"profile.detail.manage_resourcepacks.empty"];
         return;
     } else if ([item[@"key"] isEqualToString:@"manageDataPacks"]) {
         [tableView deselectRowAtIndexPath:indexPath animated:NO];
         [self.view endEditing:YES];
-        [self openContentManagerForType:LauncherProfileManagedContentTypeDataPack];
+        [self openContentManagerForType:LauncherProfileManagedContentTypeDataPack
+                           directoryPath:[self sharedManagedContentDirectoryForType:LauncherProfileManagedContentTypeDataPack]
+                                titleKey:@"profile.title.manage_datapacks"
+                                emptyKey:@"profile.detail.manage_datapacks.empty"];
         return;
     } else if ([item[@"key"] isEqualToString:@"manageShaders"]) {
         [tableView deselectRowAtIndexPath:indexPath animated:NO];
         [self.view endEditing:YES];
-        [self openContentManagerForType:LauncherProfileManagedContentTypeShader];
+        [self openContentManagerForType:LauncherProfileManagedContentTypeShader
+                           directoryPath:[self sharedManagedContentDirectoryForType:LauncherProfileManagedContentTypeShader]
+                                titleKey:@"profile.title.manage_shaders"
+                                emptyKey:@"profile.detail.manage_shaders.empty"];
         return;
     } else if ([item[@"key"] isEqualToString:@"downloadMods"]) {
         [tableView deselectRowAtIndexPath:indexPath animated:NO];
         [self.view endEditing:YES];
-        [self openInstallerForMode:ModrinthInstallModeMod directoryName:@"mods"];
+        [self openInstallerForMode:ModrinthInstallModeMod
+                   destinationPath:[self profileManagedContentDirectoryForType:LauncherProfileManagedContentTypeMod]];
+        return;
+    } else if ([item[@"key"] isEqualToString:@"downloadSharedMods"]) {
+        [tableView deselectRowAtIndexPath:indexPath animated:NO];
+        [self.view endEditing:YES];
+        [self openInstallerForMode:ModrinthInstallModeMod
+                   destinationPath:[self sharedManagedContentDirectoryForType:LauncherProfileManagedContentTypeMod]];
         return;
     } else if ([item[@"key"] isEqualToString:@"downloadResourcePacks"]) {
         [tableView deselectRowAtIndexPath:indexPath animated:NO];
         [self.view endEditing:YES];
-        [self openInstallerForMode:ModrinthInstallModeResourcePack directoryName:@"resourcepacks"];
+        [self openInstallerForMode:ModrinthInstallModeResourcePack
+                   destinationPath:[self sharedManagedContentDirectoryForType:LauncherProfileManagedContentTypeResourcePack]];
         return;
     } else if ([item[@"key"] isEqualToString:@"downloadDataPacks"]) {
         [tableView deselectRowAtIndexPath:indexPath animated:NO];
         [self.view endEditing:YES];
-        [self openInstallerForMode:ModrinthInstallModeDataPack directoryName:@"datapacks"];
+        [self openInstallerForMode:ModrinthInstallModeDataPack
+                   destinationPath:[self sharedManagedContentDirectoryForType:LauncherProfileManagedContentTypeDataPack]];
         return;
     } else if ([item[@"key"] isEqualToString:@"downloadShaders"]) {
         [tableView deselectRowAtIndexPath:indexPath animated:NO];
         [self.view endEditing:YES];
-        [self openInstallerForMode:ModrinthInstallModeShader directoryName:@"shaderpacks"];
+        [self openInstallerForMode:ModrinthInstallModeShader
+                   destinationPath:[self sharedManagedContentDirectoryForType:LauncherProfileManagedContentTypeShader]];
         return;
     }
 
