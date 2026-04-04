@@ -8,6 +8,8 @@
 #import "PLProfiles.h"
 #import "utils.h"
 
+NSString *const TouchControllerConnectionStateDidChangeNotification = @"TouchControllerConnectionStateDidChangeNotification";
+
 typedef NS_ENUM(uint32_t, TouchControllerMessageType) {
     TouchControllerMessageTypeAdd = 1,
     TouchControllerMessageTypeRemove = 2,
@@ -36,6 +38,7 @@ typedef struct {
 - (void)handleIncomingModMessage:(NSData *)message;
 - (NSString *)currentSessionToken;
 - (BOOL)isSessionEnabledValue;
+- (BOOL)isModConnectedValue;
 - (void)setVibrationHandlerSafely:(TouchControllerVibrationHandler)handler;
 - (void)disconnectCurrentHandle;
 
@@ -54,11 +57,21 @@ typedef struct {
     return self;
 }
 
+- (void)updateModConnected:(BOOL)connected {
+    BOOL changed = self.modConnected != connected;
+    self.modConnected = connected;
+    if (changed) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [[NSNotificationCenter defaultCenter] postNotificationName:TouchControllerConnectionStateDidChangeNotification object:nil];
+        });
+    }
+}
+
 - (void)prepareSessionForGameDirectory:(NSString *)gameDir {
     BOOL enabled = TouchControllerShouldEnableForGameDirectory(gameDir);
     dispatch_sync(_queue, ^{
         self.sessionEnabled = enabled;
-        self.modConnected = NO;
+        [self updateModConnected:NO];
         [self.launcherToModQueue removeAllObjects];
         self.sessionToken = enabled ? [NSString stringWithFormat:@"touchcontroller-%@", [NSUUID UUID].UUIDString.lowercaseString] : nil;
         if (enabled) {
@@ -72,7 +85,7 @@ typedef struct {
 - (void)reset {
     dispatch_sync(_queue, ^{
         self.sessionEnabled = NO;
-        self.modConnected = NO;
+        [self updateModConnected:NO];
         self.sessionToken = nil;
         [self.launcherToModQueue removeAllObjects];
     });
@@ -83,7 +96,7 @@ typedef struct {
     dispatch_sync(_queue, ^{
         valid = self.sessionEnabled && token.length > 0 && [self.sessionToken isEqualToString:token];
         if (valid) {
-            self.modConnected = YES;
+            [self updateModConnected:YES];
             [self.launcherToModQueue removeAllObjects];
         }
     });
@@ -193,9 +206,17 @@ typedef struct {
     });
 }
 
+- (BOOL)isModConnectedValue {
+    __block BOOL connected = NO;
+    dispatch_sync(_queue, ^{
+        connected = self.modConnected;
+    });
+    return connected;
+}
+
 - (void)disconnectCurrentHandle {
     dispatch_sync(_queue, ^{
-        self.modConnected = NO;
+        [self updateModConnected:NO];
         [self.launcherToModQueue removeAllObjects];
     });
 }
@@ -308,6 +329,10 @@ void TouchControllerResetSession(void) {
 
 BOOL TouchControllerIsSessionEnabled(void) {
     return [TouchControllerSharedBridge() isSessionEnabledValue];
+}
+
+BOOL TouchControllerIsInputActive(void) {
+    return [TouchControllerSharedBridge() isModConnectedValue];
 }
 
 void TouchControllerSetVibrationHandler(TouchControllerVibrationHandler handler) {
