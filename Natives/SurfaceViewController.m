@@ -1139,9 +1139,6 @@ int touchesMovedCount;
         for (UITouch *touch in touches) {
             [self touchControllerSendLegacyPointerForTouch:touch remove:NO];
         }
-        if (isGrabbing == JNI_TRUE) {
-            return;
-        }
     }
 
     for (UITouch *touch in touches) {
@@ -1178,9 +1175,6 @@ int touchesMovedCount;
             }
             [self touchControllerSendLegacyPointerForTouch:touch remove:NO];
         }
-        if (isGrabbing == JNI_TRUE) {
-            return;
-        }
     }
 
     for (UITouch *touch in touches) {
@@ -1208,9 +1202,6 @@ int touchesMovedCount;
             [self touchControllerSendLegacyPointerForTouch:touch remove:YES];
         }
         [self touchControllerClearFingerIdsForTouches:touches];
-        if (isGrabbing == JNI_TRUE) {
-            return;
-        }
     }
     for (UITouch *touch in touches) {
         if (touch.type == UITouchTypeIndirectPointer) {
