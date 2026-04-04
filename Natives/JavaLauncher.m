@@ -282,9 +282,10 @@ int launchJVM(NSString *username, id launchTarget, int width, int height, int mi
     }
 
     if ([launchTarget isKindOfClass:NSDictionary.class]) {
-        if (TouchControllerShouldEnableForGameDirectory(gameDir)) {
-            setenv("TOUCH_CONTROLLER_PROXY", "12450", 1);
-            NSLog(@"[JavaLauncher] TouchController legacy UDP enabled");
+        NSString *touchControllerSession = TouchControllerPrepareSessionForGameDirectory(gameDir);
+        if (touchControllerSession.length > 0) {
+            setenv("TOUCH_CONTROLLER_PROXY_SOCKET", touchControllerSession.UTF8String, 1);
+            NSLog(@"[JavaLauncher] TouchController socket bridge enabled");
         }
     }
 

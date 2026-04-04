@@ -25,16 +25,9 @@
 #include "glfw_keycodes.h"
 #include "utils.h"
 
-#include <arpa/inet.h>
 #include <dlfcn.h>
 #include <errno.h>
-#include <fcntl.h>
-#include <netinet/in.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <unistd.h>
-
-#define TOUCH_CONTROLLER_UDP_PORT 12450
 
 int memorystatus_control(uint32_t command, int32_t pid, uint32_t flags, void *buffer, size_t buffersize);
 #define MEMORYSTATUS_CMD_SET_JETSAM_TASK_LIMIT        6
@@ -43,111 +36,6 @@ static int currentHotbarSlot = -1;
 static GameSurfaceView* pojavWindow;
 static int32_t touchControllerFingerIdCounter = 0;
 static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
-
-@interface TouchControllerUDPSender : NSObject {
-    int _socketFd;
-    struct sockaddr_in6 _targetAddress;
-}
-
-- (void)sendMessageType:(int32_t)type fingerId:(int32_t)fingerId x:(float)x y:(float)y;
-- (void)sendClearPointers;
-
-@end
-
-@implementation TouchControllerUDPSender
-
-- (instancetype)init {
-    self = [super init];
-    if (self) {
-        _socketFd = socket(AF_INET6, SOCK_DGRAM, 0);
-        if (_socketFd < 0) {
-            NSLog(@"[TouchController] Failed to create UDP socket");
-            return self;
-        }
-
-        int sendBufferSize = 256 * 1024;
-        setsockopt(_socketFd, SOL_SOCKET, SO_SNDBUF, &sendBufferSize, sizeof(sendBufferSize));
-
-        int flags = fcntl(_socketFd, F_GETFL, 0);
-        if (flags >= 0) {
-            fcntl(_socketFd, F_SETFL, flags | O_NONBLOCK);
-        }
-
-        memset(&_targetAddress, 0, sizeof(_targetAddress));
-        _targetAddress.sin6_family = AF_INET6;
-        _targetAddress.sin6_port = htons(TOUCH_CONTROLLER_UDP_PORT);
-        if (inet_pton(AF_INET6, "::1", &_targetAddress.sin6_addr) <= 0) {
-            NSLog(@"[TouchController] Failed to resolve localhost IPv6 address");
-        }
-    }
-    return self;
-}
-
-- (void)dealloc {
-    if (_socketFd >= 0) {
-        close(_socketFd);
-    }
-}
-
-- (void)sendMessageType:(int32_t)type fingerId:(int32_t)fingerId x:(float)x y:(float)y {
-    if (_socketFd < 0) {
-        return;
-    }
-
-    struct {
-        int32_t type;
-        int32_t id;
-        int32_t x;
-        int32_t y;
-    } packet;
-
-    packet.type = htonl(type);
-    packet.id = htonl(fingerId);
-
-    union {
-        float f;
-        int32_t i;
-    } xValue, yValue;
-    xValue.f = x;
-    yValue.f = y;
-    packet.x = htonl(xValue.i);
-    packet.y = htonl(yValue.i);
-
-    size_t packetLength = type == 2 ? 8 : 16;
-    int maxRetries = type == 2 ? 3 : 2;
-    for (int retry = 0; retry < maxRetries; retry++) {
-        ssize_t sent = sendto(_socketFd, &packet, packetLength, 0, (struct sockaddr *)&_targetAddress, sizeof(_targetAddress));
-        if (sent == (ssize_t)packetLength) {
-            return;
-        }
-        if (sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-            usleep(500);
-            continue;
-        }
-        break;
-    }
-}
-
-- (void)sendClearPointers {
-    if (_socketFd < 0) {
-        return;
-    }
-
-    int32_t clearType = htonl(3);
-    for (int retry = 0; retry < 4; retry++) {
-        ssize_t sent = sendto(_socketFd, &clearType, sizeof(clearType), 0, (struct sockaddr *)&_targetAddress, sizeof(_targetAddress));
-        if (sent == sizeof(clearType)) {
-            return;
-        }
-        if (sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-            usleep(500);
-            continue;
-        }
-        break;
-    }
-}
-
-@end
 
 @interface SurfaceViewController ()<UITextFieldDelegate, UIGestureRecognizerDelegate> {
 }
@@ -176,9 +64,10 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
 @property(nonatomic) UIImpactFeedbackGenerator *lightHaptic;
 @property(nonatomic) UIImpactFeedbackGenerator *mediumHaptic;
 @property(nonatomic) BOOL touchControllerInstalled;
-@property(nonatomic) TouchControllerUDPSender *touchControllerSender;
+@property(nonatomic) BOOL touchControllerActive;
 @property(nonatomic) id appWillResignActiveObserver;
 @property(nonatomic) id appWillTerminateObserver;
+@property(nonatomic) id touchControllerConnectionObserver;
 
 @end
 
@@ -197,6 +86,10 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
     if (self.appWillTerminateObserver != nil) {
         [[NSNotificationCenter defaultCenter] removeObserver:self.appWillTerminateObserver];
     }
+    if (self.touchControllerConnectionObserver != nil) {
+        [[NSNotificationCenter defaultCenter] removeObserver:self.touchControllerConnectionObserver];
+    }
+    TouchControllerSetVibrationHandler(nil);
     [self touchControllerClearRemotePointers];
     [self touchControllerClearAllFingerIds];
 }
@@ -211,19 +104,58 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
     self.edgeGesture.enabled = YES;
 }
 
+- (void)updateTouchControllerInteractionState {
+    self.tapGesture.enabled = !self.touchControllerActive;
+    self.longPressGesture.enabled = !self.touchControllerActive;
+    self.longPressTwoGesture.enabled = !self.touchControllerActive;
+    self.doubleTapGesture.enabled = !self.touchControllerActive && self.enableHotbarGestures;
+    self.scrollPanGesture.enabled = !self.touchControllerActive && !isGrabbing && self.enableMouseGestures;
+    [self updateTouchControllerUIState];
+}
+
+- (void)syncTouchControllerConnectionState {
+    BOOL active = self.touchControllerInstalled && TouchControllerIsInputActive();
+    if (self.touchControllerActive == active) {
+        [self updateTouchControllerInteractionState];
+        return;
+    }
+
+    self.touchControllerActive = active;
+    self.primaryTouch = nil;
+    self.hotbarTouch = nil;
+    self.shouldTriggerClick = NO;
+    currentHotbarSlot = -1;
+    [self touchControllerClearAllFingerIds];
+    if (self.touchControllerActive) {
+        [self touchControllerClearRemotePointers];
+    }
+    [self updateTouchControllerInteractionState];
+}
+
+- (NSNumber *)touchControllerExistingFingerIdForTouch:(UITouch *)touch {
+    if (touchControllerFingerIds == nil) {
+        return nil;
+    }
+
+    NSString *touchKey = [NSString stringWithFormat:@"%p", touch];
+    return touchControllerFingerIds[touchKey];
+}
+
 - (int32_t)touchControllerFingerIdForTouch:(UITouch *)touch {
     if (touchControllerFingerIds == nil) {
         touchControllerFingerIds = [NSMutableDictionary dictionary];
     }
 
-    NSString *touchKey = [NSString stringWithFormat:@"%p", touch];
-    NSNumber *existingFingerId = touchControllerFingerIds[touchKey];
+    NSNumber *existingFingerId = [self touchControllerExistingFingerIdForTouch:touch];
     if (existingFingerId != nil) {
         return existingFingerId.intValue;
     }
 
-    touchControllerFingerIdCounter = (touchControllerFingerIdCounter + 1) % 100000;
-    int32_t fingerId = touchControllerFingerIdCounter;
+    if (touchControllerFingerIdCounter == INT32_MAX) {
+        touchControllerFingerIdCounter = 0;
+    }
+    int32_t fingerId = ++touchControllerFingerIdCounter;
+    NSString *touchKey = [NSString stringWithFormat:@"%p", touch];
     touchControllerFingerIds[touchKey] = @(fingerId);
     return fingerId;
 }
@@ -237,9 +169,6 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
         NSString *touchKey = [NSString stringWithFormat:@"%p", touch];
         [touchControllerFingerIds removeObjectForKey:touchKey];
     }
-    if (touchControllerFingerIds.count == 0) {
-        [self touchControllerClearRemotePointers];
-    }
 }
 
 - (void)touchControllerClearAllFingerIds {
@@ -247,18 +176,18 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
 }
 
 - (void)touchControllerClearRemotePointers {
-    if (!self.touchControllerInstalled || self.touchControllerSender == nil) {
+    if (!self.touchControllerInstalled) {
         return;
     }
-    [self.touchControllerSender sendClearPointers];
+    TouchControllerSendClearPointer();
 }
 
 - (BOOL)touchControllerShouldConsumeSurfaceTouch:(UITouch *)touch {
-    return self.touchControllerInstalled && touch.type != UITouchTypeIndirectPointer && touch.view == self.surfaceView;
+    return self.touchControllerActive && touch.type != UITouchTypeIndirectPointer && touch.view == self.surfaceView;
 }
 
-- (void)touchControllerSendLegacyPointerForTouch:(UITouch *)touch remove:(BOOL)remove {
-    if (!self.touchControllerInstalled || self.touchControllerSender == nil) {
+- (void)touchControllerSendPointerForTouch:(UITouch *)touch remove:(BOOL)remove {
+    if (!self.touchControllerActive) {
         return;
     }
     if (touch.type == UITouchTypeIndirectPointer || touch.view != self.surfaceView) {
@@ -267,7 +196,7 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
 
     int32_t fingerId = [self touchControllerFingerIdForTouch:touch];
     if (remove) {
-        [self.touchControllerSender sendMessageType:2 fingerId:fingerId x:0.0f y:0.0f];
+        TouchControllerSendRemovePointer((uint32_t)fingerId);
         return;
     }
 
@@ -276,7 +205,41 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
     CGFloat height = MAX(self.surfaceView.bounds.size.height, 1.0);
     float x = (float)clamp(location.x / width, 0.0, 1.0);
     float y = (float)clamp(location.y / height, 0.0, 1.0);
-    [self.touchControllerSender sendMessageType:1 fingerId:fingerId x:x y:y];
+    TouchControllerSendAddPointer((uint32_t)fingerId, x, y);
+}
+
+- (void)touchControllerSendEndedPointersForTouches:(NSSet<UITouch *> *)touches {
+    if (!self.touchControllerActive || touchControllerFingerIds.count == 0) {
+        [self touchControllerClearFingerIdsForTouches:touches];
+        return;
+    }
+
+    NSMutableArray<NSNumber *> *fingerIds = [NSMutableArray array];
+    for (UITouch *touch in touches) {
+        if (touch.type == UITouchTypeIndirectPointer || touch.view != self.surfaceView) {
+            continue;
+        }
+        NSNumber *fingerId = [self touchControllerExistingFingerIdForTouch:touch];
+        if (fingerId != nil) {
+            [fingerIds addObject:fingerId];
+        }
+    }
+
+    if (fingerIds.count == 0) {
+        [self touchControllerClearFingerIdsForTouches:touches];
+        return;
+    }
+
+    NSUInteger remainingPointers = touchControllerFingerIds.count >= fingerIds.count ? touchControllerFingerIds.count - fingerIds.count : 0;
+    if (remainingPointers == 0) {
+        [self touchControllerClearRemotePointers];
+    } else {
+        for (NSNumber *fingerId in fingerIds) {
+            TouchControllerSendRemovePointer((uint32_t)fingerId.unsignedIntValue);
+        }
+    }
+
+    [self touchControllerClearFingerIdsForTouches:touches];
 }
 
 - (void)viewDidLoad
@@ -289,9 +252,29 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
 
     self.lightHaptic = [[UIImpactFeedbackGenerator alloc] initWithStyle:(UIImpactFeedbackStyleLight)];
     self.mediumHaptic = [[UIImpactFeedbackGenerator alloc] initWithStyle:(UIImpactFeedbackStyleMedium)];
+    TouchControllerSetVibrationHandler(nil);
     self.touchControllerInstalled = TouchControllerShouldEnableForCurrentProfile();
-    self.touchControllerSender = self.touchControllerInstalled ? [TouchControllerUDPSender new] : nil;
+    self.touchControllerActive = self.touchControllerInstalled && TouchControllerIsInputActive();
     __weak typeof(self) weakSelf = self;
+    if (self.touchControllerInstalled) {
+        TouchControllerSetVibrationHandler(^(NSInteger kind) {
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (strongSelf == nil || !strongSelf.shouldTriggerHaptic) {
+                return;
+            }
+            if (kind == 0) {
+                [strongSelf.lightHaptic impactOccurred];
+            }
+        });
+        self.touchControllerConnectionObserver = [[NSNotificationCenter defaultCenter]
+            addObserverForName:TouchControllerConnectionStateDidChangeNotification
+                        object:nil
+                         queue:[NSOperationQueue mainQueue]
+                    usingBlock:^(NSNotification * _Nonnull note) {
+                        __strong typeof(weakSelf) strongSelf = weakSelf;
+                        [strongSelf syncTouchControllerConnectionState];
+                    }];
+    }
     self.appWillResignActiveObserver = [[NSNotificationCenter defaultCenter]
         addObserverForName:UIApplicationWillResignActiveNotification
                     object:nil
@@ -575,11 +558,7 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
     self.enableHotbarGestures = getPrefBool(@"control.gesture_hotbar");
     self.shouldTriggerHaptic = !getPrefBool(@"control.disable_haptics");
     self.longPressGesture.minimumPressDuration = getPrefFloat(@"control.press_duration") / 1000.0;
-    self.tapGesture.enabled = !self.touchControllerInstalled;
-    self.longPressGesture.enabled = !self.touchControllerInstalled;
-    self.longPressTwoGesture.enabled = !self.touchControllerInstalled;
-    self.doubleTapGesture.enabled = !self.touchControllerInstalled && self.enableHotbarGestures;
-    self.scrollPanGesture.enabled = !self.touchControllerInstalled && self.enableMouseGestures;
+    [self syncTouchControllerConnectionState];
 
     // Update audio settings
     [self updateAudioSettings];
@@ -594,7 +573,7 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
     }
     // Update pointer lock state
     [self setNeedsUpdateOfPrefersPointerLocked];
-    [self updateTouchControllerUIState];
+    [self updateTouchControllerInteractionState];
 }
 
 - (void)updateSavedResolution {
@@ -653,10 +632,9 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
         virtualMouseFrame.origin.y = self.view.frame.size.height / 2;
         self.mousePointerView.frame = virtualMouseFrame;
     }
-    self.scrollPanGesture.enabled = !self.touchControllerInstalled && !isGrabbing && self.enableMouseGestures;
     self.mousePointerView.hidden = isGrabbing || !virtualMouseEnabled;
     [self setNeedsUpdateOfPrefersPointerLocked];
-    self.ctrlView.hidden = [self shouldHideControlsForExternalInput];
+    [self updateTouchControllerInteractionState];
 
     // Update buttons visibility
     [self updateControlHiddenState:NO];
@@ -1216,9 +1194,9 @@ int touchesMovedCount;
 {
     [super touchesBegan:touches withEvent:event];
 
-    if (self.touchControllerInstalled) {
+    if (self.touchControllerActive) {
         for (UITouch *touch in touches) {
-            [self touchControllerSendLegacyPointerForTouch:touch remove:NO];
+            [self touchControllerSendPointerForTouch:touch remove:NO];
         }
     }
 
@@ -1248,7 +1226,7 @@ int touchesMovedCount;
 {
     [super touchesMoved:touches withEvent:event];
 
-    if (self.touchControllerInstalled) {
+    if (self.touchControllerActive) {
         for (UITouch *touch in touches) {
             if (touch.type == UITouchTypeIndirectPointer) {
                 if (!isGrabbing && !virtualMouseEnabled) {
@@ -1257,7 +1235,7 @@ int touchesMovedCount;
                 }
                 continue;
             }
-            [self touchControllerSendLegacyPointerForTouch:touch remove:NO];
+            [self touchControllerSendPointerForTouch:touch remove:NO];
         }
     }
 
@@ -1284,11 +1262,8 @@ int touchesMovedCount;
 // For ACTION_UP and ACTION_CANCEL
 - (void)touchesEndedGlobal:(NSSet *)touches withEvent:(UIEvent *)event
 {
-    if (self.touchControllerInstalled) {
-        for (UITouch *touch in touches) {
-            [self touchControllerSendLegacyPointerForTouch:touch remove:YES];
-        }
-        [self touchControllerClearFingerIdsForTouches:touches];
+    if (self.touchControllerActive) {
+        [self touchControllerSendEndedPointersForTouches:touches];
     }
     for (UITouch *touch in touches) {
         if ([self touchControllerShouldConsumeSurfaceTouch:touch]) {
