@@ -159,6 +159,8 @@ add_executable(AngelAuraAmethyst
   LauncherSplitViewController.m
   MinecraftResourceDownloadTask.m
   MinecraftResourceUtils.m
+  OpenAIAuthSession.m
+  OpenAIAuthViewController.m
   PickTextField.m
   PLLogOutputView.m
   PLPickerView.m

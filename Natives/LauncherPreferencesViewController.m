@@ -8,6 +8,8 @@
 #import "LauncherPreferencesViewController.h"
 #import "LauncherPrefContCfgViewController.h"
 #import "LauncherPrefManageJREViewController.h"
+#import "OpenAIAuthSession.h"
+#import "OpenAIAuthViewController.h"
 #import "UIKit+hook.h"
 
 #import "config.h"
@@ -38,6 +40,9 @@
     }
 
     self.getPreference = ^id(NSString *section, NSString *key){
+        if ([section isEqualToString:@"ai"] && [key isEqualToString:@"ai_sign_in"]) {
+            return [[OpenAIAuthSession sharedSession] statusSummary];
+        }
         NSString *keyFull = [NSString stringWithFormat:@"%@.%@", section, key];
         return getPrefObject(keyFull);
     };
@@ -388,6 +393,14 @@
                 @"hasDetail": @YES,
                 @"icon": @"sparkles",
                 @"type": self.typeSwitch,
+                @"enableCondition": whenNotInGame
+            },
+            @{@"key": @"ai_sign_in",
+                @"hasDetail": @YES,
+                @"icon": @"person.badge.key",
+                @"type": self.typeChildPane,
+                @"class": OpenAIAuthViewController.class,
+                @"canDismissWithSwipe": @YES,
                 @"enableCondition": whenNotInGame
             },
             @{@"key": @"ai_model",

@@ -75,7 +75,10 @@ static NSString *AIModDoctorEnsureTrailingNewline(NSString *string) {
     NSString *apiKey = [self apiKey];
     if (apiKey.length == 0) {
         if (error) {
-            *error = [self errorWithCode:AIModDoctorErrorCodeConfiguration description:@"Missing OpenAI API key in Settings."];
+            NSString *description = getPrefBool(@"ai.oauth_signed_in")
+                ? @"Experimental OpenAI sign-in is stored, but AI requests in this build still need an API key or backend proxy."
+                : @"Missing OpenAI API key in Settings.";
+            *error = [self errorWithCode:AIModDoctorErrorCodeConfiguration description:description];
         }
         return nil;
     }
