@@ -264,6 +264,19 @@
 "preference.title.custom_env" = "Environment variables";
 "preference.detail.custom_env" = "This option is under construction. Create and edit custom_env.txt in the meantime.";
 
+"preference.section.ai" = "AI";
+"preference.section.footer.ai" = "OpenAI-powered diagnosis and repair for launcher data inside the app sandbox. Store your API key carefully.";
+"preference.title.ai_enabled" = "Enable AI System Doctor";
+"preference.detail.ai_enabled" = "Allow the launcher to call OpenAI for diagnosis and repair actions.";
+"preference.title.ai_model" = "OpenAI model";
+"preference.detail.ai_model" = "Responses API model to use. Leave blank to default to gpt-5.4-mini.";
+"preference.title.ai_base_url" = "OpenAI base URL";
+"preference.detail.ai_base_url" = "Default is https://api.openai.com/v1.";
+"preference.title.ai_api_key" = "OpenAI API key";
+"preference.detail.ai_api_key" = "Stored locally on this device and sent only to the configured OpenAI-compatible endpoint.";
+"preference.title.ai_full_access" = "Full access in app data";
+"preference.detail.ai_full_access" = "Allow writes anywhere under POJAV_HOME. If disabled, writes stay scoped to the current profile and AI workspace. New installs default to ON.";
+
 "preference.title.debug_always_attached_jit" = "Keep attached to StikDebug";
 "preference.detail.debug_always_attached_jit" = "Enable this if your mods require loading .dylib at runtime. When this is on, StikDebug's PiP should not be closed during gameplay.";
 "preference.title.debug_skip_wait_jit" = "Skip \"Waiting for JIT\" dialog";
@@ -291,6 +304,7 @@
 "preference.profile.title.download_resourcepacks" = "Download resource packs";
 "preference.profile.title.download_datapacks" = "Download data packs";
 "preference.profile.title.download_shaders" = "Download shaders";
+"preference.profile.title.ai_doctor" = "AI System Doctor";
 "preference.profile.title.default_touch_control" = "Touch controls";
 "preference.profile.title.default_gamepad_control" = "Gamepad controls";
 
@@ -334,6 +348,21 @@
 "mods.empty" = "No mods found in this profile.";
 "mods.status.enabled" = "Enabled";
 "mods.status.disabled" = "Disabled";
+
+"ai_doctor.title" = "AI System Doctor";
+"ai_doctor.action.analyze" = "Analyze";
+"ai_doctor.action.repair" = "Auto repair";
+"ai_doctor.log.ready" = "Ready. Run Analyze for diagnosis only, or Auto repair to let AI modify files across the allowed launcher-data roots.";
+"ai_doctor.log.start_analyze" = "Starting analysis";
+"ai_doctor.log.start_repair" = "Starting auto repair";
+"ai_doctor.log.summary" = "Summary";
+"ai_doctor.summary.profile" = "Profile: %@\nVersion: %@\nGame dir: %@";
+"ai_doctor.summary.status" = "Status: %@\nModel: %@\nWrite scope: %@";
+"ai_doctor.status.enabled" = "Enabled";
+"ai_doctor.status.disabled" = "Disabled";
+"ai_doctor.access.full" = "Full POJAV_HOME access";
+"ai_doctor.access.profile" = "Current profile only";
+"ai_doctor.detail.row" = "%@, %@";
 
 "controller_configurator.title.current" = "Gamepad configuration file";
 "controller_configurator.title.type.xbox" = "Xbox";

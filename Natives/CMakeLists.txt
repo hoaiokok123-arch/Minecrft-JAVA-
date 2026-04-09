@@ -137,6 +137,8 @@ add_executable(AngelAuraAmethyst
   input/KeyboardInput.m
 
   AccountListViewController.m
+  AIModDoctorService.m
+  AIModDoctorViewController.m
   AppDelegate.m
   CustomControlsViewController.m
   CustomControlsViewController+UndoManager.m

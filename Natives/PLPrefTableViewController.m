@@ -189,6 +189,10 @@
         //view.nonEditingLinebreakMode = NSLineBreakByCharWrapping;
         view.returnKeyType = UIReturnKeyDone;
         view.textAlignment = NSTextAlignmentRight;
+        view.secureTextEntry = [item[@"secureTextEntry"] boolValue];
+        if (item[@"keyboardType"]) {
+            view.keyboardType = [item[@"keyboardType"] integerValue];
+        }
         view.placeholder = localize((item[@"placeholder"] ? item[@"placeholder"] :
             [NSString stringWithFormat:@"preference.placeholder.%@", key]), nil);
         view.text = weakSelf.getPreference(section, key);
