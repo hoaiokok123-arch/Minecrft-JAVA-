@@ -1,7 +1,6 @@
 #import "LauncherNavigationController.h"
 #import "LauncherPreferences.h"
 #import "LauncherProfileEditorViewController.h"
-#import "AIModDoctorViewController.h"
 #import "MinecraftResourceUtils.h"
 #import "PickTextField.h"
 #import "PLProfiles.h"
@@ -416,12 +415,6 @@ static NSString *LauncherManagedContentSummary(NSString *directory, LauncherProf
             return localize(@"profile.detail.download_datapacks", nil);
         } else if ([key isEqualToString:@"downloadShaders"]) {
             return localize(@"profile.detail.download_shaders", nil);
-        } else if ([key isEqualToString:@"aiModDoctor"]) {
-            NSString *statusKey = getPrefBool(@"ai.ai_enabled") ? @"ai_doctor.status.enabled" : @"ai_doctor.status.disabled";
-            BOOL fullAccessEnabled = getPrefObject(@"ai.ai_full_access") ? getPrefBool(@"ai.ai_full_access") : YES;
-            NSString *accessKey = fullAccessEnabled ? @"ai_doctor.access.full" : @"ai_doctor.access.profile";
-            return [NSString stringWithFormat:localize(@"ai_doctor.detail.row", nil),
-                localize(statusKey, nil), localize(accessKey, nil)];
         }
 
         NSString *value = weakSelf.profile[key];
@@ -506,11 +499,6 @@ static NSString *LauncherManagedContentSummary(NSString *directory, LauncherProf
           @"title": @"preference.profile.title.manage_mods",
           @"type": self.typeChildPane
         },
-        @{@"key": @"aiModDoctor",
-          @"icon": @"stethoscope",
-          @"title": @"preference.profile.title.ai_doctor",
-          @"type": self.typeChildPane
-        }
     ]];
     if (showsSharedMods) {
         [generalPrefs addObject:@{@"key": @"manageSharedMods",
@@ -690,15 +678,6 @@ static NSString *LauncherManagedContentSummary(NSString *directory, LauncherProf
     [self.navigationController pushViewController:vc animated:YES];
 }
 
-- (void)openAIModDoctor {
-    AIModDoctorViewController *vc = [AIModDoctorViewController new];
-    vc.profile = self.profile.copy;
-    vc.profileName = self.profile[@"name"] ?: self.oldName;
-    vc.instanceDirectory = LauncherInstanceDirectory(getPrefObject(@"general.game_directory"));
-    vc.gameDirectory = LauncherProfileResolvedGameDirectory(self.profile);
-    vc.sharedModsDirectory = [self sharedManagedContentDirectoryForType:LauncherProfileManagedContentTypeMod];
-    [self.navigationController pushViewController:vc animated:YES];
-}
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     NSDictionary *item = self.prefContents[indexPath.section][indexPath.row];
@@ -709,11 +688,6 @@ static NSString *LauncherManagedContentSummary(NSString *directory, LauncherProf
                            directoryPath:[self profileManagedContentDirectoryForType:LauncherProfileManagedContentTypeMod]
                                 titleKey:@"profile.title.manage_mods"
                                 emptyKey:@"profile.detail.manage_mods.empty"];
-        return;
-    } else if ([item[@"key"] isEqualToString:@"aiModDoctor"]) {
-        [tableView deselectRowAtIndexPath:indexPath animated:NO];
-        [self.view endEditing:YES];
-        [self openAIModDoctor];
         return;
     } else if ([item[@"key"] isEqualToString:@"manageSharedMods"]) {
         [tableView deselectRowAtIndexPath:indexPath animated:NO];

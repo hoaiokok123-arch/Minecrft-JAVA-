@@ -137,8 +137,6 @@ add_executable(AngelAuraAmethyst
   input/KeyboardInput.m
 
   AccountListViewController.m
-  AIModDoctorService.m
-  AIModDoctorViewController.m
   AppDelegate.m
   CustomControlsViewController.m
   CustomControlsViewController+UndoManager.m
@@ -159,8 +157,6 @@ add_executable(AngelAuraAmethyst
   LauncherSplitViewController.m
   MinecraftResourceDownloadTask.m
   MinecraftResourceUtils.m
-  OpenAIAuthSession.m
-  OpenAIAuthViewController.m
   PickTextField.m
   PLLogOutputView.m
   PLPickerView.m

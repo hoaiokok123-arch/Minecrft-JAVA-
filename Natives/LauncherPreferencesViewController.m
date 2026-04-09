@@ -8,8 +8,6 @@
 #import "LauncherPreferencesViewController.h"
 #import "LauncherPrefContCfgViewController.h"
 #import "LauncherPrefManageJREViewController.h"
-#import "OpenAIAuthSession.h"
-#import "OpenAIAuthViewController.h"
 #import "UIKit+hook.h"
 
 #import "config.h"
@@ -35,14 +33,7 @@
 
 - (void)viewDidLoad
 {
-    if (getPrefObject(@"ai.ai_full_access") == nil) {
-        setPrefBool(@"ai.ai_full_access", YES);
-    }
-
     self.getPreference = ^id(NSString *section, NSString *key){
-        if ([section isEqualToString:@"ai"] && [key isEqualToString:@"ai_sign_in"]) {
-            return [[OpenAIAuthSession sharedSession] statusSummary];
-        }
         NSString *keyFull = [NSString stringWithFormat:@"%@.%@", section, key];
         return getPrefObject(keyFull);
     };
@@ -54,7 +45,7 @@
     self.hasDetail = YES;
     self.prefDetailVisible = self.navigationController == nil;
     
-    self.prefSections = @[@"general", @"video", @"control", @"java", @"ai", @"debug"];
+    self.prefSections = @[@"general", @"video", @"control", @"java", @"debug"];
 
     self.rendererKeys = getRendererKeys(NO);
     self.rendererList = getRendererNames(NO);
@@ -385,52 +376,6 @@
                     return view.value >= NSProcessInfo.processInfo.physicalMemory / 1048576 * 0.37;
                 },
                 @"warnKey": @"mem_warn"
-            }
-        ], @[
-            // AI diagnostics and repair
-            @{@"icon": @"sparkles.rectangle.stack"},
-            @{@"key": @"ai_enabled",
-                @"hasDetail": @YES,
-                @"icon": @"sparkles",
-                @"type": self.typeSwitch,
-                @"enableCondition": whenNotInGame
-            },
-            @{@"key": @"ai_sign_in",
-                @"hasDetail": @YES,
-                @"icon": @"person.badge.key",
-                @"type": self.typeChildPane,
-                @"class": OpenAIAuthViewController.class,
-                @"canDismissWithSwipe": @YES,
-                @"enableCondition": whenNotInGame
-            },
-            @{@"key": @"ai_model",
-                @"hasDetail": @YES,
-                @"icon": @"cpu",
-                @"type": self.typeTextField,
-                @"placeholder": @"gpt-5.4-mini",
-                @"enableCondition": whenNotInGame
-            },
-            @{@"key": @"ai_base_url",
-                @"hasDetail": @YES,
-                @"icon": @"link",
-                @"type": self.typeTextField,
-                @"placeholder": @"https://api.openai.com/v1",
-                @"keyboardType": @(UIKeyboardTypeURL),
-                @"enableCondition": whenNotInGame
-            },
-            @{@"key": @"ai_api_key",
-                @"hasDetail": @YES,
-                @"icon": @"key",
-                @"type": self.typeTextField,
-                @"placeholder": @"sk-...",
-                @"secureTextEntry": @YES,
-                @"enableCondition": whenNotInGame
-            },
-            @{@"key": @"ai_full_access",
-                @"hasDetail": @YES,
-                @"icon": @"lock.open",
-                @"type": self.typeSwitch,
-                @"enableCondition": whenNotInGame
             }
         ], @[
             // Debug settings - only recommended for developer use

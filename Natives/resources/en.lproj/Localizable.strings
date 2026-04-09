@@ -264,20 +264,6 @@
 "preference.title.custom_env" = "Environment variables";
 "preference.detail.custom_env" = "This option is under construction. Create and edit custom_env.txt in the meantime.";
 
-"preference.section.ai" = "AI";
-"preference.section.footer.ai" = "OpenAI-powered diagnosis and repair for launcher data inside the app sandbox. Browser sign-in is experimental; API key access remains the stable path.";
-"preference.title.ai_enabled" = "Enable AI System Doctor";
-"preference.detail.ai_enabled" = "Allow the launcher to call OpenAI for diagnosis and repair actions.";
-"preference.title.ai_sign_in" = "OpenAI sign-in";
-"preference.detail.ai_sign_in" = "Experimental browser-based login that returns to the app using the existing Amethyst URL scheme.";
-"preference.title.ai_model" = "OpenAI model";
-"preference.detail.ai_model" = "Responses API model to use. Leave blank to default to gpt-5.4-mini.";
-"preference.title.ai_base_url" = "OpenAI base URL";
-"preference.detail.ai_base_url" = "Default is https://api.openai.com/v1.";
-"preference.title.ai_api_key" = "OpenAI API key";
-"preference.detail.ai_api_key" = "Stored locally on this device and sent only to the configured OpenAI-compatible endpoint. This is still required for stable AI requests in this build.";
-"preference.title.ai_full_access" = "Full access in app data";
-"preference.detail.ai_full_access" = "Allow writes anywhere under POJAV_HOME. If disabled, writes stay scoped to the current profile and AI workspace. New installs default to ON.";
 
 "preference.title.debug_always_attached_jit" = "Keep attached to StikDebug";
 "preference.detail.debug_always_attached_jit" = "Enable this if your mods require loading .dylib at runtime. When this is on, StikDebug's PiP should not be closed during gameplay.";
@@ -306,7 +292,6 @@
 "preference.profile.title.download_resourcepacks" = "Download resource packs";
 "preference.profile.title.download_datapacks" = "Download data packs";
 "preference.profile.title.download_shaders" = "Download shaders";
-"preference.profile.title.ai_doctor" = "AI System Doctor";
 "preference.profile.title.default_touch_control" = "Touch controls";
 "preference.profile.title.default_gamepad_control" = "Gamepad controls";
 
@@ -351,46 +336,6 @@
 "mods.status.enabled" = "Enabled";
 "mods.status.disabled" = "Disabled";
 
-"ai_doctor.title" = "AI System Doctor";
-"ai_doctor.action.analyze" = "Analyze";
-"ai_doctor.action.repair" = "Auto repair";
-"ai_doctor.log.ready" = "Ready. Run Analyze for diagnosis only, or Auto repair to let AI modify files across the allowed launcher-data roots.";
-"ai_doctor.log.start_analyze" = "Starting analysis";
-"ai_doctor.log.start_repair" = "Starting auto repair";
-"ai_doctor.log.summary" = "Summary";
-"ai_doctor.summary.profile" = "Profile: %@\nVersion: %@\nGame dir: %@";
-"ai_doctor.summary.status" = "Status: %@\nModel: %@\nWrite scope: %@";
-"ai_doctor.status.enabled" = "Enabled";
-"ai_doctor.status.disabled" = "Disabled";
-"ai_doctor.access.full" = "Full POJAV_HOME access";
-"ai_doctor.access.profile" = "Current profile only";
-"ai_doctor.detail.row" = "%@, %@";
-"openai_auth.title" = "OpenAI sign-in";
-"openai_auth.status.signed_in" = "Signed in";
-"openai_auth.status.signed_in_at" = "Signed in at %@";
-"openai_auth.status.signed_out" = "Signed out";
-"openai_auth.status.pending" = "Pending sign-in";
-"openai_auth.status.header.signed_in" = "Browser sign-in captured";
-"openai_auth.status.header.signed_out" = "No browser sign-in";
-"openai_auth.status.header.pending" = "Manual sign-in link copied";
-"openai_auth.action.sign_in" = "Sign in";
-"openai_auth.action.finish_from_clipboard" = "Finish from clipboard";
-"openai_auth.action.sign_out" = "Sign out";
-"openai_auth.note" = "This browser-based sign-in flow returns to the app through the amethyst URL scheme. The saved authorization code and code verifier can then be passed to Codex CLI for PKCE token exchange.";
-"openai_auth.info.signed_in_at" = "Signed in at";
-"openai_auth.info.authorization_code" = "Authorization code";
-"openai_auth.info.code_verifier" = "Code verifier";
-"openai_auth.info.callback_url" = "Callback URL";
-"openai_auth.success" = "The browser login flow returned to the app successfully.";
-"openai_auth.success_no_code" = "The browser session returned to the app, but no authorization code was captured.";
-"openai_auth.error.clipboard_empty" = "Clipboard is empty. Copy the final localhost callback URL first.";
-"openai_auth.error.clipboard_callback" = "Clipboard does not contain a valid localhost callback URL with code and state.";
-"openai_auth.error.busy" = "Authentication already in progress.";
-"openai_auth.error.server" = "Could not start local auth server.";
-"openai_auth.error.port_in_use" = "Port 1455 is already in use.";
-"openai_auth.error.state" = "OAuth state mismatch. Please try again.";
-"openai_auth.error.cancelled" = "Sign-in was cancelled.";
-"openai_auth.error.start" = "Could not build authorization URL.";
 
 "controller_configurator.title.current" = "Gamepad configuration file";
 "controller_configurator.title.type.xbox" = "Xbox";
