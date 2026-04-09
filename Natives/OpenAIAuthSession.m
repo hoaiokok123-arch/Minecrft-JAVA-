@@ -74,6 +74,11 @@ static NSUInteger const OpenAIAuthLoopbackPort = 1455;
         return;
     }
 
+    setPrefBool(@"ai.oauth_signed_in", NO);
+    setPrefObject(@"ai.oauth_authorization_code", nil);
+    setPrefObject(@"ai.oauth_callback_url", nil);
+    setPrefObject(@"ai.oauth_signed_in_at", nil);
+
     self.completionHandler = completion;
     self.expectedState = [self randomBase64URLStringOfLength:32];
     self.codeVerifier = [self randomBase64URLStringOfLength:48];
@@ -117,7 +122,7 @@ static NSUInteger const OpenAIAuthLoopbackPort = 1455;
         [self finishWithResult:result error:resultError];
     }];
     self.authSession.presentationContextProvider = self;
-    self.authSession.prefersEphemeralWebBrowserSession = NO;
+    self.authSession.prefersEphemeralWebBrowserSession = YES;
 
     if (![self.authSession start]) {
         [self stopLoopbackServer];
@@ -162,6 +167,7 @@ static NSUInteger const OpenAIAuthLoopbackPort = 1455;
         [NSURLQueryItem queryItemWithName:@"id_token_add_organizations" value:@"true"],
         [NSURLQueryItem queryItemWithName:@"originator" value:originator],
         [NSURLQueryItem queryItemWithName:@"redirect_uri" value:[self loopbackRedirectURI]],
+        [NSURLQueryItem queryItemWithName:@"prompt" value:@"login"],
         [NSURLQueryItem queryItemWithName:@"response_type" value:@"code"],
         [NSURLQueryItem queryItemWithName:@"scope" value:@"openid profile email offline_access"],
         [NSURLQueryItem queryItemWithName:@"state" value:self.expectedState]
