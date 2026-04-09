@@ -15,6 +15,7 @@ typedef NS_ENUM(uint32_t, TouchControllerMessageType) {
     TouchControllerMessageTypeRemove = 2,
     TouchControllerMessageTypeClear = 3,
     TouchControllerMessageTypeVibrate = 4,
+    TouchControllerMessageTypeInitialize = 10,
 };
 
 typedef struct {
@@ -27,7 +28,8 @@ typedef struct {
 @property(nonatomic, copy) NSString *sessionToken;
 @property(nonatomic, copy) TouchControllerVibrationHandler vibrationHandler;
 @property(nonatomic) BOOL sessionEnabled;
-@property(nonatomic) BOOL modConnected;
+@property(nonatomic) BOOL transportConnected;
+@property(nonatomic) BOOL inputActive;
 
 - (void)prepareSessionForGameDirectory:(NSString *)gameDir;
 - (void)reset;
@@ -57,9 +59,9 @@ typedef struct {
     return self;
 }
 
-- (void)updateModConnected:(BOOL)connected {
-    BOOL changed = self.modConnected != connected;
-    self.modConnected = connected;
+- (void)updateInputActive:(BOOL)active {
+    BOOL changed = self.inputActive != active;
+    self.inputActive = active;
     if (changed) {
         dispatch_async(dispatch_get_main_queue(), ^{
             [[NSNotificationCenter defaultCenter] postNotificationName:TouchControllerConnectionStateDidChangeNotification object:nil];
@@ -71,7 +73,8 @@ typedef struct {
     BOOL enabled = TouchControllerShouldEnableForGameDirectory(gameDir);
     dispatch_sync(_queue, ^{
         self.sessionEnabled = enabled;
-        [self updateModConnected:NO];
+        self.transportConnected = NO;
+        [self updateInputActive:NO];
         [self.launcherToModQueue removeAllObjects];
         self.sessionToken = enabled ? [NSString stringWithFormat:@"touchcontroller-%@", [NSUUID UUID].UUIDString.lowercaseString] : nil;
         if (enabled) {
@@ -85,7 +88,8 @@ typedef struct {
 - (void)reset {
     dispatch_sync(_queue, ^{
         self.sessionEnabled = NO;
-        [self updateModConnected:NO];
+        self.transportConnected = NO;
+        [self updateInputActive:NO];
         self.sessionToken = nil;
         [self.launcherToModQueue removeAllObjects];
     });
@@ -96,7 +100,8 @@ typedef struct {
     dispatch_sync(_queue, ^{
         valid = self.sessionEnabled && token.length > 0 && [self.sessionToken isEqualToString:token];
         if (valid) {
-            [self updateModConnected:YES];
+            self.transportConnected = YES;
+            [self updateInputActive:NO];
             [self.launcherToModQueue removeAllObjects];
         }
     });
@@ -111,7 +116,7 @@ typedef struct {
     NSString *token = [NSString stringWithUTF8String:handle->token];
     __block BOOL valid = NO;
     dispatch_sync(_queue, ^{
-        valid = self.sessionEnabled && self.modConnected && token.length > 0 && [self.sessionToken isEqualToString:token];
+        valid = self.sessionEnabled && self.transportConnected && token.length > 0 && [self.sessionToken isEqualToString:token];
     });
     return valid;
 }
@@ -138,7 +143,7 @@ typedef struct {
 
     __block BOOL queued = NO;
     dispatch_sync(_queue, ^{
-        if (!self.sessionEnabled || !self.modConnected) {
+        if (!self.sessionEnabled || !self.transportConnected) {
             return;
         }
         if (self.launcherToModQueue.count >= 256) {
@@ -160,6 +165,13 @@ typedef struct {
     type = ntohl(type);
 
     switch (type) {
+        case TouchControllerMessageTypeInitialize: {
+            dispatch_sync(_queue, ^{
+                [self updateInputActive:YES];
+            });
+            break;
+        }
+
         case TouchControllerMessageTypeVibrate: {
             if (message.length < sizeof(uint32_t) + sizeof(int32_t)) {
                 return;
@@ -209,14 +221,15 @@ typedef struct {
 - (BOOL)isModConnectedValue {
     __block BOOL connected = NO;
     dispatch_sync(_queue, ^{
-        connected = self.modConnected;
+        connected = self.inputActive;
     });
     return connected;
 }
 
 - (void)disconnectCurrentHandle {
     dispatch_sync(_queue, ^{
-        [self updateModConnected:NO];
+        self.transportConnected = NO;
+        [self updateInputActive:NO];
         [self.launcherToModQueue removeAllObjects];
     });
 }

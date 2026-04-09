@@ -182,15 +182,36 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
     TouchControllerSendClearPointer();
 }
 
+- (BOOL)touchControllerCanHandleTouch:(UITouch *)touch {
+    if (!self.touchControllerActive || touch.type == UITouchTypeIndirectPointer) {
+        return NO;
+    }
+
+    UIView *touchView = touch.view;
+    if (touchView != nil && [touchView isDescendantOfView:self.ctrlView]) {
+        return NO;
+    }
+
+    if (touchView == self.surfaceView || (touchView != nil && [touchView isDescendantOfView:self.surfaceView])) {
+        return YES;
+    }
+
+    if (touchView == self.touchView || (touchView != nil && [touchView isDescendantOfView:self.touchView])) {
+        CGPoint locationInTouchView = [touch locationInView:self.touchView];
+        return CGRectContainsPoint(self.surfaceView.frame, locationInTouchView);
+    }
+
+    CGRect surfaceFrameInRoot = [self.rootView convertRect:self.surfaceView.bounds fromView:self.surfaceView];
+    CGPoint locationInRootView = [touch locationInView:self.rootView];
+    return CGRectContainsPoint(surfaceFrameInRoot, locationInRootView);
+}
+
 - (BOOL)touchControllerShouldConsumeSurfaceTouch:(UITouch *)touch {
-    return self.touchControllerActive && touch.type != UITouchTypeIndirectPointer && touch.view == self.surfaceView;
+    return [self touchControllerCanHandleTouch:touch];
 }
 
 - (void)touchControllerSendPointerForTouch:(UITouch *)touch remove:(BOOL)remove {
-    if (!self.touchControllerActive) {
-        return;
-    }
-    if (touch.type == UITouchTypeIndirectPointer || touch.view != self.surfaceView) {
+    if (![self touchControllerCanHandleTouch:touch]) {
         return;
     }
 
@@ -216,7 +237,7 @@ static NSMutableDictionary<NSString *, NSNumber *> *touchControllerFingerIds;
 
     NSMutableArray<NSNumber *> *fingerIds = [NSMutableArray array];
     for (UITouch *touch in touches) {
-        if (touch.type == UITouchTypeIndirectPointer || touch.view != self.surfaceView) {
+        if (![self touchControllerCanHandleTouch:touch]) {
             continue;
         }
         NSNumber *fingerId = [self touchControllerExistingFingerIdForTouch:touch];
