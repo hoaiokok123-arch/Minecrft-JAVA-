@@ -18,6 +18,10 @@ static NSString *const OpenAIAuthAuthorizeURL = @"https://auth.openai.com/api/oa
 static NSString *const OpenAIAuthRedirectScheme = @"amethyst";
 static NSString *const OpenAIAuthRedirectHost = @"openai-auth";
 static NSUInteger const OpenAIAuthLoopbackPort = 1455;
+static NSString *const OpenAIAuthPendingStateKey = @"ai.oauth_pending_state";
+static NSString *const OpenAIAuthPendingVerifierKey = @"ai.oauth_pending_code_verifier";
+static NSString *const OpenAIAuthPendingURLKey = @"ai.oauth_pending_url";
+static NSString *const OpenAIAuthPendingStartedAtKey = @"ai.oauth_pending_started_at";
 
 @interface OpenAIAuthSession()<ASWebAuthenticationPresentationContextProviding>
 @property(nonatomic) ASWebAuthenticationSession *authSession;
@@ -57,11 +61,100 @@ static NSUInteger const OpenAIAuthLoopbackPort = 1455;
         }
         return localize(@"openai_auth.status.signed_in", nil);
     }
+    if ([self hasPendingManualSignIn]) {
+        return localize(@"openai_auth.status.pending", nil);
+    }
     return localize(@"openai_auth.status.signed_out", nil);
 }
 
 - (BOOL)isSignedIn {
     return getPrefBool(@"ai.oauth_signed_in");
+}
+
+- (BOOL)hasPendingManualSignIn {
+    NSString *pendingState = [getPrefObject(OpenAIAuthPendingStateKey) description];
+    NSString *pendingURL = [getPrefObject(OpenAIAuthPendingURLKey) description];
+    return pendingState.length > 0 && pendingURL.length > 0;
+}
+
+- (NSString *)pendingManualSignInURL {
+    NSString *value = [getPrefObject(OpenAIAuthPendingURLKey) description];
+    return value.length > 0 ? value : nil;
+}
+
+- (NSString *)prepareManualSignInURLWithError:(NSError **)error {
+    [self.authSession cancel];
+    self.authSession = nil;
+    [self stopLoopbackServer];
+
+    [self clearStoredSignInResult];
+
+    self.expectedState = [self randomBase64URLStringOfLength:32];
+    self.codeVerifier = [self randomBase64URLStringOfLength:48];
+    NSURL *url = [self authorizeURL];
+    NSString *urlString = url.absoluteString;
+    if (urlString.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"OpenAIAuthSession"
+                                         code:20
+                                     userInfo:@{NSLocalizedDescriptionKey: localize(@"openai_auth.error.start", nil)}];
+        }
+        return nil;
+    }
+
+    setPrefObject(OpenAIAuthPendingStateKey, self.expectedState);
+    setPrefObject(OpenAIAuthPendingVerifierKey, self.codeVerifier);
+    setPrefObject(OpenAIAuthPendingURLKey, urlString);
+    setPrefObject(OpenAIAuthPendingStartedAtKey, [self isoTimestamp]);
+    return urlString;
+}
+
+- (BOOL)completeManualSignInWithCallbackURLString:(NSString *)callbackURLString error:(NSError **)error {
+    NSString *trimmed = [[callbackURLString ?: @"" stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet] copy];
+    if (trimmed.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"OpenAIAuthSession"
+                                         code:21
+                                     userInfo:@{NSLocalizedDescriptionKey: localize(@"openai_auth.error.clipboard_empty", nil)}];
+        }
+        return NO;
+    }
+
+    NSURL *callbackURL = [NSURL URLWithString:trimmed];
+    NSDictionary *result = callbackURL ? [self parsedQueryItemsFromURL:callbackURL] : nil;
+    NSString *pendingState = [getPrefObject(OpenAIAuthPendingStateKey) description];
+    if (result.count == 0 || pendingState.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"OpenAIAuthSession"
+                                         code:22
+                                     userInfo:@{NSLocalizedDescriptionKey: localize(@"openai_auth.error.clipboard_callback", nil)}];
+        }
+        return NO;
+    }
+
+    if (![result[@"state"] isEqualToString:pendingState]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"OpenAIAuthSession"
+                                         code:23
+                                     userInfo:@{NSLocalizedDescriptionKey: localize(@"openai_auth.error.state", nil)}];
+        }
+        return NO;
+    }
+
+    NSString *code = [result[@"code"] description];
+    if (code.length == 0) {
+        NSString *errorDescription = [result[@"error_description"] description];
+        if (error) {
+            *error = [NSError errorWithDomain:@"OpenAIAuthSession"
+                                         code:24
+                                     userInfo:@{NSLocalizedDescriptionKey: errorDescription.length > 0 ? errorDescription : localize(@"openai_auth.error.clipboard_callback", nil)}];
+        }
+        return NO;
+    }
+
+    [self storeSuccessfulResult:result callbackURL:callbackURL];
+    [self clearPendingManualSignIn];
+    return YES;
 }
 
 - (void)startSignInWithCompletion:(void (^)(NSDictionary *result, NSError *error))completion {
@@ -74,10 +167,7 @@ static NSUInteger const OpenAIAuthLoopbackPort = 1455;
         return;
     }
 
-    setPrefBool(@"ai.oauth_signed_in", NO);
-    setPrefObject(@"ai.oauth_authorization_code", nil);
-    setPrefObject(@"ai.oauth_callback_url", nil);
-    setPrefObject(@"ai.oauth_signed_in_at", nil);
+    [self clearStoredSignInResult];
 
     self.completionHandler = completion;
     self.expectedState = [self randomBase64URLStringOfLength:32];
@@ -137,10 +227,8 @@ static NSUInteger const OpenAIAuthLoopbackPort = 1455;
     [self.authSession cancel];
     self.authSession = nil;
     [self stopLoopbackServer];
-    setPrefBool(@"ai.oauth_signed_in", NO);
-    setPrefObject(@"ai.oauth_authorization_code", nil);
-    setPrefObject(@"ai.oauth_callback_url", nil);
-    setPrefObject(@"ai.oauth_signed_in_at", nil);
+    [self clearStoredSignInResult];
+    [self clearPendingManualSignIn];
 }
 
 #pragma mark Auth request
@@ -184,6 +272,20 @@ static NSUInteger const OpenAIAuthLoopbackPort = 1455;
     setPrefObject(@"ai.oauth_authorization_code", result[@"code"]);
     setPrefObject(@"ai.oauth_callback_url", callbackURL.absoluteString);
     setPrefObject(@"ai.oauth_signed_in_at", [self isoTimestamp]);
+}
+
+- (void)clearStoredSignInResult {
+    setPrefBool(@"ai.oauth_signed_in", NO);
+    setPrefObject(@"ai.oauth_authorization_code", nil);
+    setPrefObject(@"ai.oauth_callback_url", nil);
+    setPrefObject(@"ai.oauth_signed_in_at", nil);
+}
+
+- (void)clearPendingManualSignIn {
+    setPrefObject(OpenAIAuthPendingStateKey, nil);
+    setPrefObject(OpenAIAuthPendingVerifierKey, nil);
+    setPrefObject(OpenAIAuthPendingURLKey, nil);
+    setPrefObject(OpenAIAuthPendingStartedAtKey, nil);
 }
 
 - (NSString *)isoTimestamp {
