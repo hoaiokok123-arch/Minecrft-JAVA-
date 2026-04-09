@@ -22,6 +22,9 @@ static NSString *const OpenAIAuthPendingStateKey = @"ai.oauth_pending_state";
 static NSString *const OpenAIAuthPendingVerifierKey = @"ai.oauth_pending_code_verifier";
 static NSString *const OpenAIAuthPendingURLKey = @"ai.oauth_pending_url";
 static NSString *const OpenAIAuthPendingStartedAtKey = @"ai.oauth_pending_started_at";
+static NSString *const OpenAIAuthCodeKey = @"ai.oauth_authorization_code";
+static NSString *const OpenAIAuthCodeVerifierKey = @"ai.oauth_code_verifier";
+static NSString *const OpenAIAuthCallbackURLKey = @"ai.oauth_callback_url";
 
 @interface OpenAIAuthSession()<ASWebAuthenticationPresentationContextProviding>
 @property(nonatomic) ASWebAuthenticationSession *authSession;
@@ -49,6 +52,7 @@ static NSString *const OpenAIAuthPendingStartedAtKey = @"ai.oauth_pending_starte
     if (self) {
         _listenSocket = -1;
         _serverQueue = dispatch_queue_create("org.amethyst.openai.auth", DISPATCH_QUEUE_SERIAL);
+        [self syncCodexOAuthEnvironment];
     }
     return self;
 }
@@ -69,6 +73,21 @@ static NSString *const OpenAIAuthPendingStartedAtKey = @"ai.oauth_pending_starte
 
 - (BOOL)isSignedIn {
     return getPrefBool(@"ai.oauth_signed_in");
+}
+
+- (NSDictionary *)codexAuthCredentials {
+    NSString *code = [[getPrefObject(OpenAIAuthCodeKey) description] stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
+    NSString *codeVerifier = [[getPrefObject(OpenAIAuthCodeVerifierKey) description] stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
+    NSString *callbackURL = [[getPrefObject(OpenAIAuthCallbackURLKey) description] stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
+    if (code.length == 0 || codeVerifier.length == 0) {
+        return nil;
+    }
+
+    return @{
+        @"code": code,
+        @"code_verifier": codeVerifier,
+        @"callback_url": callbackURL.length > 0 ? callbackURL : @""
+    };
 }
 
 - (BOOL)hasPendingManualSignIn {
@@ -168,6 +187,7 @@ static NSString *const OpenAIAuthPendingStartedAtKey = @"ai.oauth_pending_starte
     }
 
     [self clearStoredSignInResult];
+    [self clearPendingManualSignIn];
 
     self.completionHandler = completion;
     self.expectedState = [self randomBase64URLStringOfLength:32];
@@ -269,16 +289,27 @@ static NSString *const OpenAIAuthPendingStartedAtKey = @"ai.oauth_pending_starte
 
 - (void)storeSuccessfulResult:(NSDictionary *)result callbackURL:(NSURL *)callbackURL {
     setPrefBool(@"ai.oauth_signed_in", YES);
-    setPrefObject(@"ai.oauth_authorization_code", result[@"code"]);
-    setPrefObject(@"ai.oauth_callback_url", callbackURL.absoluteString);
+    setPrefObject(OpenAIAuthCodeKey, result[@"code"]);
+    if (self.codeVerifier.length > 0) {
+        setPrefObject(OpenAIAuthCodeVerifierKey, self.codeVerifier);
+    } else {
+        NSString *pendingVerifier = [getPrefObject(OpenAIAuthPendingVerifierKey) description];
+        if (pendingVerifier.length > 0) {
+            setPrefObject(OpenAIAuthCodeVerifierKey, pendingVerifier);
+        }
+    }
+    setPrefObject(OpenAIAuthCallbackURLKey, callbackURL.absoluteString);
     setPrefObject(@"ai.oauth_signed_in_at", [self isoTimestamp]);
+    [self syncCodexOAuthEnvironment];
 }
 
 - (void)clearStoredSignInResult {
     setPrefBool(@"ai.oauth_signed_in", NO);
-    setPrefObject(@"ai.oauth_authorization_code", nil);
-    setPrefObject(@"ai.oauth_callback_url", nil);
+    setPrefObject(OpenAIAuthCodeKey, nil);
+    setPrefObject(OpenAIAuthCodeVerifierKey, nil);
+    setPrefObject(OpenAIAuthCallbackURLKey, nil);
     setPrefObject(@"ai.oauth_signed_in_at", nil);
+    [self syncCodexOAuthEnvironment];
 }
 
 - (void)clearPendingManualSignIn {
@@ -286,6 +317,19 @@ static NSString *const OpenAIAuthPendingStartedAtKey = @"ai.oauth_pending_starte
     setPrefObject(OpenAIAuthPendingVerifierKey, nil);
     setPrefObject(OpenAIAuthPendingURLKey, nil);
     setPrefObject(OpenAIAuthPendingStartedAtKey, nil);
+}
+
+- (void)syncCodexOAuthEnvironment {
+    NSDictionary *credentials = [self codexAuthCredentials];
+    if (credentials) {
+        setenv("OPENAI_OAUTH_CODE", [credentials[@"code"] UTF8String], 1);
+        setenv("OPENAI_OAUTH_CODE_VERIFIER", [credentials[@"code_verifier"] UTF8String], 1);
+        setenv("OPENAI_OAUTH_REDIRECT_URI", [self loopbackRedirectURI].UTF8String, 1);
+    } else {
+        unsetenv("OPENAI_OAUTH_CODE");
+        unsetenv("OPENAI_OAUTH_CODE_VERIFIER");
+        unsetenv("OPENAI_OAUTH_REDIRECT_URI");
+    }
 }
 
 - (NSString *)isoTimestamp {
