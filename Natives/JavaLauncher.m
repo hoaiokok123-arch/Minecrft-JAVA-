@@ -368,7 +368,6 @@ int launchJVM(NSString *username, id launchTarget, int width, int height, int mi
         margv[++margc] = "--add-exports=java.desktop/sun.awt.event=ALL-UNNAMED";
         margv[++margc] = "--add-exports=java.desktop/sun.awt.datatransfer=ALL-UNNAMED";
         margv[++margc] = "--add-exports=java.desktop/sun.font=ALL-UNNAMED";
-        margv[++margc] = "--add-exports=java.base/sun.security.action=ALL-UNNAMED";
         margv[++margc] = "--add-opens=java.base/java.util=ALL-UNNAMED";
         margv[++margc] = "--add-opens=java.desktop/java.awt=ALL-UNNAMED";
         margv[++margc] = "--add-opens=java.desktop/sun.font=ALL-UNNAMED";
@@ -381,8 +380,13 @@ int launchJVM(NSString *username, id launchTarget, int width, int height, int mi
 
     // Add Caciocavallo bootclasspath
     NSString *cacio_classpath = [NSString stringWithFormat:@"-Xbootclasspath/%s", isJava8 ? "p" : "a"];
+    NSString *cacio_patch_path = [librariesPath stringByAppendingPathComponent:@"caciofix.jar"];
+    if ([fm fileExistsAtPath:cacio_patch_path]) {
+        cacio_classpath = [NSString stringWithFormat:@"%@:%@", cacio_classpath, cacio_patch_path];
+    }
     NSString *cacio_libs_path = [NSString stringWithFormat:@"%@/libs_caciocavallo%s", NSBundle.mainBundle.bundlePath, isJava8 ? "" : "17"];
-    NSArray *files = [fm contentsOfDirectoryAtPath:cacio_libs_path error:nil];
+    NSArray *files = [[fm contentsOfDirectoryAtPath:cacio_libs_path error:nil]
+        sortedArrayUsingSelector:@selector(localizedStandardCompare:)];
     for(NSString *file in files) {
         if ([file hasSuffix:@".jar"]) {
             cacio_classpath = [NSString stringWithFormat:@"%@:%@/%@", cacio_classpath, cacio_libs_path, file];
