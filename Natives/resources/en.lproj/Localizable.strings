@@ -247,8 +247,9 @@
 "preference.manage_runtime.header.invalid" = "Invalid runtimes";
 
 "preference.title.lwjgl_version" = "LWJGL version";
-"preference.detail.lwjgl_version" = "Switch between bundled LWJGL sets. Keep 3.3.3 for default behavior, or use 3.3.1 for compatibility.";
+"preference.detail.lwjgl_version" = "Switch between bundled LWJGL sets. Minecraft versions that require LWJGL 3.4 will automatically use 3.4.1.";
 "preference.title.lwjgl_version.333" = "LWJGL 3.3.3 (Default)";
+"preference.title.lwjgl_version.341" = "LWJGL 3.4.1";
 "preference.title.lwjgl_version.331" = "LWJGL 3.3.1";
 
 "preference.title.java_args" = "JVM Launch arguments";

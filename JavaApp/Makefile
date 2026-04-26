@@ -8,11 +8,15 @@ CLASSES := $(SOURCES:$(SOURCEDIR)/%.java=$(OUTPUTDIR)/%.class)
 TARGETS := $(shell find $(SOURCEDIR) -mindepth 1 -maxdepth 1 -type d)
 TARGETS := $(TARGETS:$(SOURCEDIR)/%=$(OUTPUTDIR)/%.jar)
 TARGETS += $(OUTPUTDIR)/lwjgl-3.3.1.jar
+TARGETS += $(OUTPUTDIR)/lwjgl-3.4.1.jar
 
 LWJGL331_VERSION := 3.3.1
 LWJGL331_DIR := libs/lwjgl-3.3.1
 LWJGL331_MODULES := lwjgl lwjgl-freetype lwjgl-glfw lwjgl-nanovg lwjgl-openal lwjgl-opengl lwjgl-shaderc lwjgl-stb lwjgl-tinyfd lwjgl-vma lwjgl-vulkan
-COMPILE_LIBS := $(wildcard libs/lwjgl/*.jar) $(wildcard libs/others/*.jar) $(wildcard libs/caciocavallo/*.jar) $(wildcard libs/caciocavallo17/*.jar)
+LWJGL341_VERSION := 3.4.1
+LWJGL341_DIR := libs/lwjgl-3.4.1
+LWJGL341_MODULES := lwjgl lwjgl-freetype lwjgl-glfw lwjgl-jemalloc lwjgl-nanovg lwjgl-openal lwjgl-opengl lwjgl-shaderc lwjgl-stb lwjgl-tinyfd lwjgl-vma lwjgl-vulkan
+COMPILE_LIBS := $(wildcard libs/lwjgl/*.jar) libs/lwjgl-3.4.1/* $(wildcard libs/others/*.jar) $(wildcard libs/caciocavallo/*.jar) $(wildcard libs/caciocavallo17/*.jar)
 
 # Add all jars to classpath and allow compiling with private API
 JCFLAGS := -cp "$(subst $() $(),:,$(wildcard $(SOURCEDIR)/*/):$(COMPILE_LIBS))" -XDignore.symbol.file
@@ -30,7 +34,7 @@ check_empty_classes:
 	fi
 
 # Rules for building java class
-$(CLASSES): $(OUTPUTDIR)/%.class: $(SOURCEDIR)/%.java
+$(CLASSES): $(OUTPUTDIR)/%.class: $(SOURCEDIR)/%.java prepare_lwjgl_341
 	@set -e
 	$(eval TARGET=$(word 2, $(subst /, ,$@)))
 	@mkdir -p $(OUTPUTDIR)/classes
@@ -73,6 +77,27 @@ $(OUTPUTDIR)/lwjgl-3.3.1.jar: $(CLASSES) check_empty_classes prepare_lwjgl_331
 	@cp -R $(OUTPUTDIR)/lwjgl/* $(OUTPUTDIR)/lwjgl_331_lib/
 	@$(BOOTJDK)/jar -cf $@ -C $(OUTPUTDIR)/lwjgl_331_lib .
 
+prepare_lwjgl_341:
+	@set -e
+	@mkdir -p $(LWJGL341_DIR)
+	@for module in $(LWJGL341_MODULES); do \
+		if [ ! -f "$(LWJGL341_DIR)/$$module.jar" ]; then \
+			echo "Downloading $$module-$(LWJGL341_VERSION).jar"; \
+			wget -q --show-progress -O "$(LWJGL341_DIR)/$$module.jar" "https://repo1.maven.org/maven2/org/lwjgl/$$module/$(LWJGL341_VERSION)/$$module-$(LWJGL341_VERSION).jar"; \
+		fi; \
+	done
+	@if [ ! -f "$(LWJGL341_DIR)/lwjgl-lwjglx.jar" ]; then \
+		cp libs/lwjgl/lwjgl-lwjglx.jar "$(LWJGL341_DIR)/lwjgl-lwjglx.jar"; \
+	fi
+
+$(OUTPUTDIR)/lwjgl-3.4.1.jar: $(CLASSES) check_empty_classes prepare_lwjgl_341
+	@set -e
+	@echo "Creating $@"
+	@mkdir -p $(OUTPUTDIR)/lwjgl_341_lib
+	@cd $(OUTPUTDIR)/lwjgl_341_lib && find ../../$(LWJGL341_DIR) -name 'lwjgl*.jar' -exec $(BOOTJDK)/jar -xf {} \; && rm -rf META-INF
+	@cp -R $(OUTPUTDIR)/lwjgl/* $(OUTPUTDIR)/lwjgl_341_lib/
+	@$(BOOTJDK)/jar -cf $@ -C $(OUTPUTDIR)/lwjgl_341_lib .
+
 $(OUTPUTDIR)/patchjna_agent.jar: $(CLASSES)
 	@set -e
 	@mv $(basename $@)/com/sun/jna/Platform.class $(basename $@)/com/sun/jna/Platform.class.patch
@@ -83,4 +108,4 @@ clean:
 	rm -rf $(OUTPUTDIR)
 
 .SUFFIXES: .java
-.PHONY: all clean prepare_lwjgl_331
+.PHONY: all clean prepare_lwjgl_331 prepare_lwjgl_341

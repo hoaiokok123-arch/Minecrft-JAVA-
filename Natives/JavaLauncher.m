@@ -98,17 +98,74 @@ void init_loadCustomJvmFlags(int* argc, const char** argv) {
     }
 }
 
-static NSString* getPreferredLWJGLVersion() {
+static NSString* getSelectedLWJGLVersion() {
     NSString *value = getPrefObject(@"java.lwjgl_version");
     if ([value isKindOfClass:NSString.class] && [value isEqualToString:@"3.3.1"]) {
         return @"3.3.1";
     }
+    if ([value isKindOfClass:NSString.class] && [value isEqualToString:@"3.4.1"]) {
+        return @"3.4.1";
+    }
     return @"3.3.3";
 }
 
-static NSString* resolveLWJGLJarPath(NSString *librariesPath) {
-    NSString *selectedVersion = getPreferredLWJGLVersion();
-    NSString *selectedFile = [selectedVersion isEqualToString:@"3.3.1"] ? @"lwjgl-3.3.1.jar" : @"lwjgl.jar";
+static NSString* getRequiredBundledLWJGLVersion(id launchTarget) {
+    if (![launchTarget isKindOfClass:NSDictionary.class]) {
+        return nil;
+    }
+
+    NSArray *libraries = launchTarget[@"libraries"];
+    if (![libraries isKindOfClass:NSArray.class]) {
+        return nil;
+    }
+
+    for (NSDictionary *library in libraries) {
+        if (![library isKindOfClass:NSDictionary.class]) {
+            continue;
+        }
+
+        NSString *name = library[@"name"];
+        if (![name isKindOfClass:NSString.class] || ![name hasPrefix:@"org.lwjgl:"]) {
+            continue;
+        }
+
+        NSArray<NSString *> *components = [name componentsSeparatedByString:@":"];
+        if (components.count < 3) {
+            continue;
+        }
+
+        NSString *version = components[2];
+        if ([version compare:@"3.4.0" options:NSNumericSearch] != NSOrderedAscending) {
+            return @"3.4.1";
+        }
+    }
+
+    return nil;
+}
+
+static NSString* getPreferredLWJGLVersion(id launchTarget) {
+    NSString *selectedVersion = getSelectedLWJGLVersion();
+    NSString *requiredVersion = getRequiredBundledLWJGLVersion(launchTarget);
+    if (requiredVersion && [selectedVersion compare:requiredVersion options:NSNumericSearch] == NSOrderedAscending) {
+        NSLog(@"[JavaLauncher] Minecraft requires LWJGL %@ or newer. Upgrading bundled LWJGL from %@.", requiredVersion, selectedVersion);
+        return requiredVersion;
+    }
+    return selectedVersion;
+}
+
+static NSString* getLWJGLJarFileName(NSString *version) {
+    if ([version isEqualToString:@"3.3.1"]) {
+        return @"lwjgl-3.3.1.jar";
+    }
+    if ([version isEqualToString:@"3.4.1"]) {
+        return @"lwjgl-3.4.1.jar";
+    }
+    return @"lwjgl.jar";
+}
+
+static NSString* resolveLWJGLJarPath(NSString *librariesPath, id launchTarget) {
+    NSString *selectedVersion = getPreferredLWJGLVersion(launchTarget);
+    NSString *selectedFile = getLWJGLJarFileName(selectedVersion);
     NSString *selectedPath = [librariesPath stringByAppendingPathComponent:selectedFile];
     if ([fm fileExistsAtPath:selectedPath]) {
         NSLog(@"[JavaLauncher] Using %@ (LWJGL %@)", selectedFile, selectedVersion);
@@ -125,16 +182,16 @@ static NSString* resolveLWJGLJarPath(NSString *librariesPath) {
     return nil;
 }
 
-static NSString* buildLauncherClasspath(NSString *librariesPath, BOOL launchJar, NSString *launchJarPath) {
+static NSString* buildLauncherClasspath(NSString *librariesPath, BOOL launchJar, NSString *launchJarPath, id launchTarget) {
     NSMutableArray<NSString *> *entries = [NSMutableArray array];
-    NSString *lwjglJarPath = resolveLWJGLJarPath(librariesPath);
+    NSString *lwjglJarPath = resolveLWJGLJarPath(librariesPath, launchTarget);
     if (lwjglJarPath) {
         [entries addObject:lwjglJarPath];
     }
 
     NSArray<NSString *> *allFiles = [[fm contentsOfDirectoryAtPath:librariesPath error:nil]
         sortedArrayUsingSelector:@selector(localizedStandardCompare:)];
-    NSSet<NSString *> *excluded = [NSSet setWithArray:@[@"lwjgl.jar", @"lwjgl-3.3.1.jar"]];
+    NSSet<NSString *> *excluded = [NSSet setWithArray:@[@"lwjgl.jar", @"lwjgl-3.3.1.jar", @"lwjgl-3.4.1.jar"]];
     for (NSString *file in allFiles) {
         if (![file hasSuffix:@".jar"] || [excluded containsObject:file]) {
             continue;
@@ -405,7 +462,7 @@ int launchJVM(NSString *username, id launchTarget, int width, int height, int mi
     init_loadCustomJvmFlags(&margc, (const char **)margv);
     NSLog(@"[Init] Found JLI lib");
 
-    NSString *classpath = buildLauncherClasspath(librariesPath, launchJar, launchJar ? (NSString *)launchTarget : nil);
+    NSString *classpath = buildLauncherClasspath(librariesPath, launchJar, launchJar ? (NSString *)launchTarget : nil, launchTarget);
     margv[++margc] = "-cp";
     margv[++margc] = classpath.UTF8String;
     margv[++margc] = "net.kdt.pojavlaunch.PojavLauncher";

@@ -8,6 +8,7 @@
 #include <dlfcn.h>
 #include <libgen.h>
 #include <pthread.h>
+#include <unistd.h>
 #include "external/fishhook/fishhook.h"
 
 mach_port_t excPort;
@@ -32,6 +33,172 @@ void handle_fatal_exit(int code) {
     fatalExitGroup = dispatch_group_create();
     dispatch_group_enter(fatalExitGroup);
     dispatch_group_wait(fatalExitGroup, DISPATCH_TIME_FOREVER);
+}
+
+static void clearJavaException(JNIEnv *env, NSString *context) {
+    if ((*env)->ExceptionCheck(env) == JNI_TRUE) {
+        NSLog(@"[ExitDiagnostics] Java exception while %@", context);
+        (*env)->ExceptionClear(env);
+    }
+}
+
+static void logCurrentJavaStack() {
+    if (runtimeJavaVMPtr == NULL) {
+        NSLog(@"[ExitDiagnostics] Java VM pointer is not available");
+        return;
+    }
+
+    JNIEnv *env = NULL;
+    if ((*runtimeJavaVMPtr)->GetEnv(runtimeJavaVMPtr, (void **)&env, JNI_VERSION_1_4) != JNI_OK || env == NULL) {
+        NSLog(@"[ExitDiagnostics] Current thread is not attached to the Java VM");
+        return;
+    }
+
+    jclass threadClass = (*env)->FindClass(env, "java/lang/Thread");
+    if (threadClass == NULL) {
+        clearJavaException(env, @"resolving java.lang.Thread");
+        return;
+    }
+
+    jmethodID currentThreadMethod = (*env)->GetStaticMethodID(env, threadClass, "currentThread", "()Ljava/lang/Thread;");
+    jmethodID getStackTraceMethod = (*env)->GetMethodID(env, threadClass, "getStackTrace", "()[Ljava/lang/StackTraceElement;");
+    if (currentThreadMethod == NULL || getStackTraceMethod == NULL) {
+        clearJavaException(env, @"resolving Thread stack methods");
+        return;
+    }
+
+    jobject thread = (*env)->CallStaticObjectMethod(env, threadClass, currentThreadMethod);
+    if (thread == NULL) {
+        clearJavaException(env, @"getting current Java thread");
+        return;
+    }
+
+    jobjectArray stack = (jobjectArray)(*env)->CallObjectMethod(env, thread, getStackTraceMethod);
+    if (stack == NULL) {
+        clearJavaException(env, @"getting Java stack trace");
+        return;
+    }
+
+    jclass stackElementClass = (*env)->FindClass(env, "java/lang/StackTraceElement");
+    if (stackElementClass == NULL) {
+        clearJavaException(env, @"resolving StackTraceElement");
+        return;
+    }
+
+    jmethodID toStringMethod = (*env)->GetMethodID(env, stackElementClass, "toString", "()Ljava/lang/String;");
+    if (toStringMethod == NULL) {
+        clearJavaException(env, @"resolving StackTraceElement.toString");
+        return;
+    }
+
+    jsize stackLength = (*env)->GetArrayLength(env, stack);
+    NSLog(@"[ExitDiagnostics] Current Java thread stack (%d frames):", stackLength);
+    for (jsize i = 0; i < stackLength && i < 64; i++) {
+        jobject element = (*env)->GetObjectArrayElement(env, stack, i);
+        if (element == NULL) {
+            continue;
+        }
+
+        jstring text = (jstring)(*env)->CallObjectMethod(env, element, toStringMethod);
+        if (text != NULL) {
+            const char *utf = (*env)->GetStringUTFChars(env, text, NULL);
+            if (utf != NULL) {
+                NSLog(@"[ExitDiagnostics]     at %s", utf);
+                (*env)->ReleaseStringUTFChars(env, text, utf);
+            }
+            (*env)->DeleteLocalRef(env, text);
+        }
+        clearJavaException(env, @"formatting Java stack frame");
+        (*env)->DeleteLocalRef(env, element);
+    }
+}
+
+static void addCrashReportDir(NSMutableOrderedSet<NSString *> *dirs, NSString *path) {
+    if (path.length > 0) {
+        [dirs addObject:path.stringByStandardizingPath];
+    }
+}
+
+static NSString* newestFileInDir(NSString *dir, NSDate **newestDate) {
+    NSArray<NSString *> *files = [NSFileManager.defaultManager contentsOfDirectoryAtPath:dir error:nil];
+    NSString *newestPath = nil;
+
+    for (NSString *file in files) {
+        if (![file hasSuffix:@".txt"] && ![file hasSuffix:@".log"]) {
+            continue;
+        }
+
+        NSString *path = [dir stringByAppendingPathComponent:file];
+        NSDictionary *attributes = [NSFileManager.defaultManager attributesOfItemAtPath:path error:nil];
+        NSDate *date = attributes[NSFileModificationDate];
+        if (date && (*newestDate == nil || [date compare:*newestDate] == NSOrderedDescending)) {
+            *newestDate = date;
+            newestPath = path;
+        }
+    }
+
+    return newestPath;
+}
+
+static void logLatestCrashReport() {
+    NSMutableOrderedSet<NSString *> *dirs = [NSMutableOrderedSet orderedSet];
+
+    char cwd[PATH_MAX];
+    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+        addCrashReportDir(dirs, [NSString stringWithFormat:@"%s/crash-reports", cwd]);
+    }
+
+    const char *home = getenv("POJAV_HOME");
+    if (home != NULL) {
+        NSString *instancesPath = [NSString stringWithFormat:@"%s/instances", home];
+        NSArray<NSString *> *instances = [NSFileManager.defaultManager contentsOfDirectoryAtPath:instancesPath error:nil];
+        for (NSString *instance in instances) {
+            addCrashReportDir(dirs, [[instancesPath stringByAppendingPathComponent:instance] stringByAppendingPathComponent:@"crash-reports"]);
+        }
+    }
+
+    const char *gameDir = getenv("POJAV_GAME_DIR");
+    if (gameDir != NULL) {
+        addCrashReportDir(dirs, [NSString stringWithFormat:@"%s/crash-reports", gameDir]);
+    }
+
+    NSDate *newestDate = nil;
+    NSString *newestPath = nil;
+    for (NSString *dir in dirs) {
+        BOOL isDirectory = NO;
+        if (![NSFileManager.defaultManager fileExistsAtPath:dir isDirectory:&isDirectory] || !isDirectory) {
+            continue;
+        }
+
+        NSString *candidate = newestFileInDir(dir, &newestDate);
+        if (candidate != nil) {
+            newestPath = candidate;
+        }
+    }
+
+    if (newestPath == nil) {
+        NSLog(@"[ExitDiagnostics] No crash report found in %@", dirs.array);
+        return;
+    }
+
+    NSLog(@"[ExitDiagnostics] Latest crash report: %@", newestPath);
+    NSData *data = [NSData dataWithContentsOfFile:newestPath];
+    if (data.length == 0) {
+        NSLog(@"[ExitDiagnostics] Crash report is empty or unreadable");
+        return;
+    }
+
+    NSUInteger previewLength = MIN(data.length, 24000);
+    NSString *preview = [[NSString alloc] initWithData:[data subdataWithRange:NSMakeRange(0, previewLength)] encoding:NSUTF8StringEncoding];
+    if (preview == nil) {
+        preview = [[NSString alloc] initWithData:[data subdataWithRange:NSMakeRange(0, previewLength)] encoding:NSISOLatin1StringEncoding];
+    }
+
+    if (preview != nil) {
+        NSLog(@"[ExitDiagnostics] Crash report preview%@:\n%@",
+              data.length > previewLength ? @" (truncated)" : @"",
+              preview);
+    }
 }
 
 void hooked_abort() {
@@ -60,6 +227,9 @@ void hooked_exit(int code) {
         orig_exit(0);
         return;
     }
+
+    logCurrentJavaStack();
+    logLatestCrashReport();
     handle_fatal_exit(code);
 
     orig_exit(code);

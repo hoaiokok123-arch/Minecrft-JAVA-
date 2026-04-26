@@ -49,9 +49,10 @@
 
     self.rendererKeys = getRendererKeys(NO);
     self.rendererList = getRendererNames(NO);
-    self.lwjglVersionKeys = @[@"3.3.3", @"3.3.1"];
+    self.lwjglVersionKeys = @[@"3.3.3", @"3.4.1", @"3.3.1"];
     self.lwjglVersionList = @[
         localize(@"preference.title.lwjgl_version.333", nil),
+        localize(@"preference.title.lwjgl_version.341", nil),
         localize(@"preference.title.lwjgl_version.331", nil)
     ];
     
