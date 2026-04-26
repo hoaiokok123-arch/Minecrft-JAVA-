@@ -12,7 +12,7 @@
 @property(nonatomic) NSString* oldName;
 
 @property(nonatomic) NSArray<NSDictionary *> *versionList;
-@property(nonatomic) UITextField* versionTextField;
+@property(nonatomic) PickTextField* versionTextField;
 @property(nonatomic) UISegmentedControl* versionTypeControl;
 @property(nonatomic) UIPickerView* versionPickerView;
 @property(nonatomic) UIToolbar* versionPickerToolbar;
@@ -57,14 +57,16 @@
     NSArray *touchControlList = [self listFilesAtPath:[NSString stringWithFormat:@"%s/controlmap", getenv("POJAV_HOME")]];
     NSArray *gamepadControlList = [self listFilesAtPath:[NSString stringWithFormat:@"%s/controlmap/gamepads", getenv("POJAV_HOME")]];
     NSMutableArray *javaList = [getPrefObject(@"java.java_homes") allKeys].mutableCopy;
-    [javaList sortUsingSelector:@selector(compare:)];
+    [javaList sortUsingComparator:^NSComparisonResult(NSString *lhs, NSString *rhs) {
+        return [@(lhs.intValue) compare:@(rhs.intValue)];
+    }];
     javaList[0] = @"(default)";
 
     // Setup version picker
     [self setupVersionPicker];
     id typeVersionPicker = ^void(UITableViewCell *cell, NSString *section, NSString *key, NSDictionary *item){
         self.typeTextField(cell, section, key, item);
-        UITextField *textField = (id)cell.accessoryView;
+        PickTextField *textField = (id)cell.accessoryView;
         weakSelf.versionTextField = textField;
         textField.inputAccessoryView = weakSelf.versionPickerToolbar;
         textField.inputView = weakSelf.versionPickerView;

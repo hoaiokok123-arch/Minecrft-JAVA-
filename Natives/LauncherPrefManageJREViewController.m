@@ -164,6 +164,8 @@ static WFWorkflowProgressView* currentProgressView;
         case DEFAULT_JRE: return localize(@"preference.manage_runtime.footer.default", nil);
         case 8: return localize(@"preference.manage_runtime.footer.java8", nil);
         case 17: return localize(@"preference.manage_runtime.footer.java17", nil);
+        case 21: return localize(@"preference.manage_runtime.footer.java21", nil);
+        case 25: return localize(@"preference.manage_runtime.footer.java25", nil);
         default: return nil;
     }
 }

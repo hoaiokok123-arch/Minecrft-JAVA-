@@ -56,7 +56,8 @@
                 }.mutableCopy,
                 @"8": @"internal",
                 @"17": @"internal",
-                @"21": @"internal"
+                @"21": @"internal",
+                @"25": @"internal"
             }.mutableCopy,
             @"lwjgl_version": @"3.3.3",
             @"java_args": @"",
