@@ -298,7 +298,8 @@ public class GLFW
     GLFW_NO_WINDOW_CONTEXT     = 0x1000A,
     GLFW_CURSOR_UNAVAILABLE    = 0x1000B,
     GLFW_FEATURE_UNAVAILABLE   = 0x1000C,
-    GLFW_FEATURE_UNIMPLEMENTED = 0x1000D;
+    GLFW_FEATURE_UNIMPLEMENTED = 0x1000D,
+    GLFW_PLATFORM_UNAVAILABLE  = 0x1000E;
 
     public static final int
     GLFW_FOCUSED                 = 0x20001,
@@ -371,8 +372,12 @@ public class GLFW
     /** Init hints. */
     public static final int
     GLFW_JOYSTICK_HAT_BUTTONS  = 0x50001,
+    GLFW_ANGLE_PLATFORM_TYPE   = 0x50002,
+    GLFW_PLATFORM              = 0x50003,
     GLFW_COCOA_CHDIR_RESOURCES = 0x51001,
-    GLFW_COCOA_MENUBAR         = 0x51002;
+    GLFW_COCOA_MENUBAR         = 0x51002,
+    GLFW_X11_XCB_VULKAN_SURFACE = 0x52001,
+    GLFW_WAYLAND_LIBDECOR      = 0x53001;
 
     /** Hint value for {@link #GLFW_PLATFORM PLATFORM} that enables automatic platform selection. */
     public static final int
@@ -807,6 +812,10 @@ public class GLFW
 
     public static int glfwGetPlatform() {
         return GLFW_PLATFORM_X11;
+    }
+
+    public static boolean glfwPlatformSupported(int platform) {
+        return platform == GLFW_PLATFORM_X11;
     }
 
     @NativeType("GLFWwindow *")
