@@ -380,13 +380,8 @@ int launchJVM(NSString *username, id launchTarget, int width, int height, int mi
 
     // Add Caciocavallo bootclasspath
     NSString *cacio_classpath = [NSString stringWithFormat:@"-Xbootclasspath/%s", isJava8 ? "p" : "a"];
-    NSString *cacio_patch_path = [librariesPath stringByAppendingPathComponent:@"caciofix.jar"];
-    if ([fm fileExistsAtPath:cacio_patch_path]) {
-        cacio_classpath = [NSString stringWithFormat:@"%@:%@", cacio_classpath, cacio_patch_path];
-    }
     NSString *cacio_libs_path = [NSString stringWithFormat:@"%@/libs_caciocavallo%s", NSBundle.mainBundle.bundlePath, isJava8 ? "" : "17"];
-    NSArray *files = [[fm contentsOfDirectoryAtPath:cacio_libs_path error:nil]
-        sortedArrayUsingSelector:@selector(localizedStandardCompare:)];
+    NSArray *files = [fm contentsOfDirectoryAtPath:cacio_libs_path error:nil];
     for(NSString *file in files) {
         if ([file hasSuffix:@".jar"]) {
             cacio_classpath = [NSString stringWithFormat:@"%@:%@/%@", cacio_classpath, cacio_libs_path, file];
