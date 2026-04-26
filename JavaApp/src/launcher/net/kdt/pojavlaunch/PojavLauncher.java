@@ -38,6 +38,8 @@ public class PojavLauncher {
 
             public void uncaughtException(Thread t, Throwable th) {
                 th.printStackTrace();
+                System.err.flush();
+                System.out.flush();
                 System.exit(1);
             }
         });

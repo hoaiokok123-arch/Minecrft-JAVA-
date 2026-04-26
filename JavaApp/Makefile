@@ -16,7 +16,7 @@ LWJGL331_MODULES := lwjgl lwjgl-freetype lwjgl-glfw lwjgl-nanovg lwjgl-openal lw
 LWJGL341_VERSION := 3.4.1
 LWJGL341_DIR := libs/lwjgl-3.4.1
 LWJGL341_MODULES := lwjgl lwjgl-freetype lwjgl-glfw lwjgl-jemalloc lwjgl-nanovg lwjgl-openal lwjgl-opengl lwjgl-shaderc lwjgl-stb lwjgl-tinyfd lwjgl-vma lwjgl-vulkan
-COMPILE_LIBS := $(wildcard libs/lwjgl/*.jar) $(wildcard libs/others/*.jar) $(wildcard libs/caciocavallo/*.jar) $(wildcard libs/caciocavallo17/*.jar)
+COMPILE_LIBS := $(wildcard libs/lwjgl/*.jar) libs/lwjgl-3.4.1/* $(wildcard libs/others/*.jar) $(wildcard libs/caciocavallo/*.jar) $(wildcard libs/caciocavallo17/*.jar)
 
 # Add all jars to classpath and allow compiling with private API
 JCFLAGS := -cp "$(subst $() $(),:,$(wildcard $(SOURCEDIR)/*/):$(COMPILE_LIBS))" -XDignore.symbol.file
@@ -34,7 +34,7 @@ check_empty_classes:
 	fi
 
 # Rules for building java class
-$(CLASSES): $(OUTPUTDIR)/%.class: $(SOURCEDIR)/%.java
+$(CLASSES): $(OUTPUTDIR)/%.class: $(SOURCEDIR)/%.java prepare_lwjgl_341
 	@set -e
 	$(eval TARGET=$(word 2, $(subst /, ,$@)))
 	@mkdir -p $(OUTPUTDIR)/classes

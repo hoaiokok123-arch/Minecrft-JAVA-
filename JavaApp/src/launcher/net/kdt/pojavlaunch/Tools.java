@@ -73,7 +73,15 @@ public final class Tools {
             
         Class<?> clazz = loader.loadClass(versionInfo.mainClass);
         Method method = clazz.getMethod("main", String[].class);
-        method.invoke(null, new Object[]{launchArgs});
+        try {
+            method.invoke(null, new Object[]{launchArgs});
+        } catch (java.lang.reflect.InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            if (cause != null) {
+                throw cause;
+            }
+            throw e;
+        }
     }
 
     public static String[] getMinecraftArgs(MinecraftAccount profile, JMinecraftVersionList.Version versionInfo) {
